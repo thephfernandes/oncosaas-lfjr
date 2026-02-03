@@ -18,6 +18,7 @@ export class AuthController {
     // Prioridade: tenantId do body > tenantId do header
     // Isso permite seleção de tenant tanto via form quanto via header
     const tenantId = loginDto.tenantId || headerTenantId;
+
     return this.authService.login(loginDto, tenantId);
   }
 

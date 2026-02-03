@@ -1,6 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+import { getApiUrl } from '@/lib/utils/api-config';
 
 export interface ApiError {
   message: string | string[];
@@ -25,8 +24,12 @@ class ApiClient {
   private tenantId: string | null = null;
 
   constructor() {
+    // Usar função utilitária que detecta automaticamente HTTP/HTTPS
+    const apiUrl = getApiUrl();
+    const baseURL = `${apiUrl}/api/v1`;
+    
     this.client = axios.create({
-      baseURL: `${API_URL}/api/v1`,
+      baseURL,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -76,8 +79,13 @@ class ApiClient {
           throw new ApiClientError(message, status, data?.error || 'Unknown Error');
         }
 
+        // Network Error geralmente significa que o servidor não está rodando
+        const message = error.code === 'ECONNREFUSED' || error.message === 'Network Error'
+          ? 'Servidor não está rodando. Verifique se o backend está iniciado na porta 3002.'
+          : error.message || 'Network Error';
+        
         throw new ApiClientError(
-          error.message || 'Network Error',
+          message,
           0,
           'Network Error'
         );

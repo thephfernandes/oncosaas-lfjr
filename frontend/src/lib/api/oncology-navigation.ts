@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { apiClient } from './client';
+import { getApiUrl } from '@/lib/utils/api-config';
 
 export interface NavigationStep {
   id: string;
@@ -173,7 +174,7 @@ export const oncologyNavigationApi = {
     formData.append('file', file);
     
     // Usar axios diretamente para FormData (não definir Content-Type manualmente)
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+    const API_URL = getApiUrl();
     const token =
       typeof window !== 'undefined'
         ? localStorage.getItem('auth_token')

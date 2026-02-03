@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
+import { getApiUrl } from '@/lib/utils/api-config';
 import { usePatients } from '@/hooks/usePatients';
 import {
   usePatientNavigationSteps,
@@ -84,6 +85,15 @@ const STATUS_ICONS: Record<string, JSX.Element> = {
 export default function OncologyNavigationPage() {
   const router = useRouter();
   const { user, isAuthenticated, isInitializing, initialize } = useAuthStore();
+  
+  // Obter URL da API dinamicamente (HTTP/HTTPS)
+  const apiUrl = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return getApiUrl();
+    }
+    return 'http://localhost:3002'; // Fallback para SSR
+  }, []);
+  
   const { data: patients, isLoading: isLoadingPatients } = usePatients();
   const [selectedCancerType, setSelectedCancerType] = useState<string | null>(
     null
@@ -944,7 +954,7 @@ function StepCard({ step }: StepCardProps) {
                           {formatFileSize(file.size)}
                         </span>
                         <a
-                          href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}${file.path}`}
+                          href={`${apiUrl}${file.path}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-indigo-600 hover:text-indigo-800"
@@ -1060,7 +1070,7 @@ function StepCard({ step }: StepCardProps) {
                       {formatFileSize(file.size)}
                     </span>
                     <a
-                      href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}${file.path}`}
+                      href={`${apiUrl}${file.path}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-800 text-xs"

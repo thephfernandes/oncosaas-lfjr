@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { getApiUrl } from '@/lib/utils/api-config';
 
 export interface CancerDiagnosis {
   id: string;
@@ -237,7 +238,7 @@ export const patientsApi = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+    const API_URL = getApiUrl();
     const token =
       typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     const tenantId =

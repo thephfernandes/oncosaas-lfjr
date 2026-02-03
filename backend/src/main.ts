@@ -60,12 +60,32 @@ async function bootstrap() {
     prefix: '/uploads',
   });
 
-  // CORS - atualizar origin para HTTPS se necessário
+  // CORS - aceitar ambos HTTP e HTTPS em desenvolvimento
   const frontendUrl =
     process.env.FRONTEND_URL ||
     (useHttps ? 'https://localhost:3000' : 'http://localhost:3000');
+  
+  // Em desenvolvimento, aceitar ambos os protocolos para flexibilidade
+  const allowedOrigins =
+    process.env.NODE_ENV === 'production'
+      ? [frontendUrl] // Em produção, apenas a URL configurada
+      : [
+          'http://localhost:3000',
+          'https://localhost:3000',
+          frontendUrl,
+        ]; // Em desenvolvimento, ambos os protocolos
+
   app.enableCors({
-    origin: frontendUrl,
+    origin: (origin, callback) => {
+      // Permitir requisições sem origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   });
 

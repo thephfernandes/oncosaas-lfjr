@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { authApi, User } from '@/lib/api/auth';
+import { apiClient } from '@/lib/api/client';
 
 interface AuthState {
   user: User | null;
@@ -39,8 +40,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         const user = JSON.parse(userStr);
 
         // Configurar token no cliente API
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { apiClient } = require('@/lib/api/client');
         apiClient.setToken(token);
         apiClient.setTenantId(tenantId);
 

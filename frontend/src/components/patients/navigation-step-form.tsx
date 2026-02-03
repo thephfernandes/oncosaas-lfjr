@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   updateNavigationStepSchema,
   UpdateNavigationStepFormData,
+  navigationStepStatusSchema,
 } from '@/lib/validations/navigation-step';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,10 +57,17 @@ export function NavigationStepForm({
   onSubmit,
   onCancel,
 }: NavigationStepFormProps) {
+  // Valida e converte o status para o tipo esperado
+  const getValidStatus = (status: string | undefined): UpdateNavigationStepFormData['status'] => {
+    if (!status) return undefined;
+    const result = navigationStepStatusSchema.safeParse(status);
+    return result.success ? result.data : undefined;
+  };
+
   const form = useForm<UpdateNavigationStepFormData>({
     resolver: zodResolver(updateNavigationStepSchema),
     defaultValues: {
-      status: step.status || undefined,
+      status: getValidStatus(step.status),
       isCompleted: step.isCompleted || undefined,
       completedAt: step.completedAt
         ? typeof step.completedAt === 'string' &&
