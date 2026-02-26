@@ -11,6 +11,7 @@ npm run generate-certs
 ### 2. Instalar Certificado no Windows
 
 **Opção A - Interface Gráfica:**
+
 1. Abra `certs/localhost.crt` (duplo clique)
 2. Clique em "Instalar Certificado"
 3. Selecione "Usuário Atual"
@@ -19,6 +20,7 @@ npm run generate-certs
 6. Clique em "Concluir"
 
 **Opção B - PowerShell (como Administrador):**
+
 ```powershell
 Import-Certificate -FilePath ".\certs\localhost.crt" -CertStoreLocation Cert:\CurrentUser\Root
 ```
@@ -69,18 +71,21 @@ Para mais detalhes, consulte: [`docs/desenvolvimento/https-setup.md`](docs/desen
 ## ❓ Troubleshooting
 
 ### Erro: "Certificados SSL não encontrados"
+
 - Execute: `npm run generate-certs`
 - Verifique se os arquivos existem em `certs/`
 
 ### Erro: "NET::ERR_CERT_AUTHORITY_INVALID"
+
 - Instale o certificado no Windows (veja passo 2 acima)
 
 ### Erro: "ERR_SSL_PROTOCOL_ERROR"
+
 - Verifique se os servidores estão rodando com HTTPS
 - Use `npm run dev:https` em vez de `npm run dev`
 
 ### Facebook ainda mostra erro de HTTPS
+
 - Verifique se está acessando via `https://` (não `http://`)
 - Verifique se o certificado está instalado como confiável
 - Limpe o cache do navegador
-

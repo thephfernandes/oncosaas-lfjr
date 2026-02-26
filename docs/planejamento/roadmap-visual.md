@@ -1,4 +1,5 @@
 # Roadmap Visual de Desenvolvimento
+
 ## Plataforma de Otimização Oncológica
 
 ## Timeline Geral (12 Meses)
@@ -129,14 +130,17 @@ Fase 1: Fundação
 ## Milestones Principais
 
 ### Milestone 1: MVP Técnico (Mês 6)
+
 **Data:** 6 meses após início  
 **Entregáveis:**
+
 - Navegação funcional
 - Priorização básica
 - Agente WhatsApp básico
 - Dashboard enfermagem básico
 
 **Critérios de Aceitação:**
+
 - ✅ Sistema funcional end-to-end
 - ✅ Testes básicos passando
 - ✅ Documentação técnica completa
@@ -144,14 +148,17 @@ Fase 1: Fundação
 ---
 
 ### Milestone 2: MVP Completo (Mês 9)
+
 **Data:** 9 meses após início  
 **Entregáveis:**
+
 - Todas as features P0 completas
 - Questionários adaptativos
 - STT funcional
 - Métricas básicas
 
 **Critérios de Aceitação:**
+
 - ✅ Todas as features críticas funcionando
 - ✅ Testes E2E completos
 - ✅ Performance aceitável
@@ -160,14 +167,17 @@ Fase 1: Fundação
 ---
 
 ### Milestone 3: Produção (Mês 12)
+
 **Data:** 12 meses após início  
 **Entregáveis:**
+
 - Sistema em produção
 - Todas as features P0 e P1
 - Testes completos
 - Documentação completa
 
 **Critérios de Aceitação:**
+
 - ✅ Uptime >99.9%
 - ✅ Performance otimizada
 - ✅ Segurança validada
@@ -180,29 +190,34 @@ Fase 1: Fundação
 ### Equipe Técnica
 
 **Backend (2-3 desenvolvedores)**
+
 - Node.js/NestJS
 - Python/FastAPI
 - PostgreSQL
 - Integrações (FHIR, WhatsApp)
 
 **Frontend (2 desenvolvedores)**
+
 - Next.js/React
 - TypeScript
 - Tailwind CSS
 - Charts/Visualizações
 
 **IA/ML (1-2 engenheiros)**
+
 - Modelos de ML
 - Agente conversacional
 - NLP/STT
 
 **DevOps (1 engenheiro)**
+
 - Infraestrutura
 - CI/CD
 - Monitoramento
 - Segurança
 
 **QA (1 testador)**
+
 - Testes manuais
 - Testes automatizados
 - Validação de features
@@ -216,6 +231,7 @@ Fase 1: Fundação
 ### Custos de Desenvolvimento
 
 **Equipe:**
+
 - Backend: R$ 180.000 (2 devs × R$ 15k/mês × 6 meses)
 - Frontend: R$ 120.000 (2 devs × R$ 10k/mês × 6 meses)
 - IA/ML: R$ 120.000 (1 eng × R$ 20k/mês × 6 meses)
@@ -227,6 +243,7 @@ Fase 1: Fundação
 ### Custos de Infraestrutura
 
 **Cloud (AWS/GCP):**
+
 - Servidores: R$ 3.000/mês × 12 = R$ 36.000
 - Banco de dados: R$ 2.000/mês × 12 = R$ 24.000
 - Storage: R$ 500/mês × 12 = R$ 6.000
@@ -237,10 +254,12 @@ Fase 1: Fundação
 ### Custos de APIs Externas
 
 **WhatsApp Business API:**
+
 - Setup: R$ 5.000
 - Mensagens: R$ 2.000/mês × 12 = R$ 24.000
 
 **APIs de IA:**
+
 - GPT-4/Claude: R$ 5.000/mês × 12 = R$ 60.000
 - STT: R$ 1.000/mês × 12 = R$ 12.000
 
@@ -249,6 +268,7 @@ Fase 1: Fundação
 ### Custos de Ferramentas
 
 **Ferramentas de Desenvolvimento:**
+
 - GitHub/GitLab: R$ 500/mês × 12 = R$ 6.000
 - CI/CD: R$ 1.000/mês × 12 = R$ 12.000
 - Monitoramento: R$ 1.500/mês × 12 = R$ 18.000
@@ -297,4 +317,3 @@ Fase 1: Fundação
 ---
 
 **FIM DO ROADMAP**
-

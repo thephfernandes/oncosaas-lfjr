@@ -64,7 +64,6 @@ export default function IntegrationsPage() {
     enabled: isAuthenticated,
   });
 
-
   // Mutation para deletar conexão
   const deleteMutation = useMutation({
     mutationFn: (id: string) => whatsappConnectionsApi.delete(id),
@@ -154,9 +153,7 @@ export default function IntegrationsPage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Integrações
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Integrações</h1>
           <p className="text-gray-600">
             Gerencie suas integrações com serviços externos
           </p>
@@ -178,7 +175,9 @@ export default function IntegrationsPage() {
               <div className="flex gap-2">
                 <EmbeddedSignup
                   onSuccess={() => {
-                    queryClient.invalidateQueries({ queryKey: ['whatsapp-connections'] });
+                    queryClient.invalidateQueries({
+                      queryKey: ['whatsapp-connections'],
+                    });
                   }}
                   onError={(error) => {
                     console.error('Erro no Embedded Signup:', error);
@@ -222,4 +221,3 @@ export default function IntegrationsPage() {
     </div>
   );
 }
-

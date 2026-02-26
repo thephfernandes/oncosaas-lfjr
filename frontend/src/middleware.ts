@@ -11,11 +11,10 @@ export function middleware(request: NextRequest) {
   // Para rotas protegidas, a verificação será feita no cliente
   // pois o token está no localStorage (não em cookies)
   // O middleware apenas permite acesso às rotas públicas
-  
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
-

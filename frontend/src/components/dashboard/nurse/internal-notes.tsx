@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useInternalNotes, useCreateInternalNote, useUpdateInternalNote, useDeleteInternalNote } from '@/hooks/useInternalNotes';
+import {
+  useInternalNotes,
+  useCreateInternalNote,
+  useUpdateInternalNote,
+  useDeleteInternalNote,
+} from '@/hooks/useInternalNotes';
 import { interventionsApi } from '@/lib/api/interventions';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -181,10 +186,7 @@ export function InternalNotes({ patientId }: InternalNotesProps) {
         ) : (
           <div className="space-y-3">
             {notes.map((note) => (
-              <div
-                key={note.id}
-                className="p-4 border rounded-lg space-y-2"
-              >
+              <div key={note.id} className="p-4 border rounded-lg space-y-2">
                 {editingId === note.id ? (
                   <div className="space-y-2">
                     <Textarea
@@ -216,7 +218,9 @@ export function InternalNotes({ patientId }: InternalNotesProps) {
                 ) : (
                   <>
                     <div className="flex items-start justify-between">
-                      <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {note.content}
+                      </p>
                       {canEditOrDelete(note) && (
                         <div className="flex gap-2 ml-2">
                           <Button
@@ -241,9 +245,13 @@ export function InternalNotes({ patientId }: InternalNotesProps) {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Badge variant="outline">{note.author.name}</Badge>
                       <span>
-                        {format(new Date(note.createdAt), "dd/MM/yyyy 'às' HH:mm", {
-                          locale: ptBR,
-                        })}
+                        {format(
+                          new Date(note.createdAt),
+                          "dd/MM/yyyy 'às' HH:mm",
+                          {
+                            locale: ptBR,
+                          }
+                        )}
                       </span>
                       {note.updatedAt !== note.createdAt && (
                         <span className="italic">(editada)</span>
@@ -263,7 +271,8 @@ export function InternalNotes({ patientId }: InternalNotesProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja deletar esta nota interna? Esta ação não pode ser desfeita.
+              Tem certeza que deseja deletar esta nota interna? Esta ação não
+              pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -280,4 +289,3 @@ export function InternalNotes({ patientId }: InternalNotesProps) {
     </Card>
   );
 }
-

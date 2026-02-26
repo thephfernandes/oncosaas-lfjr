@@ -18,6 +18,7 @@ curl -X POST http://localhost:3002/api/v1/auth/login \
 ```
 
 **Resposta**:
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -44,10 +45,12 @@ curl -X GET http://localhost:3002/api/v1/patients \
 ```
 
 **Substitua**:
+
 - `{access_token}` pelo token recebido no login
 - `{tenantId}` pelo tenantId do usuário (ex: `bae0e239-a98e-48dc-b12f-e90bdec6ad81`)
 
 **Exemplo completo**:
+
 ```bash
 curl -X GET http://localhost:3002/api/v1/patients \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ODdlZGM3OC1kNjU0LTQ0MzktYjk1My1kMWRiMmI0YjVlNjMiLCJlbWFpbCI6ImFkbWluQGhvc3BpdGFsdGVzdGUuY29tIiwidGVuYW50SWQiOiJiYWUwZTIzOS1hOThlLTQ4ZGMtYjEyZi1lOTBiZGVjNmFkODEiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NjI5ODk4NTEsImV4cCI6MTc2MzA3NjI1MX0.Z7-A6SG3IEbwUoKtoiOXt1Rtoz-v6C4buty8Gtc8bXw" \
@@ -65,6 +68,7 @@ curl -X GET http://localhost:3002/api/v1/messages \
 ```
 
 **Query Parameters opcionais**:
+
 - `?patientId={id}` - Filtrar por paciente
 - `?status=PENDING` - Filtrar por status
 
@@ -79,6 +83,7 @@ curl -X GET http://localhost:3002/api/v1/alerts \
 ```
 
 **Query Parameters opcionais**:
+
 - `?status=ACTIVE` - Filtrar por status
 - `?severity=CRITICAL` - Filtrar por severidade
 - `?patientId={id}` - Filtrar por paciente
@@ -126,6 +131,7 @@ curl -X POST http://localhost:3002/api/v1/observations \
 ```
 
 **LOINC Codes comuns**:
+
 - `72514-3`: Pain severity (0-10)
 - `39156-5`: Body mass index (BMI)
 - `8480-6`: Systolic blood pressure
@@ -133,6 +139,7 @@ curl -X POST http://localhost:3002/api/v1/observations \
 - `8867-4`: Heart rate
 
 **Listar observações não sincronizadas com EHR**:
+
 ```bash
 curl -X GET http://localhost:3002/api/v1/observations/unsynced \
   -H "Authorization: Bearer {access_token}" \
@@ -140,6 +147,7 @@ curl -X GET http://localhost:3002/api/v1/observations/unsynced \
 ```
 
 **Marcar observação como sincronizada**:
+
 ```bash
 curl -X PATCH http://localhost:3002/api/v1/observations/{observation-id}/sync \
   -H "Authorization: Bearer {access_token}" \
@@ -213,14 +221,17 @@ curl -X GET http://localhost:3002/api/v1/patients \
 ## 🛠️ Ferramentas Recomendadas
 
 ### Postman
+
 1. Importar collection de endpoints
 2. Configurar variáveis de ambiente (`access_token`, `tenant_id`)
 3. Testar todos os endpoints facilmente
 
 ### Insomnia
+
 Similar ao Postman, com interface moderna
 
 ### Thunder Client (VSCode)
+
 Extensão para testar APIs diretamente no editor
 
 ---
@@ -228,21 +239,25 @@ Extensão para testar APIs diretamente no editor
 ## ⚠️ Erros Comuns
 
 ### 401 Unauthorized
+
 - Token expirado (válido por 24h)
 - Token inválido ou malformado
 - **Solução**: Fazer login novamente
 
 ### 403 Forbidden
+
 - `X-Tenant-Id` incorreto ou ausente
 - Usuário não tem permissão (role) para a ação
 - **Solução**: Verificar headers e role do usuário
 
 ### 404 Not Found
+
 - URL incorreta
 - Método HTTP errado (GET vs POST)
 - **Solução**: Verificar URL e método
 
 ### 500 Internal Server Error
+
 - Erro no servidor
 - Banco de dados não conectado
 - **Solução**: Verificar logs do servidor e conexão com DB
@@ -275,4 +290,3 @@ Após validar todos os endpoints:
 2. **Desenvolver frontend dashboard** conectado ao backend
 3. **Implementar autenticação no frontend**
 4. **Integrar WebSocket** para atualizações em tempo real
-

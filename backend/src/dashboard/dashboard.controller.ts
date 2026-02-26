@@ -31,26 +31,43 @@ export class DashboardController {
     @CurrentUser() user: any,
     @Query('period') period?: '7d' | '30d' | '90d'
   ): Promise<DashboardStatisticsDto> {
-    return this.dashboardService.getStatistics(
-      user.tenantId,
-      period || '7d'
-    );
+    return this.dashboardService.getStatistics(user.tenantId, period || '7d');
   }
 
   @Get('nurse-metrics')
-  @Roles(UserRole.NURSE, UserRole.NURSE_CHIEF, UserRole.COORDINATOR, UserRole.ADMIN, UserRole.ONCOLOGIST)
+  @Roles(
+    UserRole.NURSE,
+    UserRole.NURSE_CHIEF,
+    UserRole.COORDINATOR,
+    UserRole.ADMIN,
+    UserRole.ONCOLOGIST
+  )
   async getNurseMetrics(@CurrentUser() user: any): Promise<NurseMetricsDto> {
     return this.dashboardService.getNurseMetrics(user.tenantId, user.id);
   }
 
   @Get('navigation-metrics')
-  @Roles(UserRole.NURSE, UserRole.NURSE_CHIEF, UserRole.COORDINATOR, UserRole.ADMIN, UserRole.ONCOLOGIST)
-  async getNavigationMetrics(@CurrentUser() user: any): Promise<NavigationMetricsDto> {
+  @Roles(
+    UserRole.NURSE,
+    UserRole.NURSE_CHIEF,
+    UserRole.COORDINATOR,
+    UserRole.ADMIN,
+    UserRole.ONCOLOGIST
+  )
+  async getNavigationMetrics(
+    @CurrentUser() user: any
+  ): Promise<NavigationMetricsDto> {
     return this.dashboardService.getNavigationMetrics(user.tenantId);
   }
 
   @Get('patients-with-critical-steps')
-  @Roles(UserRole.ONCOLOGIST, UserRole.ADMIN, UserRole.COORDINATOR, UserRole.NURSE, UserRole.NURSE_CHIEF)
+  @Roles(
+    UserRole.ONCOLOGIST,
+    UserRole.ADMIN,
+    UserRole.COORDINATOR,
+    UserRole.NURSE,
+    UserRole.NURSE_CHIEF
+  )
   async getPatientsWithCriticalSteps(
     @CurrentUser() user: any,
     @Query('journeyStage') journeyStage?: JourneyStage,
@@ -61,9 +78,10 @@ export class DashboardController {
     let parsedMaxResults: number | undefined;
     if (maxResults) {
       const parsed = parseInt(maxResults, 10);
-      parsedMaxResults = !isNaN(parsed) && parsed > 0 ? Math.min(parsed, 100) : undefined;
+      parsedMaxResults =
+        !isNaN(parsed) && parsed > 0 ? Math.min(parsed, 100) : undefined;
     }
-    
+
     return this.dashboardService.getPatientsWithCriticalSteps(user.tenantId, {
       journeyStage,
       cancerType,
@@ -73,8 +91,9 @@ export class DashboardController {
 
   @Get('critical-timelines')
   @Roles(UserRole.ONCOLOGIST, UserRole.ADMIN, UserRole.COORDINATOR)
-  async getCriticalTimelines(@CurrentUser() user: any): Promise<CriticalTimelinesDto> {
+  async getCriticalTimelines(
+    @CurrentUser() user: any
+  ): Promise<CriticalTimelinesDto> {
     return this.dashboardService.getCriticalTimelines(user.tenantId);
   }
 }
-

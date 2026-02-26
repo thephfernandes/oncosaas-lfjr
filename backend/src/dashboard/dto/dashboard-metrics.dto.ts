@@ -45,4 +45,3 @@ export class DashboardMetricsDto {
     percentage: number;
   }>;
 }
-

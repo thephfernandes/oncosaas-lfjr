@@ -21,10 +21,12 @@ Implementação de duas melhorias importantes de UX na visualização de convers
 ### 1. Scroll Automático para Última Mensagem
 
 **Problema:**
+
 - Ao abrir uma conversa, o usuário precisava rolar manualmente até a última mensagem
 - Quando uma nova mensagem chegava via WebSocket, não era visível imediatamente
 
 **Solução:**
+
 - Implementado `useRef` para referenciar um elemento no final da lista de mensagens
 - `useEffect` que executa quando o número de mensagens muda
 - Scroll suave (`behavior: 'smooth'`) para melhor experiência visual
@@ -45,6 +47,7 @@ useEffect(() => {
 ```
 
 **Quando executa:**
+
 - Ao abrir uma conversa (componente monta)
 - Quando uma nova mensagem é recebida (via WebSocket)
 - Quando uma mensagem é enviada (optimistic update)
@@ -54,11 +57,13 @@ useEffect(() => {
 ### 2. Feedback Visual de Conversas Assumidas
 
 **Problema:**
+
 - Não era claro quem havia assumido uma conversa
 - Múltiplos enfermeiros podiam tentar assumir a mesma conversa
 - Falta de transparência sobre o estado da conversa
 
 **Solução:**
+
 - Badge verde no header da conversa mostrando:
   - Nome do usuário que assumiu (ou "Você" se for o usuário atual)
   - Data e hora em que foi assumida
@@ -93,6 +98,7 @@ useEffect(() => {
 4. Se for outro usuário: mostra "Outro usuário" (pode ser melhorado buscando o nome do usuário)
 
 **Melhorias Futuras:**
+
 - Buscar nome completo do usuário que assumiu (se não for o usuário atual)
 - Mostrar avatar do usuário
 - Permitir "desassumir" conversa
@@ -102,10 +108,12 @@ useEffect(() => {
 ### 3. Melhoria na Lógica de `isNursingActive`
 
 **Problema:**
+
 - `isNursingActive` era controlado apenas manualmente pelo botão "Assumir Conversa"
 - Não refletia o estado real da conversa (se já estava assumida)
 
 **Solução:**
+
 - Verificação automática se há mensagem assumida pelo usuário atual
 - `useEffect` que atualiza `isNursingActive` quando:
   - Uma mensagem é assumida pelo usuário atual
@@ -131,9 +139,11 @@ useEffect(() => {
 ### 4. Correção na Identificação do Remetente
 
 **Problema:**
+
 - Mensagens enviadas pela enfermagem eram identificadas como "agent" ao invés de "nursing"
 
 **Solução:**
+
 - Verificação do campo `processedBy` para determinar o remetente correto:
   - `INBOUND` → `'patient'`
   - `OUTBOUND` + `processedBy === 'NURSING'` → `'nursing'`
@@ -277,4 +287,3 @@ sender:
 ---
 
 **Última atualização:** 2025-01-12
-

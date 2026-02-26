@@ -55,4 +55,3 @@ export class CreateNavigationStepDto {
   @IsOptional()
   notes?: string;
 }
-

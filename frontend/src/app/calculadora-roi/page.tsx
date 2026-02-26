@@ -1,6 +1,6 @@
 'use client';
 
-import { ROICalculator } from "@/components/roi-calculator/ROICalculator"
+import { ROICalculator } from '@/components/roi-calculator/ROICalculator';
 import { NavigationBar } from '@/components/shared/navigation-bar';
 import { useAuthStore } from '@/stores/auth-store';
 import { useEffect } from 'react';
@@ -56,7 +56,5 @@ export default function CalculadoraROIPage() {
         <ROICalculator />
       </div>
     </div>
-  )
+  );
 }
-
-

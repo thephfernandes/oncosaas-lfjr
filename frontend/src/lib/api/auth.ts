@@ -14,7 +14,13 @@ export interface RegisterDto {
   email: string;
   password: string;
   name: string;
-  role: 'ADMIN' | 'ONCOLOGIST' | 'DOCTOR' | 'NURSE_CHIEF' | 'NURSE' | 'COORDINATOR';
+  role:
+    | 'ADMIN'
+    | 'ONCOLOGIST'
+    | 'DOCTOR'
+    | 'NURSE_CHIEF'
+    | 'NURSE'
+    | 'COORDINATOR';
   tenantId: string;
 }
 
@@ -22,7 +28,13 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'ONCOLOGIST' | 'DOCTOR' | 'NURSE_CHIEF' | 'NURSE' | 'COORDINATOR';
+  role:
+    | 'ADMIN'
+    | 'ONCOLOGIST'
+    | 'DOCTOR'
+    | 'NURSE_CHIEF'
+    | 'NURSE'
+    | 'COORDINATOR';
   tenantId: string;
   tenant?: {
     id: string;
@@ -37,32 +49,38 @@ export interface LoginResponse {
 
 export const authApi = {
   async login(credentials: LoginDto): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>('/auth/login', credentials);
-    
+    const response = await apiClient.post<LoginResponse>(
+      '/auth/login',
+      credentials
+    );
+
     // Salvar token e tenantId
     apiClient.setToken(response.access_token);
     apiClient.setTenantId(response.user.tenantId);
-    
+
     // Salvar dados do usuário
     if (typeof window !== 'undefined') {
       localStorage.setItem('user', JSON.stringify(response.user));
     }
-    
+
     return response;
   },
 
   async register(data: RegisterDto): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>('/auth/register', data);
-    
+    const response = await apiClient.post<LoginResponse>(
+      '/auth/register',
+      data
+    );
+
     // Salvar token e tenantId
     apiClient.setToken(response.access_token);
     apiClient.setTenantId(response.user.tenantId);
-    
+
     // Salvar dados do usuário
     if (typeof window !== 'undefined') {
       localStorage.setItem('user', JSON.stringify(response.user));
     }
-    
+
     return response;
   },
 
@@ -84,4 +102,3 @@ export const authApi = {
     return !!apiClient.getToken();
   },
 };
-

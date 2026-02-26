@@ -20,17 +20,12 @@ export class LoggingInterceptor implements NestInterceptor {
         const { statusCode } = response;
         const delay = Date.now() - now;
 
-        console.log(
-          `${method} ${url} ${statusCode} - ${delay}ms`,
-          {
-            body: method !== 'GET' ? body : undefined,
-            query,
-            params,
-          },
-        );
-      }),
+        console.log(`${method} ${url} ${statusCode} - ${delay}ms`, {
+          body: method !== 'GET' ? body : undefined,
+          query,
+          params,
+        });
+      })
     );
   }
 }
-
-

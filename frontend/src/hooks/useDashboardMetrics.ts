@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { dashboardApi, DashboardMetrics, DashboardStatistics, PatientWithCriticalStep } from '@/lib/api/dashboard';
+import {
+  dashboardApi,
+  DashboardMetrics,
+  DashboardStatistics,
+  PatientWithCriticalStep,
+} from '@/lib/api/dashboard';
 
 export const useDashboardMetrics = () => {
   return useQuery({
@@ -29,4 +34,3 @@ export const usePatientsWithCriticalSteps = (params?: {
     staleTime: 2 * 60 * 1000, // 2 minutos
   });
 };
-

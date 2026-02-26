@@ -26,10 +26,7 @@ export class ObservationsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @Body() createObservationDto: CreateObservationDto,
-    @Request() req
-  ) {
+  create(@Body() createObservationDto: CreateObservationDto, @Request() req) {
     return this.observationsService.create(
       createObservationDto,
       req.user.tenantId
@@ -42,11 +39,7 @@ export class ObservationsController {
     @Query('patientId') patientId?: string,
     @Query('code') code?: string
   ) {
-    return this.observationsService.findAll(
-      req.user.tenantId,
-      patientId,
-      code
-    );
+    return this.observationsService.findAll(req.user.tenantId, patientId, code);
   }
 
   @Get('unsynced')
@@ -92,4 +85,3 @@ export class ObservationsController {
     return this.observationsService.remove(id, req.user.tenantId);
   }
 }
-

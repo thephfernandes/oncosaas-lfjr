@@ -38,4 +38,3 @@ export interface FHIRToken {
   expiresAt: Date;
   tokenType: string;
 }
-

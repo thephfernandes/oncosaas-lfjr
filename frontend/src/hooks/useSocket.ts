@@ -47,4 +47,3 @@ export const useSocket = (namespace: string = '/') => {
 
   return { socket, isConnected };
 };
-

@@ -12,7 +12,9 @@ interface CriticalStepsSectionProps {
   maxResults?: number;
 }
 
-export function CriticalStepsSection({ maxResults = 10 }: CriticalStepsSectionProps) {
+export function CriticalStepsSection({
+  maxResults = 10,
+}: CriticalStepsSectionProps) {
   const router = useRouter();
   const { data: patientsWithSteps, isLoading } = usePatientsWithCriticalSteps({
     maxResults,
@@ -39,10 +41,14 @@ export function CriticalStepsSection({ maxResults = 10 }: CriticalStepsSectionPr
     router.push(`/dashboard?patient=${patientId}`);
   };
 
-  const getSeverityColor = (daysOverdue: number | null, isRequired: boolean) => {
+  const getSeverityColor = (
+    daysOverdue: number | null,
+    isRequired: boolean
+  ) => {
     if (!daysOverdue) return 'border-l-yellow-500 bg-yellow-50';
     if (daysOverdue > 14 && isRequired) return 'border-l-red-500 bg-red-50';
-    if (daysOverdue > 7 && isRequired) return 'border-l-orange-500 bg-orange-50';
+    if (daysOverdue > 7 && isRequired)
+      return 'border-l-orange-500 bg-orange-50';
     return 'border-l-yellow-500 bg-yellow-50';
   };
 
@@ -101,11 +107,13 @@ export function CriticalStepsSection({ maxResults = 10 }: CriticalStepsSectionPr
                       <span
                         className={cn(
                           'px-2 py-0.5 rounded text-xs font-medium',
-                          getPriorityColor(item.priorityCategory) === 'text-red-600'
+                          getPriorityColor(item.priorityCategory) ===
+                            'text-red-600'
                             ? 'bg-red-100 text-red-700'
-                            : getPriorityColor(item.priorityCategory) === 'text-orange-600'
-                            ? 'bg-orange-100 text-orange-700'
-                            : 'bg-gray-100 text-gray-700'
+                            : getPriorityColor(item.priorityCategory) ===
+                                'text-orange-600'
+                              ? 'bg-orange-100 text-orange-700'
+                              : 'bg-gray-100 text-gray-700'
                         )}
                       >
                         {item.priorityCategory}
@@ -124,7 +132,9 @@ export function CriticalStepsSection({ maxResults = 10 }: CriticalStepsSectionPr
                       {step.stepName}
                     </p>
                     {step.stepDescription && (
-                      <p className="text-xs text-gray-600">{step.stepDescription}</p>
+                      <p className="text-xs text-gray-600">
+                        {step.stepDescription}
+                      </p>
                     )}
                     <div className="flex items-center gap-4 text-xs text-gray-500">
                       <span className="capitalize">{step.journeyStage}</span>
@@ -133,7 +143,8 @@ export function CriticalStepsSection({ maxResults = 10 }: CriticalStepsSectionPr
                           <Clock className="h-3 w-3" />
                           {isOverdue ? (
                             <span className="text-red-600 font-medium">
-                              {daysOverdue} {daysOverdue === 1 ? 'dia' : 'dias'} de atraso
+                              {daysOverdue} {daysOverdue === 1 ? 'dia' : 'dias'}{' '}
+                              de atraso
                             </span>
                           ) : (
                             <span>
@@ -155,11 +166,10 @@ export function CriticalStepsSection({ maxResults = 10 }: CriticalStepsSectionPr
                   </div>
 
                   <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span>{item.cancerType || 'Tipo não informado'}</span>
                     <span>
-                      {item.cancerType || 'Tipo não informado'}
-                    </span>
-                    <span>
-                      Progresso: {item.completedSteps}/{item.totalSteps} ({item.completionRate}%)
+                      Progresso: {item.completedSteps}/{item.totalSteps} (
+                      {item.completionRate}%)
                     </span>
                   </div>
                 </div>
@@ -180,8 +190,6 @@ export function CriticalStepsSection({ maxResults = 10 }: CriticalStepsSectionPr
           );
         })}
       </div>
-
     </div>
   );
 }
-

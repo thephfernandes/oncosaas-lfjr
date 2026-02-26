@@ -27,7 +27,9 @@ export const createPatientSchema = z
     cpf: z.string().optional(),
     birthDate: z.string().min(1, 'Data de nascimento é obrigatória'),
     gender: z.enum(['male', 'female', 'other']).optional(),
-    phone: z.string().min(10, 'Telefone é obrigatório e deve ter pelo menos 10 dígitos'),
+    phone: z
+      .string()
+      .min(10, 'Telefone é obrigatório e deve ter pelo menos 10 dígitos'),
     email: z.string().email('Email inválido').optional().or(z.literal('')),
 
     // Etapa 2 - Dados Oncológicos Essenciais
@@ -78,10 +80,10 @@ export const createPatientSchema = z
       return true;
     },
     {
-      message: 'Data de diagnóstico é obrigatória quando o paciente não está em rastreio',
+      message:
+        'Data de diagnóstico é obrigatória quando o paciente não está em rastreio',
       path: ['diagnosisDate'],
     }
   );
 
 export type CreatePatientFormData = z.infer<typeof createPatientSchema>;
-

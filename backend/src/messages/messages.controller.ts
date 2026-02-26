@@ -116,7 +116,10 @@ export class MessagesController {
     UserRole.NURSE,
     UserRole.COORDINATOR
   )
-  assumeConversation(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+  assumeConversation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any
+  ) {
     return this.messagesService.assumeConversation(id, user.tenantId, user.id);
   }
 }

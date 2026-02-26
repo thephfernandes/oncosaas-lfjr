@@ -7,7 +7,7 @@
 - [ ] **DPO Designado**: Nomear Data Protection Officer
 - [ ] **Inventário de Dados**: Mapear todos os dados pessoais coletados
 - [ ] **Base Legal**: Definir base legal para tratamento (consentimento, execução de contrato)
-- [ ] **Consentimento Explícito**: 
+- [ ] **Consentimento Explícito**:
   - [ ] Consentimento para uso de dados de saúde
   - [ ] Consentimento para interação via WhatsApp
   - [ ] Consentimento para processamento por IA
@@ -187,5 +187,3 @@
 - [ ] Manual Técnico (ANVISA, se necessário)
 - [ ] RIPD (Relatório de Impacto à Proteção de Dados)
 - [ ] Incident Response Plan
-
-

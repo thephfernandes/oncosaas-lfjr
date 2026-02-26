@@ -69,11 +69,10 @@ export function filterPatients(
     filtered = filtered.filter((patient) => {
       // Verificar se tem diagnóstico com o tipo de câncer especificado
       if (patient.cancerDiagnoses && patient.cancerDiagnoses.length > 0) {
-        return patient.cancerDiagnoses.some(
-          (diagnosis) =>
-            diagnosis.cancerType
-              .toLowerCase()
-              .includes(filters.cancerType!.toLowerCase())
+        return patient.cancerDiagnoses.some((diagnosis) =>
+          diagnosis.cancerType
+            .toLowerCase()
+            .includes(filters.cancerType!.toLowerCase())
         );
       }
       // Fallback para cancerType legado
@@ -88,4 +87,3 @@ export function filterPatients(
 
   return filtered;
 }
-

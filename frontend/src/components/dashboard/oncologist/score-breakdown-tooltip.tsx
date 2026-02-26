@@ -22,14 +22,14 @@ export function ScoreBreakdownTooltip({ patient }: ScoreBreakdownTooltipProps) {
   // Estimar fatores baseados em dados disponíveis
   if (patient.priorityScore) {
     const score = patient.priorityScore;
-    
+
     // Fator: Estágio do câncer (mais avançado = maior score)
     if (patient.stage) {
       const stageScores: Record<string, number> = {
-        'I': 10,
-        'II': 20,
-        'III': 35,
-        'IV': 50,
+        I: 10,
+        II: 20,
+        III: 35,
+        IV: 50,
       };
       const stageScore = stageScores[patient.stage] || 0;
       if (stageScore > 0) {
@@ -69,14 +69,19 @@ export function ScoreBreakdownTooltip({ patient }: ScoreBreakdownTooltipProps) {
     }
 
     // Fator: Prioridade base (restante)
-    const totalFactorScore = breakdown.factors.reduce((sum, f) => sum + f.value, 0);
+    const totalFactorScore = breakdown.factors.reduce(
+      (sum, f) => sum + f.value,
+      0
+    );
     const baseScore = Math.max(0, score - totalFactorScore);
     if (baseScore > 0) {
       breakdown.baseScore = baseScore;
     }
   }
 
-  const totalScore = breakdown.baseScore + breakdown.factors.reduce((sum, f) => sum + f.value, 0);
+  const totalScore =
+    breakdown.baseScore +
+    breakdown.factors.reduce((sum, f) => sum + f.value, 0);
 
   return (
     <div className="relative inline-block">
@@ -104,19 +109,25 @@ export function ScoreBreakdownTooltip({ patient }: ScoreBreakdownTooltipProps) {
                 Breakdown do Score de Prioridade
               </h4>
               <p className="text-xs text-gray-600 mb-3">
-                Score total: <span className="font-bold">{patient.priorityScore}/100</span>
+                Score total:{' '}
+                <span className="font-bold">{patient.priorityScore}/100</span>
               </p>
             </div>
 
             {breakdown.factors.length > 0 ? (
               <div className="space-y-2">
                 {breakdown.factors.map((factor, index) => (
-                  <div key={index} className="flex items-start justify-between gap-2">
+                  <div
+                    key={index}
+                    className="flex items-start justify-between gap-2"
+                  >
                     <div className="flex-1">
                       <p className="text-xs font-medium text-gray-700">
                         {factor.label}
                       </p>
-                      <p className="text-xs text-gray-500">{factor.description}</p>
+                      <p className="text-xs text-gray-500">
+                        {factor.description}
+                      </p>
                     </div>
                     <span className="text-xs font-semibold text-blue-600">
                       +{factor.value}
@@ -169,4 +180,3 @@ export function ScoreBreakdownTooltip({ patient }: ScoreBreakdownTooltipProps) {
     </div>
   );
 }
-

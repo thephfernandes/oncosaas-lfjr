@@ -11,25 +11,30 @@ Integração bidirecional com sistemas EHR/PMS usando padrões HL7 v2 e FHIR par
 #### ADT - Admit, Discharge, Transfer
 
 **ADT^A04 (Registro de Paciente):**
+
 - Usado quando novo paciente é registrado no EHR
 - Sincronizar dados básicos do paciente
 
 **ADT^A08 (Atualização de Informações do Paciente):**
+
 - Usado quando dados do paciente são atualizados
 - Sincronizar mudanças
 
 **ADT^A31 (Atualização de Informações do Paciente):**
+
 - Similar ao A08, mas mais completo
 
 #### ORU - Observation Result
 
 **ORU^R01 (Resultado de Observação):**
+
 - Usado quando resultados de exames são disponibilizados
 - Sincronizar exames, resultados de laboratório
 
 #### MDM - Medical Document Management
 
 **MDM^T02 (Documento Original):**
+
 - Usado quando documentos são criados (relatórios, laudos)
 - Sincronizar documentos
 
@@ -38,6 +43,7 @@ Integração bidirecional com sistemas EHR/PMS usando padrões HL7 v2 e FHIR par
 **Biblioteca**: `node-hl7` (Node.js) ou `hl7` (Python)
 
 **Fluxo**:
+
 1. Servidor MLLP escuta na porta configurada
 2. Recebe mensagem HL7 v2
 3. Parse da mensagem
@@ -46,6 +52,7 @@ Integração bidirecional com sistemas EHR/PMS usando padrões HL7 v2 e FHIR par
 6. ACK de confirmação
 
 **Exemplo de Mensagem ADT^A04**:
+
 ```
 MSH|^~\&|EHR|Hospital|Sistema|Clinica|202401151030||ADT^A04|12345|P|2.5
 PID|1||123456789||Silva^João^Maria||19800101|M|||Rua X, 123||||||||12345678901
@@ -59,36 +66,44 @@ PV1|1|I|ICU^101^1||||123456^Doutor^Oncologista|||||||||12345678901||V||123456789
 #### Patient
 
 **GET /Patient/{id}**
+
 - Buscar dados do paciente
 
 **PUT /Patient/{id}**
+
 - Atualizar dados do paciente
 
 **POST /Patient**
+
 - Criar novo paciente (se necessário)
 
 #### Observation
 
 **POST /Observation**
+
 - Enviar observações coletadas pelo agente WhatsApp
 - Mapear dados estruturados para FHIR Observation
 
 **GET /Observation?patient={patientId}**
+
 - Buscar observações do paciente
 
 #### Condition
 
 **GET /Condition?patient={patientId}**
+
 - Buscar condições/diagnósticos do paciente
 
 #### Procedure
 
 **GET /Procedure?patient={patientId}**
+
 - Buscar procedimentos realizados
 
 #### MedicationStatement
 
 **GET /MedicationStatement?patient={patientId}**
+
 - Buscar medicações em uso
 
 ### Mapeamento de Dados
@@ -100,11 +115,15 @@ PV1|1|I|ICU^101^1||||123456^Doutor^Oncologista|||||||||12345678901||V||123456789
 function mapFHIRPatientToInternal(fhirPatient: fhir.Patient): Patient {
   return {
     name: fhirPatient.name?.[0]?.text || '',
-    cpf: fhirPatient.identifier?.find(id => id.system === 'http://www.brazil.gov.br/cpf')?.value,
-    birthDate: fhirPatient.birthDate ? new Date(fhirPatient.birthDate) : undefined,
-    phone: fhirPatient.telecom?.find(t => t.system === 'phone')?.value || '',
-    email: fhirPatient.telecom?.find(t => t.system === 'email')?.value,
-    ehrPatientId: fhirPatient.id
+    cpf: fhirPatient.identifier?.find(
+      (id) => id.system === 'http://www.brazil.gov.br/cpf'
+    )?.value,
+    birthDate: fhirPatient.birthDate
+      ? new Date(fhirPatient.birthDate)
+      : undefined,
+    phone: fhirPatient.telecom?.find((t) => t.system === 'phone')?.value || '',
+    email: fhirPatient.telecom?.find((t) => t.system === 'email')?.value,
+    ehrPatientId: fhirPatient.id,
   };
 }
 ```
@@ -118,21 +137,23 @@ function mapInternalToFHIRObservation(obs: Observation): fhir.Observation {
     resourceType: 'Observation',
     status: 'final',
     code: {
-      coding: [{
-        system: 'http://loinc.org',
-        code: obs.code,
-        display: obs.display
-      }]
+      coding: [
+        {
+          system: 'http://loinc.org',
+          code: obs.code,
+          display: obs.display,
+        },
+      ],
     },
     subject: {
-      reference: `Patient/${obs.patientId}`
+      reference: `Patient/${obs.patientId}`,
     },
     effectiveDateTime: obs.effectiveDateTime.toISOString(),
     valueQuantity: {
       value: obs.value,
       unit: obs.unit,
-      system: 'http://unitsofmeasure.org'
-    }
+      system: 'http://unitsofmeasure.org',
+    },
   };
 }
 ```
@@ -140,6 +161,7 @@ function mapInternalToFHIRObservation(obs: Observation): fhir.Observation {
 ### LOINC Codes para Observações
 
 **Sintomas e Qualidade de Vida:**
+
 - `72514-3`: Pain severity (0-10)
 - `8331-1`: Nausea severity
 - `8332-9`: Vomiting severity
@@ -148,10 +170,12 @@ function mapInternalToFHIRObservation(obs: Observation): fhir.Observation {
 - `72523-4`: Appetite assessment
 
 **EORTC QLQ-C30:**
+
 - Múltiplos códigos LOINC para cada domínio
 - Mapear scores de questionários para Observations individuais
 
 **PRO-CTCAE:**
+
 - Códigos específicos para cada sintoma relacionado ao tratamento
 
 ### Sincronização Bidirecional
@@ -159,18 +183,21 @@ function mapInternalToFHIRObservation(obs: Observation): fhir.Observation {
 #### Pull (EHR → Plataforma)
 
 **Cron Job**: Executar a cada 1 hora
+
 1. Buscar pacientes atualizados desde última sincronização
 2. Buscar novas observações (exames, resultados)
 3. Atualizar banco de dados interno
 4. Atualizar scores de priorização
 
 **Webhook**: (se EHR suportar)
+
 - Receber notificações em tempo real de mudanças
 - Sincronizar imediatamente
 
 #### Push (Plataforma → EHR)
 
 **Em tempo real**:
+
 1. Agente WhatsApp coleta dados
 2. Extrai dados estruturados
 3. Cria FHIR Observation
@@ -178,17 +205,20 @@ function mapInternalToFHIRObservation(obs: Observation): fhir.Observation {
 5. Aguarda confirmação
 
 **Batch** (fallback):
+
 - Se push falhar, agendar para batch posterior
 - Tentar novamente em 5, 15, 60 minutos
 
 ### Autenticação FHIR
 
 **Métodos Suportados**:
+
 - OAuth 2.0 (preferencial)
 - Basic Auth (se necessário)
 - API Key (se necessário)
 
 **Token Management**:
+
 - Refresh token automático
 - Cache de tokens (Redis)
 - Retry com refresh se token expirar
@@ -196,12 +226,14 @@ function mapInternalToFHIRObservation(obs: Observation): fhir.Observation {
 ### Tratamento de Erros
 
 **Erros Comuns**:
+
 - `404 Not Found`: Paciente não existe no EHR (criar se necessário)
 - `409 Conflict`: Recurso já existe (atualizar)
 - `401 Unauthorized`: Token expirado (refresh)
 - `503 Service Unavailable`: EHR offline (retry depois)
 
 **Estratégia**:
+
 - Retry com exponential backoff
 - Dead letter queue para falhas persistentes
 - Alertas para erros críticos
@@ -241,12 +273,12 @@ function mapInternalToFHIRObservation(obs: Observation): fhir.Observation {
 interface IntegrationConfig {
   tenantId: string;
   ehrSystem: string; // 'epic', 'cerner', 'tasy', 'custom'
-  
+
   // HL7 v2
   hl7Enabled: boolean;
   hl7MllpHost?: string;
   hl7MllpPort?: number;
-  
+
   // FHIR
   fhirEnabled: boolean;
   fhirBaseUrl?: string;
@@ -257,7 +289,7 @@ interface IntegrationConfig {
     tokenUrl?: string;
     apiKey?: string;
   };
-  
+
   // Sync
   syncFrequency: 'realtime' | 'hourly' | 'daily';
   syncDirection: 'pull' | 'push' | 'bidirectional';
@@ -290,5 +322,3 @@ interface IntegrationConfig {
 3. Implementar cliente FHIR
 4. Criar serviço de transformação
 5. Testes com EHRs de desenvolvimento
-
-

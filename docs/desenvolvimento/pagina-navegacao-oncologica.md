@@ -7,11 +7,13 @@ Página dedicada para visualização consolidada da navegação oncológica de t
 ## Funcionalidades
 
 ### 1. Agrupamento por Tipo de Câncer
+
 - Lista todos os tipos de câncer presentes no sistema
 - Mostra contagem de pacientes por tipo
 - Permite filtrar por tipo específico ou ver todos
 
 ### 2. Visualização de Pacientes
+
 - Para cada tipo de câncer, lista todos os pacientes
 - Mostra informações resumidas:
   - Nome do paciente
@@ -20,6 +22,7 @@ Página dedicada para visualização consolidada da navegação oncológica de t
   - Etapas atrasadas
 
 ### 3. Detalhamento de Etapas
+
 - Ao expandir um paciente, mostra todas as etapas de navegação
 - Organizadas por fase da jornada (SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP)
 - Cada etapa mostra:
@@ -29,6 +32,7 @@ Página dedicada para visualização consolidada da navegação oncológica de t
   - Se é obrigatória ou não
 
 ### 4. Indicadores Visuais
+
 - Cores por status:
   - **PENDING**: Cinza
   - **IN_PROGRESS**: Azul
@@ -41,6 +45,7 @@ Página dedicada para visualização consolidada da navegação oncológica de t
 ## Estrutura da Página
 
 ### Rota
+
 - `/oncology-navigation`
 
 ### Componentes Principais
@@ -82,6 +87,7 @@ Página dedicada para visualização consolidada da navegação oncológica de t
 ### Botão na Barra de Navegação
 
 O botão "Navegação Oncológica" está disponível em:
+
 - `/chat` (página de chat)
 - `/dashboard` (página de dashboard)
 
@@ -110,4 +116,3 @@ Ao clicar, navega para `/oncology-navigation`.
 ---
 
 **Última atualização**: 2024-01-XX
-

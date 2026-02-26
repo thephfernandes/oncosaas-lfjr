@@ -227,7 +227,8 @@ async function main() {
       currentStage: 'FOLLOW_UP',
       priorityScore: 85,
       priorityCategory: 'HIGH',
-      priorityReason: 'Paciente em tratamento paliativo - necessita acompanhamento contínuo',
+      priorityReason:
+        'Paciente em tratamento paliativo - necessita acompanhamento contínuo',
       status: 'PALLIATIVE_CARE',
       ehrPatientId: null,
       lastSyncAt: null,

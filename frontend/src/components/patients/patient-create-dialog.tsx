@@ -19,7 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { createPatientSchema, CreatePatientFormData } from '@/lib/validations/patient';
+import {
+  createPatientSchema,
+  CreatePatientFormData,
+} from '@/lib/validations/patient';
 import { patientsApi } from '@/lib/api/patients';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -94,7 +97,9 @@ export function PatientCreateDialog({
       occupationalExposure: data.occupationalExposure || undefined,
       comorbidities:
         data.comorbidities && data.comorbidities.length > 0
-          ? data.comorbidities.filter((c: any) => c.name && c.name.trim().length > 0)
+          ? data.comorbidities.filter(
+              (c: any) => c.name && c.name.trim().length > 0
+            )
           : undefined,
       familyHistory:
         data.familyHistory && data.familyHistory.length > 0
@@ -191,11 +196,10 @@ export function PatientCreateDialog({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Data de Nascimento *</label>
-                <Input
-                  type="date"
-                  {...register('birthDate')}
-                />
+                <label className="text-sm font-medium">
+                  Data de Nascimento *
+                </label>
+                <Input type="date" {...register('birthDate')} />
                 {errors.birthDate && (
                   <p className="text-sm text-destructive mt-1">
                     {errors.birthDate.message}
@@ -226,8 +230,14 @@ export function PatientCreateDialog({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Telefone WhatsApp *</label>
-                <Input {...register('phone')} placeholder="(11) 99999-9999" required />
+                <label className="text-sm font-medium">
+                  Telefone WhatsApp *
+                </label>
+                <Input
+                  {...register('phone')}
+                  placeholder="(11) 99999-9999"
+                  required
+                />
                 {errors.phone && (
                   <p className="text-sm text-destructive mt-1">
                     {errors.phone.message}
@@ -258,7 +268,9 @@ export function PatientCreateDialog({
                 <label className="text-sm font-medium">Tipo de Câncer *</label>
                 <Select
                   value={watch('cancerType')}
-                  onValueChange={(value) => setValue('cancerType', value as any)}
+                  onValueChange={(value) =>
+                    setValue('cancerType', value as any)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo de câncer" />
@@ -281,10 +293,14 @@ export function PatientCreateDialog({
                 )}
               </div>
 
-
               <div>
-                <label className="text-sm font-medium">Estágio TNM ou Estágio</label>
-                <Input {...register('stage')} placeholder="Ex: T2N1M0 ou Estágio II" />
+                <label className="text-sm font-medium">
+                  Estágio TNM ou Estágio
+                </label>
+                <Input
+                  {...register('stage')}
+                  placeholder="Ex: T2N1M0 ou Estágio II"
+                />
               </div>
 
               <div>
@@ -312,7 +328,9 @@ export function PatientCreateDialog({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Performance Status - ECOG (0-4)</label>
+                <label className="text-sm font-medium">
+                  Performance Status - ECOG (0-4)
+                </label>
                 <Input
                   type="number"
                   min="0"
@@ -327,10 +345,14 @@ export function PatientCreateDialog({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Estágio da Jornada</label>
+                <label className="text-sm font-medium">
+                  Estágio da Jornada
+                </label>
                 <Select
                   value={watch('currentStage')}
-                  onValueChange={(value) => setValue('currentStage', value as any)}
+                  onValueChange={(value) =>
+                    setValue('currentStage', value as any)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -347,11 +369,15 @@ export function PatientCreateDialog({
 
               {/* Comorbidades e Fatores de Risco */}
               <div className="border-t pt-4 mt-4">
-                <h4 className="text-sm font-semibold mb-3">Comorbidades e Fatores de Risco (Opcional)</h4>
-                
+                <h4 className="text-sm font-semibold mb-3">
+                  Comorbidades e Fatores de Risco (Opcional)
+                </h4>
+
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Histórico de Tabagismo</label>
+                    <label className="text-sm font-medium">
+                      Histórico de Tabagismo
+                    </label>
                     <Input
                       {...register('smokingHistory')}
                       placeholder="Ex: nunca fumou, ex-fumante (10 anos-maço)"
@@ -359,7 +385,9 @@ export function PatientCreateDialog({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Histórico de Álcool</label>
+                    <label className="text-sm font-medium">
+                      Histórico de Álcool
+                    </label>
                     <Input
                       {...register('alcoholHistory')}
                       placeholder="Ex: nunca, ocasional, moderado (20g/dia)"
@@ -367,7 +395,9 @@ export function PatientCreateDialog({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Exposição Ocupacional</label>
+                    <label className="text-sm font-medium">
+                      Exposição Ocupacional
+                    </label>
                     <Input
                       {...register('occupationalExposure')}
                       placeholder="Ex: amianto, benzeno, radiação"
@@ -377,14 +407,18 @@ export function PatientCreateDialog({
                   <div>
                     <ComorbiditiesForm
                       value={watch('comorbidities') as any}
-                      onChange={(comorbidities) => setValue('comorbidities', comorbidities as any)}
+                      onChange={(comorbidities) =>
+                        setValue('comorbidities', comorbidities as any)
+                      }
                     />
                   </div>
 
                   <div>
                     <FamilyHistoryForm
                       value={watch('familyHistory') as any}
-                      onChange={(familyHistory) => setValue('familyHistory', familyHistory as any)}
+                      onChange={(familyHistory) =>
+                        setValue('familyHistory', familyHistory as any)
+                      }
                     />
                   </div>
                 </div>
@@ -397,7 +431,10 @@ export function PatientCreateDialog({
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">ID no Sistema EHR</label>
-                <Input {...register('ehrPatientId')} placeholder="ID do paciente no EHR" />
+                <Input
+                  {...register('ehrPatientId')}
+                  placeholder="ID do paciente no EHR"
+                />
               </div>
 
               <p className="text-sm text-muted-foreground">
@@ -424,11 +461,10 @@ export function PatientCreateDialog({
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
-              <Button
-                type="submit"
-                disabled={createPatientMutation.isPending}
-              >
-                {createPatientMutation.isPending ? 'Criando...' : 'Criar Paciente'}
+              <Button type="submit" disabled={createPatientMutation.isPending}>
+                {createPatientMutation.isPending
+                  ? 'Criando...'
+                  : 'Criar Paciente'}
               </Button>
             )}
           </div>
@@ -437,4 +473,3 @@ export function PatientCreateDialog({
     </Dialog>
   );
 }
-

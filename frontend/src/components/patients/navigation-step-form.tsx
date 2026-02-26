@@ -58,7 +58,9 @@ export function NavigationStepForm({
   onCancel,
 }: NavigationStepFormProps) {
   // Valida e converte o status para o tipo esperado
-  const getValidStatus = (status: string | undefined): UpdateNavigationStepFormData['status'] => {
+  const getValidStatus = (
+    status: string | undefined
+  ): UpdateNavigationStepFormData['status'] => {
     if (!status) return undefined;
     const result = navigationStepStatusSchema.safeParse(status);
     return result.success ? result.data : undefined;
@@ -70,8 +72,7 @@ export function NavigationStepForm({
       status: getValidStatus(step.status),
       isCompleted: step.isCompleted || undefined,
       completedAt: step.completedAt
-        ? typeof step.completedAt === 'string' &&
-          step.completedAt.includes('T')
+        ? typeof step.completedAt === 'string' && step.completedAt.includes('T')
           ? step.completedAt
           : new Date(step.completedAt).toISOString()
         : undefined,
@@ -108,21 +109,20 @@ export function NavigationStepForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Object.entries(STEP_STATUS_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    {Object.entries(STEP_STATUS_LABELS).map(
+                      ([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -321,4 +321,3 @@ export function NavigationStepForm({
     </Form>
   );
 }
-

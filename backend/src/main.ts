@@ -46,7 +46,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
-    httpsOptions ? { httpsOptions } : {},
+    httpsOptions ? { httpsOptions } : {}
   );
 
   // Criar diretório de uploads se não existir
@@ -64,16 +64,12 @@ async function bootstrap() {
   const frontendUrl =
     process.env.FRONTEND_URL ||
     (useHttps ? 'https://localhost:3000' : 'http://localhost:3000');
-  
+
   // Em desenvolvimento, aceitar ambos os protocolos para flexibilidade
   const allowedOrigins =
     process.env.NODE_ENV === 'production'
       ? [frontendUrl] // Em produção, apenas a URL configurada
-      : [
-          'http://localhost:3000',
-          'https://localhost:3000',
-          frontendUrl,
-        ]; // Em desenvolvimento, ambos os protocolos
+      : ['http://localhost:3000', 'https://localhost:3000', frontendUrl]; // Em desenvolvimento, ambos os protocolos
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -95,7 +91,7 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-    }),
+    })
   );
 
   // Prefixo global para APIs
@@ -107,11 +103,9 @@ async function bootstrap() {
   console.log(`🚀 Backend running on ${protocol}://localhost:${port}`);
   if (useHttps) {
     console.log(
-      '⚠️  Certifique-se de que o certificado está instalado como confiável!',
+      '⚠️  Certifique-se de que o certificado está instalado como confiável!'
     );
   }
 }
 
 bootstrap();
-
-

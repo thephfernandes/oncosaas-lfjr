@@ -21,7 +21,9 @@ export function CriticalAlertsPanel({
   const { data: alerts, isLoading } = useAlerts('PENDING');
   const acknowledgeAlert = useAcknowledgeAlert();
   const resolveAlert = useResolveAlert();
-  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(
+    new Set()
+  );
   const [isExpanded, setIsExpanded] = useState(true); // Expandido por padrão para alertas críticos
 
   // Filtrar alertas críticos e de alta severidade (incluindo NAVIGATION_DELAY)
@@ -80,84 +82,83 @@ export function CriticalAlertsPanel({
 
       {isExpanded && (
         <div className="space-y-3 mt-3">
-        {criticalAlerts.slice(0, 3).map((alert) => (
-          <div
-            key={alert.id}
-            className="bg-white rounded-lg border border-red-200 p-3 cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => onAlertSelect?.(alert)}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-semibold text-red-900 truncate">
-                    {alert.patient?.name || 'Paciente'}
-                  </h4>
-                </div>
-                <p className="text-sm text-gray-700 mb-2 break-words">
-                  {alert.message}
-                </p>
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <span>
-                    {formatDistanceToNow(new Date(alert.createdAt), {
-                      addSuffix: true,
-                      locale: ptBR,
-                    })}
-                  </span>
-                  {alert.type && (
-                    <span className="capitalize">
-                      {alert.type.replace('_', ' ')}
+          {criticalAlerts.slice(0, 3).map((alert) => (
+            <div
+              key={alert.id}
+              className="bg-white rounded-lg border border-red-200 p-3 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => onAlertSelect?.(alert)}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-semibold text-red-900 truncate">
+                      {alert.patient?.name || 'Paciente'}
+                    </h4>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-2 break-words">
+                    {alert.message}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span>
+                      {formatDistanceToNow(new Date(alert.createdAt), {
+                        addSuffix: true,
+                        locale: ptBR,
+                      })}
                     </span>
-                  )}
+                    {alert.type && (
+                      <span className="capitalize">
+                        {alert.type.replace('_', ' ')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex gap-2 mt-3 pt-3 border-t border-red-100">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 text-red-700 border-red-300 hover:bg-red-50"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  acknowledgeAlert.mutate(alert.id);
-                }}
-                disabled={acknowledgeAlert.isPending}
-              >
-                Reconhecer
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  resolveAlert.mutate(alert.id);
-                }}
-                disabled={resolveAlert.isPending}
-              >
-                Resolver
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDismiss(alert.id);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2 mt-3 pt-3 border-t border-red-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-red-700 border-red-300 hover:bg-red-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    acknowledgeAlert.mutate(alert.id);
+                  }}
+                  disabled={acknowledgeAlert.isPending}
+                >
+                  Reconhecer
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resolveAlert.mutate(alert.id);
+                  }}
+                  disabled={resolveAlert.isPending}
+                >
+                  Resolver
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDismiss(alert.id);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
-        {criticalAlerts.length > 3 && (
-          <div className="text-sm text-red-700 text-center pt-2">
-            +{criticalAlerts.length - 3} alertas críticos adicionais
-          </div>
-        )}
+          ))}
+          {criticalAlerts.length > 3 && (
+            <div className="text-sm text-red-700 text-center pt-2">
+              +{criticalAlerts.length - 3} alertas críticos adicionais
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
-

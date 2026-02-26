@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsUUID, IsEnum, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsUUID,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 import { InterventionType } from '@prisma/client';
 
 export class CreateInterventionDto {
@@ -18,4 +24,3 @@ export class CreateInterventionDto {
   @IsOptional()
   notes?: string;
 }
-

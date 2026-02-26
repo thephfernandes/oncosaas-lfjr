@@ -26,14 +26,26 @@ interface ShiftChecklistProps {
 
 const START_SHIFT_ITEMS: ChecklistItem[] = [
   { id: 'check-alerts', label: 'Verificar alertas críticos', checked: false },
-  { id: 'review-priority', label: 'Revisar pacientes de alta prioridade', checked: false },
-  { id: 'check-no-response', label: 'Verificar pacientes sem resposta (≥3 dias)', checked: false },
+  {
+    id: 'review-priority',
+    label: 'Revisar pacientes de alta prioridade',
+    checked: false,
+  },
+  {
+    id: 'check-no-response',
+    label: 'Verificar pacientes sem resposta (≥3 dias)',
+    checked: false,
+  },
 ];
 
 const END_SHIFT_ITEMS: ChecklistItem[] = [
   { id: 'review-pending', label: 'Revisar alertas pendentes', checked: false },
   { id: 'add-notes', label: 'Adicionar notas se necessário', checked: false },
-  { id: 'check-followup', label: 'Verificar casos para follow-up', checked: false },
+  {
+    id: 'check-followup',
+    label: 'Verificar casos para follow-up',
+    checked: false,
+  },
 ];
 
 export function ShiftChecklist({ type }: ShiftChecklistProps) {
@@ -79,7 +91,8 @@ export function ShiftChecklist({ type }: ShiftChecklistProps) {
 
   const completedCount = items.filter((item) => item.checked).length;
   const totalCount = items.length;
-  const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const progress =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <>
@@ -108,7 +121,8 @@ export function ShiftChecklist({ type }: ShiftChecklistProps) {
               Checklist de {type === 'start' ? 'Início' : 'Fim'} de Turno
             </DialogTitle>
             <DialogDescription>
-              Complete as tarefas para garantir uma transição eficiente entre turnos.
+              Complete as tarefas para garantir uma transição eficiente entre
+              turnos.
             </DialogDescription>
           </DialogHeader>
 
@@ -161,9 +175,7 @@ export function ShiftChecklist({ type }: ShiftChecklistProps) {
               <Button variant="outline" onClick={resetChecklist}>
                 Reiniciar
               </Button>
-              <Button onClick={() => setIsOpen(false)}>
-                Fechar
-              </Button>
+              <Button onClick={() => setIsOpen(false)}>Fechar</Button>
             </div>
           </div>
         </DialogContent>
@@ -171,4 +183,3 @@ export function ShiftChecklist({ type }: ShiftChecklistProps) {
     </>
   );
 }
-

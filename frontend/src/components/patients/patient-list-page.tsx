@@ -33,7 +33,10 @@ export function PatientListPage() {
       }
 
       // Filtro por tipo de câncer
-      if (cancerTypeFilter !== 'all' && patient.cancerType !== cancerTypeFilter) {
+      if (
+        cancerTypeFilter !== 'all' &&
+        patient.cancerType !== cancerTypeFilter
+      ) {
         return false;
       }
 
@@ -44,12 +47,18 @@ export function PatientListPage() {
       }
 
       // Filtro por prioridade
-      if (priorityFilter !== 'all' && patient.priorityCategory !== priorityFilter) {
+      if (
+        priorityFilter !== 'all' &&
+        patient.priorityCategory !== priorityFilter
+      ) {
         return false;
       }
 
       // Filtro por estágio de navegação
-      if (navigationStageFilter !== 'all' && patient.currentStage !== navigationStageFilter) {
+      if (
+        navigationStageFilter !== 'all' &&
+        patient.currentStage !== navigationStageFilter
+      ) {
         return false;
       }
 
@@ -85,10 +94,7 @@ export function PatientListPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowImportDialog(true)}
-          >
+          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Importar CSV
           </Button>
@@ -139,4 +145,3 @@ export function PatientListPage() {
     </div>
   );
 }
-

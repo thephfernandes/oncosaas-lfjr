@@ -27,10 +27,7 @@ export class TreatmentsController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.ONCOLOGIST, UserRole.COORDINATOR)
-  async create(
-    @Body() createDto: CreateTreatmentDto,
-    @Request() req: any
-  ) {
+  async create(@Body() createDto: CreateTreatmentDto, @Request() req: any) {
     return this.treatmentsService.create(createDto, req.user.tenantId);
   }
 
@@ -80,4 +77,3 @@ export class TreatmentsController {
     return { message: 'Treatment deleted successfully' };
   }
 }
-

@@ -26,7 +26,7 @@ export function ResizablePanel({
   forcedWidth,
 }: ResizablePanelProps) {
   const [width, setWidth] = useState(defaultWidth);
-  
+
   // Se forcedWidth estiver definido, usar ele
   const effectiveWidth = forcedWidth ?? width;
   const [isResizing, setIsResizing] = useState(false);

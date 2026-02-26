@@ -3,7 +3,13 @@
 import { useAlerts } from '@/hooks/useAlerts';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AlertTriangle, CheckCircle, XCircle, Bell, Filter } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Bell,
+  Filter,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAcknowledgeAlert, useResolveAlert } from '@/hooks/useAlerts';
 import { Alert } from '@/lib/api/alerts';
@@ -138,7 +144,7 @@ export function AlertsPanel({
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold mb-4">Alertas Pendentes</h2>
-            {filteredAlerts.map((alert) => (
+      {filteredAlerts.map((alert) => (
         <div
           key={alert.id}
           className={`p-4 rounded-lg border-l-4 ${getSeverityColor(
@@ -215,4 +221,3 @@ export function AlertsPanel({
     </div>
   );
 }
-

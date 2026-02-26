@@ -64,9 +64,7 @@ export const whatsappConnectionsApi = {
    */
   getAll: async (): Promise<WhatsAppConnection[]> => {
     try {
-      return await apiClient.get<WhatsAppConnection[]>(
-        '/whatsapp-connections'
-      );
+      return await apiClient.get<WhatsAppConnection[]>('/whatsapp-connections');
     } catch (error: unknown) {
       // Se for 404 ou erro, retornar array vazio em vez de undefined
       if (
@@ -84,9 +82,7 @@ export const whatsappConnectionsApi = {
    * Obter conexão específica
    */
   getById: async (id: string): Promise<WhatsAppConnection> => {
-    return apiClient.get<WhatsAppConnection>(
-      `/whatsapp-connections/${id}`
-    );
+    return apiClient.get<WhatsAppConnection>(`/whatsapp-connections/${id}`);
   },
 
   /**
@@ -95,10 +91,7 @@ export const whatsappConnectionsApi = {
   create: async (
     data: CreateWhatsAppConnectionDto
   ): Promise<WhatsAppConnection> => {
-    return apiClient.post<WhatsAppConnection>(
-      '/whatsapp-connections',
-      data
-    );
+    return apiClient.post<WhatsAppConnection>('/whatsapp-connections', data);
   },
 
   /**
@@ -161,4 +154,3 @@ export const whatsappConnectionsApi = {
     );
   },
 };
-

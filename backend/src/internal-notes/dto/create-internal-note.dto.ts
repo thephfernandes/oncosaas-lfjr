@@ -9,4 +9,3 @@ export class CreateInternalNoteDto {
   @IsNotEmpty()
   content: string;
 }
-

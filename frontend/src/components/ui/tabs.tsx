@@ -8,7 +8,9 @@ interface TabsContextValue {
   onValueChange: (value: string) => void;
 }
 
-const TabsContext = React.createContext<TabsContextValue | undefined>(undefined);
+const TabsContext = React.createContext<TabsContextValue | undefined>(
+  undefined
+);
 
 interface TabsProps {
   value?: string;
@@ -108,4 +110,3 @@ export function TabsContent({ value, children, className }: TabsContentProps) {
 
   return <div className={cn('mt-2', className)}>{children}</div>;
 }
-

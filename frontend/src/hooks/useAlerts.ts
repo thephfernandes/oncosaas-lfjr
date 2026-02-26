@@ -72,4 +72,3 @@ export const useCriticalAlertsCount = () => {
     refetchInterval: 30 * 1000, // Atualizar a cada 30 segundos
   });
 };
-

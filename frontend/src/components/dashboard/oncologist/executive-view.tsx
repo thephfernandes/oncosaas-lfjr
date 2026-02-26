@@ -1,7 +1,13 @@
 'use client';
 
 import { DashboardMetrics, DashboardStatistics } from '@/lib/api/dashboard';
-import { TrendingUp, Clock, Users, AlertTriangle, ArrowRight } from 'lucide-react';
+import {
+  TrendingUp,
+  Clock,
+  Users,
+  AlertTriangle,
+  ArrowRight,
+} from 'lucide-react';
 import { useMemo } from 'react';
 
 interface ExecutiveViewProps {
@@ -54,14 +60,16 @@ export function ExecutiveView({ metrics, statistics }: ExecutiveViewProps) {
     const last7Days = statistics.alertStatistics.slice(-7);
     const totalAlerts7d = last7Days.reduce((sum, day) => sum + day.total, 0);
     const resolvedAlerts7d = metrics.resolvedTodayCount * 7; // Estimativa
-    const resolutionRate = totalAlerts7d > 0
-      ? Math.round((resolvedAlerts7d / totalAlerts7d) * 100)
-      : 0;
+    const resolutionRate =
+      totalAlerts7d > 0
+        ? Math.round((resolvedAlerts7d / totalAlerts7d) * 100)
+        : 0;
 
     // Taxa de pacientes críticos
-    const criticalRate = totalPatients > 0
-      ? Math.round((metrics.criticalPatientsCount / totalPatients) * 100)
-      : 0;
+    const criticalRate =
+      totalPatients > 0
+        ? Math.round((metrics.criticalPatientsCount / totalPatients) * 100)
+        : 0;
 
     return {
       conversionRates,
@@ -77,9 +85,7 @@ export function ExecutiveView({ metrics, statistics }: ExecutiveViewProps) {
     <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border border-indigo-200 p-6">
       <div className="flex items-center gap-2 mb-6">
         <TrendingUp className="h-6 w-6 text-indigo-600" />
-        <h2 className="text-xl font-semibold text-gray-900">
-          Visão Executiva
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-900">Visão Executiva</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -111,7 +117,8 @@ export function ExecutiveView({ metrics, statistics }: ExecutiveViewProps) {
             {executiveMetrics.criticalRate}%
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            {executiveMetrics.criticalRate} de {executiveMetrics.totalPatients} pacientes
+            {executiveMetrics.criticalRate} de {executiveMetrics.totalPatients}{' '}
+            pacientes
           </p>
         </div>
 
@@ -142,9 +149,7 @@ export function ExecutiveView({ metrics, statistics }: ExecutiveViewProps) {
           <p className="text-2xl font-bold text-gray-900">
             {executiveMetrics.totalPatients}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Em acompanhamento ativo
-          </p>
+          <p className="text-xs text-gray-500 mt-1">Em acompanhamento ativo</p>
         </div>
       </div>
 
@@ -157,7 +162,8 @@ export function ExecutiveView({ metrics, statistics }: ExecutiveViewProps) {
           </h3>
           <div className="space-y-3">
             {executiveMetrics.conversionRates.map((stage, index) => {
-              const isLast = index === executiveMetrics.conversionRates.length - 1;
+              const isLast =
+                index === executiveMetrics.conversionRates.length - 1;
               return (
                 <div key={stage.stageKey} className="flex items-center gap-3">
                   <div className="flex-1">
@@ -260,7 +266,9 @@ export function ExecutiveView({ metrics, statistics }: ExecutiveViewProps) {
             <div className="text-right">
               <p className="text-xs text-gray-500">Meta: 80%</p>
               {executiveMetrics.resolutionRate >= 80 ? (
-                <p className="text-xs text-green-600 font-medium">✅ Meta atingida</p>
+                <p className="text-xs text-green-600 font-medium">
+                  ✅ Meta atingida
+                </p>
               ) : (
                 <p className="text-xs text-yellow-600 font-medium">
                   ⚠️ {80 - executiveMetrics.resolutionRate}% abaixo
@@ -279,7 +287,9 @@ export function ExecutiveView({ metrics, statistics }: ExecutiveViewProps) {
             <div className="text-right">
               <p className="text-xs text-gray-500">Ideal: {'<'} 10%</p>
               {executiveMetrics.criticalRate < 10 ? (
-                <p className="text-xs text-green-600 font-medium">✅ Dentro do ideal</p>
+                <p className="text-xs text-green-600 font-medium">
+                  ✅ Dentro do ideal
+                </p>
               ) : (
                 <p className="text-xs text-red-600 font-medium">
                   ⚠️ {executiveMetrics.criticalRate - 10}% acima
@@ -292,4 +302,3 @@ export function ExecutiveView({ metrics, statistics }: ExecutiveViewProps) {
     </div>
   );
 }
-

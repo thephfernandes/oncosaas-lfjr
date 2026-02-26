@@ -9,4 +9,3 @@ export const usePatientDetail = (id: string | null) => {
     staleTime: 2 * 60 * 1000, // 2 minutos
   });
 };
-

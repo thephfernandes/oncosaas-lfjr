@@ -145,21 +145,20 @@ export function TreatmentForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de Tratamento *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Object.entries(TREATMENT_TYPE_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    {Object.entries(TREATMENT_TYPE_LABELS).map(
+                      ([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -212,7 +211,9 @@ export function TreatmentForm({
                     value={field.value || ''}
                     onChange={(e) =>
                       field.onChange(
-                        e.target.value ? parseInt(e.target.value, 10) : undefined
+                        e.target.value
+                          ? parseInt(e.target.value, 10)
+                          : undefined
                       )
                     }
                     placeholder="Ex: 1 (primeira linha)"
@@ -230,21 +231,20 @@ export function TreatmentForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Intenção</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a intenção" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Object.entries(TREATMENT_INTENT_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    {Object.entries(TREATMENT_INTENT_LABELS).map(
+                      ([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -259,21 +259,20 @@ export function TreatmentForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Object.entries(TREATMENT_STATUS_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    {Object.entries(TREATMENT_STATUS_LABELS).map(
+                      ([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -428,7 +427,9 @@ export function TreatmentForm({
                     value={field.value || ''}
                     onChange={(e) =>
                       field.onChange(
-                        e.target.value ? parseInt(e.target.value, 10) : undefined
+                        e.target.value
+                          ? parseInt(e.target.value, 10)
+                          : undefined
                       )
                     }
                     placeholder="Ex: 6"
@@ -454,7 +455,9 @@ export function TreatmentForm({
                     value={field.value || ''}
                     onChange={(e) =>
                       field.onChange(
-                        e.target.value ? parseInt(e.target.value, 10) : undefined
+                        e.target.value
+                          ? parseInt(e.target.value, 10)
+                          : undefined
                       )
                     }
                     placeholder="Ex: 3"
@@ -472,21 +475,20 @@ export function TreatmentForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Resposta ao Tratamento</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a resposta" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Object.entries(TREATMENT_RESPONSE_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    {Object.entries(TREATMENT_RESPONSE_LABELS).map(
+                      ([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -569,12 +571,11 @@ export function TreatmentForm({
             {form.formState.isSubmitting
               ? 'Salvando...'
               : treatment
-              ? 'Atualizar'
-              : 'Criar'}
+                ? 'Atualizar'
+                : 'Criar'}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
-

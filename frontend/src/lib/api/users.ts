@@ -63,4 +63,3 @@ export const usersApi = {
     await apiClient.delete(`/users/${id}`);
   },
 };
-

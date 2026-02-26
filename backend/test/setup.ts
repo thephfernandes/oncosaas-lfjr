@@ -9,4 +9,3 @@ process.env.AI_SERVICE_URL = 'http://localhost:8001';
 
 // Increase timeout for integration tests
 jest.setTimeout(10000);
-

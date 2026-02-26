@@ -31,4 +31,3 @@ import { FHIRConfigController } from './fhir-config.controller';
   ],
 })
 export class FHIRModule {}
-

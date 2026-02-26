@@ -46,6 +46,7 @@ A integração FHIR permite sincronização **bidirecional** entre nossa platafo
 ### 1. Push Automático (Plataforma → EHR)
 
 **Quando acontece:**
+
 - Uma observação é criada pelo agente WhatsApp
 - Ou manualmente via API
 
@@ -79,6 +80,7 @@ A integração FHIR permite sincronização **bidirecional** entre nossa platafo
 **Exemplo de transformação:**
 
 **Observation Interna:**
+
 ```typescript
 {
   id: "obs-123",
@@ -92,16 +94,19 @@ A integração FHIR permite sincronização **bidirecional** entre nossa platafo
 ```
 
 **FHIR Observation Resource:**
+
 ```json
 {
   "resourceType": "Observation",
   "status": "final",
   "code": {
-    "coding": [{
-      "system": "http://loinc.org",
-      "code": "72514-3",
-      "display": "Pain severity"
-    }]
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "72514-3",
+        "display": "Pain severity"
+      }
+    ]
   },
   "subject": {
     "reference": "Patient/patient-456"
@@ -118,6 +123,7 @@ A integração FHIR permite sincronização **bidirecional** entre nossa platafo
 ### 2. Pull Automático (EHR → Plataforma)
 
 **Quando acontece:**
+
 - Cron job executa a cada 6 horas
 - Ou manualmente via endpoint `/fhir/patients/:id/pull`
 
@@ -148,6 +154,7 @@ A integração FHIR permite sincronização **bidirecional** entre nossa platafo
 ### 3. Sincronização em Lote
 
 **Quando acontece:**
+
 - Cron job executa a cada hora
 - Ou manualmente via endpoint `/fhir/observations/sync-all`
 
@@ -216,16 +223,19 @@ A integração FHIR permite sincronização **bidirecional** entre nossa platafo
 ## 📊 Componentes Principais
 
 ### 1. FHIRAuthService
+
 - Gerencia autenticação (OAuth2, Basic, API Key)
 - Cache de tokens (evita requisições desnecessárias)
 - Refresh automático de tokens OAuth2
 
 ### 2. FHIRClientService
+
 - Cliente HTTP para FHIR REST API
 - Métodos: getPatient, createObservation, searchObservations
 - Tratamento de erros e retry automático
 
 ### 3. FHIRTransformerService
+
 - Transforma dados entre formato interno e FHIR
 - `toFHIRPatient()`: Patient interno → FHIR Patient
 - `toFHIRObservation()`: Observation interna → FHIR Observation
@@ -233,6 +243,7 @@ A integração FHIR permite sincronização **bidirecional** entre nossa platafo
 - `fromFHIRObservation()`: FHIR Observation → Observation interna
 
 ### 4. FHIRSyncService
+
 - Lógica de sincronização
 - `syncObservationToEHR()`: Push de observação
 - `syncPatientToEHR()`: Push de paciente
@@ -240,11 +251,13 @@ A integração FHIR permite sincronização **bidirecional** entre nossa platafo
 - `syncUnsyncedObservations()`: Sincronização em lote
 
 ### 5. FHIRConfigService
+
 - Gerencia configuração por tenant
 - Por enquanto mockado (retorna null)
 - Futuro: buscar do banco de dados
 
 ### 6. FHIRSchedulerService
+
 - Cron jobs de sincronização
 - `@Cron(CronExpression.EVERY_HOUR)`: Sincronização em lote
 - `@Cron(CronExpression.EVERY_6_HOURS)`: Pull periódico
@@ -254,15 +267,19 @@ A integração FHIR permite sincronização **bidirecional** entre nossa platafo
 ### Sincronização Manual
 
 **POST `/api/v1/fhir/observations/:id/sync`**
+
 - Sincronizar observação específica
 
 **POST `/api/v1/fhir/patients/:id/sync`**
+
 - Sincronizar paciente específico
 
 **POST `/api/v1/fhir/observations/sync-all`**
+
 - Sincronizar todas não sincronizadas (até 100)
 
 **POST `/api/v1/fhir/patients/:id/pull`**
+
 - Fazer pull de observações do EHR
 
 ## 🔍 Estado Atual
@@ -346,10 +363,10 @@ POST /api/v1/observations
 
 ```typescript
 // Sincronizar observação específica
-POST /api/v1/fhir/observations/{id}/sync
+POST / api / v1 / fhir / observations / { id } / sync;
 
 // Fazer pull de observações
-POST /api/v1/fhir/patients/{id}/pull
+POST / api / v1 / fhir / patients / { id } / pull;
 ```
 
 ## 📝 Logs e Debugging
@@ -380,4 +397,3 @@ this.logger.warn(`Integração não habilitada para tenant ${tenantId}`);
 - [FHIR R4 Specification](https://www.hl7.org/fhir/)
 - [LOINC Codes](https://loinc.org/)
 - [Documentação de Integração](./arquitetura/integracao-hl7-fhir.md)
-

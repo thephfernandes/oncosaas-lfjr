@@ -84,4 +84,3 @@ export function NavigationStepDialog({
     </Dialog>
   );
 }
-

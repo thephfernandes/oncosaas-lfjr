@@ -19,15 +19,18 @@ npm run generate-certs
 Este script tentará usar `mkcert` (recomendado) ou `OpenSSL` (fallback).
 
 **Se usar mkcert:**
+
 - O certificado será automaticamente instalado como confiável
 - Funciona perfeitamente com navegadores
 
 **Se usar OpenSSL:**
+
 - Você precisará instalar o certificado manualmente no sistema operacional
 
 ### 2. Instalar Certificado (se usar OpenSSL)
 
 #### Windows:
+
 1. Clique duas vezes em `certs/localhost.crt`
 2. Clique em "Instalar Certificado"
 3. Selecione "Usuário Atual"
@@ -36,17 +39,20 @@ Este script tentará usar `mkcert` (recomendado) ou `OpenSSL` (fallback).
 6. Clique em Concluir
 
 **Ou via PowerShell (como Administrador):**
+
 ```powershell
 Import-Certificate -FilePath ".\certs\localhost.crt" -CertStoreLocation Cert:\CurrentUser\Root
 ```
 
 #### Mac:
+
 1. Abra Keychain Access
 2. Arraste `certs/localhost.crt` para "login"
 3. Clique duas vezes no certificado
 4. Expanda "Trust" e selecione "Always Trust"
 
 #### Linux:
+
 ```bash
 sudo cp certs/localhost.crt /usr/local/share/ca-certificates/localhost.crt
 sudo update-ca-certificates
@@ -65,12 +71,14 @@ Este comando inicia ambos os servidores (frontend e backend) com HTTPS.
 #### Opção 2: Executar separadamente
 
 **Frontend:**
+
 ```bash
 cd frontend
 npm run dev:https
 ```
 
 **Backend:**
+
 ```bash
 cd backend
 npm run start:dev:https
@@ -81,6 +89,7 @@ npm run start:dev:https
 Atualize os arquivos `.env` para usar HTTPS:
 
 **`.env` (raiz):**
+
 ```env
 # Frontend
 NEXT_PUBLIC_API_URL=https://localhost:3002
@@ -88,12 +97,14 @@ NEXT_PUBLIC_WS_URL=wss://localhost:3002
 ```
 
 **`frontend/.env.local`:**
+
 ```env
 NEXT_PUBLIC_API_URL=https://localhost:3002
 NEXT_PUBLIC_WS_URL=wss://localhost:3002
 ```
 
 **`backend/.env`:**
+
 ```env
 FRONTEND_URL=https://localhost:3000
 USE_HTTPS=true
@@ -107,6 +118,7 @@ Após iniciar os servidores, acesse:
 - **Backend:** https://localhost:3002
 
 ⚠️ **Aviso de Segurança do Navegador:**
+
 - O navegador mostrará um aviso sobre o certificado não confiável
 - Clique em "Avançado" → "Continuar para localhost"
 - Isso é normal para certificados autoassinados
@@ -125,6 +137,7 @@ No Meta App Dashboard:
 ### 7. Verificar Configuração
 
 1. Certifique-se de que os certificados foram gerados:
+
    ```bash
    ls certs/
    # Deve mostrar: localhost.crt e localhost.key
@@ -142,22 +155,27 @@ No Meta App Dashboard:
 ## Troubleshooting
 
 ### Erro: "Certificados SSL não encontrados"
+
 - Execute: `npm run generate-certs`
 - Verifique se os arquivos existem em `certs/`
 
 ### Erro: "NET::ERR_CERT_AUTHORITY_INVALID"
+
 - Instale o certificado no sistema operacional (veja passo 2)
 - Se usar mkcert, execute: `mkcert -install`
 
 ### Erro: "ERR_SSL_PROTOCOL_ERROR"
+
 - Verifique se os servidores estão rodando com HTTPS
 - Verifique se as portas estão corretas (3000 para frontend, 3002 para backend)
 
 ### Erro: "CORS policy"
+
 - Atualize `FRONTEND_URL` no backend para `https://localhost:3000`
 - Verifique se o CORS está configurado corretamente no `main.ts`
 
 ### Facebook ainda mostra erro de HTTPS
+
 - Verifique se está acessando via `https://` (não `http://`)
 - Verifique se o certificado está instalado como confiável
 - Limpe o cache do navegador
@@ -179,4 +197,3 @@ ngrok http 3000
 ```
 
 Atualize as configurações do Meta App para usar a URL do ngrok.
-

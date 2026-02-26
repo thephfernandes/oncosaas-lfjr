@@ -75,9 +75,7 @@ export function TreatmentDialog({
     },
   });
 
-  const handleSubmit = async (
-    data: CreateTreatmentFormData
-  ): Promise<void> => {
+  const handleSubmit = async (data: CreateTreatmentFormData): Promise<void> => {
     setIsSubmitting(true);
     try {
       if (treatment) {
@@ -122,4 +120,3 @@ export function TreatmentDialog({
     </Dialog>
   );
 }
-

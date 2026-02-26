@@ -9,6 +9,7 @@
 ## 📋 Resumo
 
 Implementação de filtros básicos para a lista de pacientes, permitindo filtrar por:
+
 - **Categoria de prioridade** (CRITICAL, HIGH, MEDIUM, LOW)
 - **Alertas pendentes** (apenas pacientes com alertas)
 - **Tipo de câncer** (dropdown com tipos únicos)
@@ -30,6 +31,7 @@ Os filtros funcionam em conjunto com a busca existente e são aplicados antes da
 - ✅ Visual claro do filtro ativo
 
 **Código:**
+
 ```typescript
 const [priorityFilter, setPriorityFilter] = useState<'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | null>(null);
 
@@ -53,6 +55,7 @@ const [priorityFilter, setPriorityFilter] = useState<'CRITICAL' | 'HIGH' | 'MEDI
 - ✅ Filtro combinável com outros filtros
 
 **Código:**
+
 ```typescript
 const [hasAlertsFilter, setHasAlertsFilter] = useState<boolean>(false);
 
@@ -74,18 +77,21 @@ const [hasAlertsFilter, setHasAlertsFilter] = useState<boolean>(false);
 - ✅ Busca case-insensitive e parcial
 
 **Código:**
+
 ```typescript
 const [cancerTypeFilter, setCancerTypeFilter] = useState<string>('');
 
 // Obter tipos únicos
 const uniqueCancerTypes = Array.from(
   new Set(
-    patients?.flatMap((p) => {
-      if (p.cancerDiagnoses && p.cancerDiagnoses.length > 0) {
-        return p.cancerDiagnoses.map((d) => d.cancerType);
-      }
-      return p.cancerType ? [p.cancerType] : [];
-    }).filter((type): type is string => !!type) || []
+    patients
+      ?.flatMap((p) => {
+        if (p.cancerDiagnoses && p.cancerDiagnoses.length > 0) {
+          return p.cancerDiagnoses.map((d) => d.cancerType);
+        }
+        return p.cancerType ? [p.cancerType] : [];
+      })
+      .filter((type): type is string => !!type) || []
   )
 ).sort();
 ```
@@ -100,6 +106,7 @@ const uniqueCancerTypes = Array.from(
 - ✅ Compatível com busca existente
 
 **Código:**
+
 ```typescript
 export interface PatientFilters {
   searchTerm?: string;
@@ -124,9 +131,7 @@ export function filterPatients(
     );
   }
   if (filters.hasAlerts === true) {
-    filtered = filtered.filter(
-      (patient) => (patient._count?.alerts || 0) > 0
-    );
+    filtered = filtered.filter((patient) => (patient._count?.alerts || 0) > 0);
   }
   if (filters.cancerType) {
     // Busca em cancerDiagnoses ou cancerType legado
@@ -146,6 +151,7 @@ export function filterPatients(
 - ✅ Visual claro e acessível
 
 **Código:**
+
 ```typescript
 {(priorityFilter || hasAlertsFilter || cancerTypeFilter) && (
   <button
@@ -186,6 +192,7 @@ export function filterPatients(
 ### Filtros Visuais:
 
 **Prioridade:**
+
 - Botões com cores específicas quando ativo:
   - Crítico: Vermelho (`bg-red-600`)
   - Alto: Laranja (`bg-orange-600`)
@@ -194,11 +201,13 @@ export function filterPatients(
 - Botão "Limpar" aparece quando um filtro está ativo
 
 **Alertas:**
+
 - Checkbox simples
 - Label clicável
 - Visual claro quando marcado
 
 **Tipo de Câncer:**
+
 - Dropdown com todos os tipos únicos
 - Opção "Todos os tipos" no topo
 - Ordenado alfabeticamente
@@ -217,6 +226,7 @@ export function filterPatients(
 ### Frontend
 
 **Modificado:**
+
 - `frontend/src/app/chat/page.tsx`
   - Estados para filtros (`priorityFilter`, `hasAlertsFilter`, `cancerTypeFilter`)
   - UI de filtros (botões, checkbox, dropdown)
@@ -229,6 +239,7 @@ export function filterPatients(
   - Mensagens de erro melhoradas
 
 **Criado/Expandido:**
+
 - `frontend/src/lib/utils/patient-filtering.ts`
   - Interface `PatientFilters`
   - Função `filterPatients()` para múltiplos filtros
@@ -320,4 +331,3 @@ export function filterPatients(
 ---
 
 **Última atualização:** 2024-01-XX
-

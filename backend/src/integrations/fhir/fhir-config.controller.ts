@@ -45,10 +45,7 @@ export class FHIRConfigController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createOrUpdate(
-    @Body() createDto: CreateFHIRConfigDto,
-    @Request() req
-  ) {
+  async createOrUpdate(@Body() createDto: CreateFHIRConfigDto, @Request() req) {
     const tenantId = req.user.tenantId;
 
     // Verificar se já existe
@@ -127,25 +124,38 @@ export class FHIRConfigController {
     }
 
     const updateData: any = {};
-    if (updateDto.baseUrl !== undefined) updateData.baseUrl = updateDto.baseUrl;
-    if (updateDto.authType !== undefined) updateData.authType = updateDto.authType;
-    if (updateDto.authConfig !== undefined)
+    if (updateDto.baseUrl !== undefined) {
+      updateData.baseUrl = updateDto.baseUrl;
+    }
+    if (updateDto.authType !== undefined) {
+      updateData.authType = updateDto.authType;
+    }
+    if (updateDto.authConfig !== undefined) {
       updateData.authConfig = updateDto.authConfig as any;
-    if (updateDto.enabled !== undefined) updateData.enabled = updateDto.enabled;
-    if (updateDto.syncDirection !== undefined)
+    }
+    if (updateDto.enabled !== undefined) {
+      updateData.enabled = updateDto.enabled;
+    }
+    if (updateDto.syncDirection !== undefined) {
       updateData.syncDirection = updateDto.syncDirection;
-    if (updateDto.syncFrequency !== undefined)
+    }
+    if (updateDto.syncFrequency !== undefined) {
       updateData.syncFrequency = updateDto.syncFrequency;
-    if (updateDto.maxRetries !== undefined)
+    }
+    if (updateDto.maxRetries !== undefined) {
       updateData.maxRetries = updateDto.maxRetries;
-    if (updateDto.initialDelay !== undefined)
+    }
+    if (updateDto.initialDelay !== undefined) {
       updateData.initialDelay = updateDto.initialDelay;
-    if (updateDto.maxDelay !== undefined)
+    }
+    if (updateDto.maxDelay !== undefined) {
       updateData.maxDelay = updateDto.maxDelay;
-    if (updateDto.backoffMultiplier !== undefined)
+    }
+    if (updateDto.backoffMultiplier !== undefined) {
       updateData.backoffMultiplier = new Prisma.Decimal(
         updateDto.backoffMultiplier
       );
+    }
 
     const updated = await this.prisma.fHIRIntegrationConfig.update({
       where: { tenantId },
@@ -161,4 +171,3 @@ export class FHIRConfigController {
     };
   }
 }
-

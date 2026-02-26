@@ -66,13 +66,16 @@ export function PatientsCriticalStepsList({
   const [cancerTypeFilter, setCancerTypeFilter] = useState<string>('all');
 
   const filters = {
-    journeyStage:
-      journeyStageFilter !== 'all' ? journeyStageFilter : undefined,
+    journeyStage: journeyStageFilter !== 'all' ? journeyStageFilter : undefined,
     cancerType: cancerTypeFilter !== 'all' ? cancerTypeFilter : undefined,
     maxResults: 50,
   };
 
-  const { data: patients, isLoading, error } = usePatientsCriticalSteps(filters);
+  const {
+    data: patients,
+    isLoading,
+    error,
+  } = usePatientsCriticalSteps(filters);
 
   // Filtrar por termo de busca
   const filteredPatients = patients?.filter((patient) =>
@@ -119,7 +122,9 @@ export function PatientsCriticalStepsList({
 
   return (
     <Card className="h-full flex flex-col overflow-hidden">
-      <CardHeader className={`flex-shrink-0 relative pb-3 ${hideButtons ? '' : 'pr-20'}`}>
+      <CardHeader
+        className={`flex-shrink-0 relative pb-3 ${hideButtons ? '' : 'pr-20'}`}
+      >
         <div className="flex items-center justify-between w-full gap-2">
           <CardTitle className="flex items-center gap-2 flex-1 min-w-0 text-lg">
             <User className="h-5 w-5 flex-shrink-0" />
@@ -134,7 +139,9 @@ export function PatientsCriticalStepsList({
                 size="icon"
                 onClick={onMaximize}
                 className="h-8 w-8 bg-white hover:bg-gray-100 border border-gray-200 shadow-sm"
-                title={isMaximized ? "Restaurar tamanho" : "Expandir para tela toda"}
+                title={
+                  isMaximized ? 'Restaurar tamanho' : 'Expandir para tela toda'
+                }
               >
                 {isMaximized ? (
                   <Minimize2 className="h-4 w-4" />
@@ -167,7 +174,10 @@ export function PatientsCriticalStepsList({
             className="w-full"
           />
           <div className="grid grid-cols-2 gap-2">
-            <Select value={journeyStageFilter} onValueChange={setJourneyStageFilter}>
+            <Select
+              value={journeyStageFilter}
+              onValueChange={setJourneyStageFilter}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Fase da jornada" />
               </SelectTrigger>
@@ -180,7 +190,10 @@ export function PatientsCriticalStepsList({
                 ))}
               </SelectContent>
             </Select>
-            <Select value={cancerTypeFilter} onValueChange={setCancerTypeFilter}>
+            <Select
+              value={cancerTypeFilter}
+              onValueChange={setCancerTypeFilter}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Tipo de câncer" />
               </SelectTrigger>
@@ -213,11 +226,11 @@ export function PatientsCriticalStepsList({
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{patient.patientName}</h3>
+                    <h3 className="font-semibold text-lg">
+                      {patient.patientName}
+                    </h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline">
-                        {patient.patientAge} anos
-                      </Badge>
+                      <Badge variant="outline">{patient.patientAge} anos</Badge>
                       {patient.cancerType && (
                         <Badge variant="outline">{patient.cancerType}</Badge>
                       )}
@@ -249,7 +262,7 @@ export function PatientsCriticalStepsList({
                             Prazo:{' '}
                             {format(
                               new Date(patient.criticalStep.dueDate),
-                              "dd/MM/yyyy",
+                              'dd/MM/yyyy',
                               { locale: ptBR }
                             )}
                           </span>
@@ -269,7 +282,8 @@ export function PatientsCriticalStepsList({
                   <div className="mt-2">
                     <Badge variant="destructive" className="text-xs">
                       {patient.navigationAlertsCount} alerta
-                      {patient.navigationAlertsCount > 1 ? 's' : ''} de navegação
+                      {patient.navigationAlertsCount > 1 ? 's' : ''} de
+                      navegação
                     </Badge>
                   </div>
                 )}
@@ -285,4 +299,3 @@ export function PatientsCriticalStepsList({
     </Card>
   );
 }
-

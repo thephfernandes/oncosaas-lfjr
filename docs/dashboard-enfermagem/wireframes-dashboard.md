@@ -42,6 +42,7 @@ Dashboard para monitoramento de pacientes oncológicos, visualização de conver
 ### Componentes
 
 **1. Filtros e Busca**
+
 - Dropdown: Tipo de câncer
 - Dropdown: Estágio (I, II, III, IV)
 - Dropdown: Status (crítico, alto, médio, baixo)
@@ -49,6 +50,7 @@ Dashboard para monitoramento de pacientes oncológicos, visualização de conver
 - Campo de busca: Nome do paciente
 
 **2. Lista de Pacientes**
+
 - Ordenada por score de prioridade (descendente)
 - Cards com informações principais:
   - Nome do paciente
@@ -64,6 +66,7 @@ Dashboard para monitoramento de pacientes oncológicos, visualização de conver
   - [Marcar Resolvido]: Marca alerta como resolvido
 
 **3. Indicadores Visuais**
+
 - 🔴 Vermelho: Crítico (score 76-100)
 - 🟡 Amarelo: Alto (score 51-75)
 - 🟢 Verde: Médio/Baixo (score 0-50)
@@ -111,11 +114,13 @@ Dashboard para monitoramento de pacientes oncológicos, visualização de conver
 ### Componentes
 
 **1. Cabeçalho**
+
 - Nome do paciente
 - Informações básicas (tipo de câncer, estágio, score)
 - Botão fechar (X)
 
 **2. Histórico de Conversa**
+
 - Timeline de mensagens
 - Identificação de remetente (Agente, Paciente, Enfermagem)
 - Timestamp de cada mensagem
@@ -123,11 +128,13 @@ Dashboard para monitoramento de pacientes oncológicos, visualização de conver
 - Áudios: player para ouvir
 
 **3. Dados Estruturados**
+
 - Sintomas extraídos com escalas
 - Questionários completados (EORTC, PRO-CTCAE, ESAS)
 - Scores calculados
 
 **4. Ações**
+
 - Campo de texto para responder
 - Botão "Enviar" (envia mensagem via WhatsApp)
 - Botão "Assumir Conversa" (muda contexto para enfermagem)
@@ -165,6 +172,7 @@ Dashboard para monitoramento de pacientes oncológicos, visualização de conver
 ### Componentes
 
 **1. Lista de Alertas**
+
 - Ordenada por severidade e tempo
 - Cards com:
   - Severidade (🔴 🟡 🟢)
@@ -175,11 +183,13 @@ Dashboard para monitoramento de pacientes oncológicos, visualização de conver
   - Ações rápidas
 
 **2. Filtros**
+
 - Por severidade (crítico, alto, médio, baixo)
 - Por tipo (sintoma crítico, sem resposta, atraso, etc.)
 - Por status (pendente, resolvido, descartado)
 
 **3. Notificações**
+
 - Badge com número de alertas não resolvidos
 - Push notifications no navegador
 - Som (opcional, pode desabilitar)
@@ -218,12 +228,14 @@ Dashboard para monitoramento de pacientes oncológicos, visualização de conver
 ### Componentes
 
 **1. Cards de Métricas**
+
 - Total de pacientes
 - Taxa de resposta ao agente
 - Número de alertas gerados
 - Tempo médio de resposta
 
 **2. Gráficos**
+
 - Taxa de resposta ao longo do tempo
 - Sintomas mais reportados
 - Distribuição de prioridades
@@ -251,5 +263,3 @@ Dashboard para monitoramento de pacientes oncológicos, visualização de conver
 3. Testar com enfermeiros
 4. Iterar baseado em feedback
 5. Implementar no frontend (Next.js)
-
-

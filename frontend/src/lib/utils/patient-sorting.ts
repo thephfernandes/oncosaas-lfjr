@@ -35,4 +35,3 @@ export function sortPatientsByPriority(patients: Patient[]): Patient[] {
     return dateB - dateA;
   });
 }
-

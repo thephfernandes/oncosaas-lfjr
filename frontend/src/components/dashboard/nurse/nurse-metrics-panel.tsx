@@ -3,7 +3,13 @@
 import { useNurseMetrics } from '@/hooks/useNurseMetrics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Clock, Users, MessageSquare, TrendingUp } from 'lucide-react';
+import {
+  AlertCircle,
+  Clock,
+  Users,
+  MessageSquare,
+  TrendingUp,
+} from 'lucide-react';
 
 export function NurseMetricsPanel() {
   const { data: metrics, isLoading, error } = useNurseMetrics();
@@ -49,7 +55,9 @@ export function NurseMetricsPanel() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.alertsResolvedToday}</div>
+            <div className="text-2xl font-bold">
+              {metrics.alertsResolvedToday}
+            </div>
             <p className="text-xs text-muted-foreground">
               Resolvidos por você hoje
             </p>
@@ -83,7 +91,9 @@ export function NurseMetricsPanel() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.patientsAttendedToday}</div>
+            <div className="text-2xl font-bold">
+              {metrics.patientsAttendedToday}
+            </div>
             <p className="text-xs text-muted-foreground">
               Pacientes únicos atendidos hoje
             </p>
@@ -101,10 +111,10 @@ export function NurseMetricsPanel() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.agentResponseRate}%</div>
-            <p className="text-xs text-muted-foreground">
-              Últimos 30 dias
-            </p>
+            <div className="text-2xl font-bold">
+              {metrics.agentResponseRate}%
+            </div>
+            <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
             <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
               <div
                 className="bg-indigo-600 h-2 rounded-full"
@@ -125,7 +135,10 @@ export function NurseMetricsPanel() {
             {metrics.topReportedSymptoms.length > 0 ? (
               <div className="space-y-2">
                 {metrics.topReportedSymptoms.slice(0, 3).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between"
+                  >
                     <span className="text-sm">{item.symptom}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{item.count}</span>
@@ -147,4 +160,3 @@ export function NurseMetricsPanel() {
     </div>
   );
 }
-

@@ -9,4 +9,3 @@ export class UpdateWhatsAppConnectionDto extends PartialType(
   @IsBoolean()
   isActive?: boolean;
 }
-

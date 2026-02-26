@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { FHIRIntegrationConfig, FHIRAuthConfig } from '../interfaces/fhir-config.interface';
+import {
+  FHIRIntegrationConfig,
+  FHIRAuthConfig,
+} from '../interfaces/fhir-config.interface';
 
 @Injectable()
 export class FHIRConfigService {
@@ -34,7 +37,10 @@ export class FHIRConfigService {
       enabled: dbConfig.enabled,
       baseUrl: dbConfig.baseUrl,
       auth: dbConfig.authConfig as any,
-      syncDirection: dbConfig.syncDirection as 'pull' | 'push' | 'bidirectional',
+      syncDirection: dbConfig.syncDirection as
+        | 'pull'
+        | 'push'
+        | 'bidirectional',
       syncFrequency: dbConfig.syncFrequency as 'realtime' | 'hourly' | 'daily',
       retryConfig: {
         maxRetries: dbConfig.maxRetries,
@@ -69,4 +75,3 @@ export class FHIRConfigService {
     }
   }
 }
-

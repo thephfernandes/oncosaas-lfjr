@@ -9,4 +9,3 @@ export class NurseMetricsDto {
     percentage: number;
   }>;
 }
-

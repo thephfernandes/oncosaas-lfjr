@@ -27,4 +27,3 @@ export const usePatientInterventions = (patientId: string) => {
     enabled: !!patientId,
   });
 };
-

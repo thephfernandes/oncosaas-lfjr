@@ -129,8 +129,12 @@ export const dashboardApi = {
     return apiClient.get<DashboardMetrics>('/dashboard/metrics');
   },
 
-  async getStatistics(period: '7d' | '30d' | '90d' = '7d'): Promise<DashboardStatistics> {
-    return apiClient.get<DashboardStatistics>(`/dashboard/statistics?period=${period}`);
+  async getStatistics(
+    period: '7d' | '30d' | '90d' = '7d'
+  ): Promise<DashboardStatistics> {
+    return apiClient.get<DashboardStatistics>(
+      `/dashboard/statistics?period=${period}`
+    );
   },
 
   async getPatientsWithCriticalSteps(params?: {
@@ -139,10 +143,12 @@ export const dashboardApi = {
     maxResults?: number;
   }): Promise<PatientWithCriticalStep[]> {
     const queryParams = new URLSearchParams();
-    if (params?.journeyStage) queryParams.append('journeyStage', params.journeyStage);
+    if (params?.journeyStage)
+      queryParams.append('journeyStage', params.journeyStage);
     if (params?.cancerType) queryParams.append('cancerType', params.cancerType);
-    if (params?.maxResults) queryParams.append('maxResults', params.maxResults.toString());
-    
+    if (params?.maxResults)
+      queryParams.append('maxResults', params.maxResults.toString());
+
     const queryString = queryParams.toString();
     return apiClient.get<PatientWithCriticalStep[]>(
       `/dashboard/patients-with-critical-steps${queryString ? `?${queryString}` : ''}`
@@ -153,4 +159,3 @@ export const dashboardApi = {
     return apiClient.get<CriticalTimelines>('/dashboard/critical-timelines');
   },
 };
-

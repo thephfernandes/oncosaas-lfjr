@@ -1,12 +1,21 @@
 'use client';
 
-import { useMyInterventions, usePatientInterventions } from '@/hooks/useInterventionHistory';
+import {
+  useMyInterventions,
+  usePatientInterventions,
+} from '@/hooks/useInterventionHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
-import { History, MessageSquare, AlertCircle, FileText, TrendingUp } from 'lucide-react';
+import {
+  History,
+  MessageSquare,
+  AlertCircle,
+  FileText,
+  TrendingUp,
+} from 'lucide-react';
 
 const INTERVENTION_TYPE_LABELS: Record<string, string> = {
   ASSUME: 'Assumiu Conversa',
@@ -40,9 +49,11 @@ export function InterventionHistory({ patientId }: InterventionHistoryProps) {
   const myInterventionsQuery = useMyInterventions();
   const patientInterventionsQuery = usePatientInterventions(patientId || '');
 
-  const { data: interventions, isLoading, error } = patientId
-    ? patientInterventionsQuery
-    : myInterventionsQuery;
+  const {
+    data: interventions,
+    isLoading,
+    error,
+  } = patientId ? patientInterventionsQuery : myInterventionsQuery;
 
   if (isLoading) {
     return (
@@ -101,7 +112,8 @@ export function InterventionHistory({ patientId }: InterventionHistoryProps) {
         <div className="space-y-3 max-h-[600px] overflow-y-auto">
           {interventions.map((intervention) => {
             const Icon = INTERVENTION_TYPE_ICONS[intervention.type] || History;
-            const colorClass = INTERVENTION_TYPE_COLORS[intervention.type] || 'bg-gray-500';
+            const colorClass =
+              INTERVENTION_TYPE_COLORS[intervention.type] || 'bg-gray-500';
 
             return (
               <div
@@ -116,7 +128,8 @@ export function InterventionHistory({ patientId }: InterventionHistoryProps) {
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
                         <Badge className={colorClass}>
-                          {INTERVENTION_TYPE_LABELS[intervention.type] || intervention.type}
+                          {INTERVENTION_TYPE_LABELS[intervention.type] ||
+                            intervention.type}
                         </Badge>
                         <span className="text-sm font-medium">
                           {intervention.patient.name}
@@ -129,13 +142,18 @@ export function InterventionHistory({ patientId }: InterventionHistoryProps) {
                       )}
                       {intervention.message && (
                         <p className="text-xs text-muted-foreground italic">
-                          Mensagem relacionada: "{intervention.message.content.substring(0, 50)}..."
+                          Mensagem relacionada: "
+                          {intervention.message.content.substring(0, 50)}..."
                         </p>
                       )}
                       <div className="text-xs text-muted-foreground">
-                        {format(new Date(intervention.createdAt), "dd/MM/yyyy 'às' HH:mm", {
-                          locale: ptBR,
-                        })}
+                        {format(
+                          new Date(intervention.createdAt),
+                          "dd/MM/yyyy 'às' HH:mm",
+                          {
+                            locale: ptBR,
+                          }
+                        )}
                       </div>
                     </div>
                   </div>
@@ -148,4 +166,3 @@ export function InterventionHistory({ patientId }: InterventionHistoryProps) {
     </Card>
   );
 }
-

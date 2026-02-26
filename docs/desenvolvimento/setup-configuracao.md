@@ -60,6 +60,7 @@ npm run prepare
 ```
 
 **Verificar se foi criado:**
+
 ```bash
 ls -la .husky/
 # Deve mostrar: pre-commit, pre-push, _/
@@ -200,6 +201,7 @@ npm run test:cov      # Com cobertura
 ### Erro: "husky: command not found"
 
 **Solução:**
+
 ```bash
 npm run prepare
 ```
@@ -207,6 +209,7 @@ npm run prepare
 ### Erro: "lint-staged: command not found"
 
 **Solução:**
+
 ```bash
 npm install --save-dev lint-staged
 ```
@@ -214,6 +217,7 @@ npm install --save-dev lint-staged
 ### Erro: "Permission denied" no Husky (Linux/Mac)
 
 **Solução:**
+
 ```bash
 chmod +x .husky/pre-commit
 chmod +x .husky/pre-push
@@ -223,6 +227,7 @@ chmod +x .husky/_/husky.sh
 ### Husky não executa no commit
 
 **Solução:**
+
 1. Verificar se `.husky/pre-commit` existe
 2. Verificar se é executável: `ls -la .husky/pre-commit`
 3. Reinstalar: `npm run prepare`
@@ -231,6 +236,7 @@ chmod +x .husky/_/husky.sh
 ### ESLint encontra muitos erros
 
 **Solução:**
+
 ```bash
 # Corrigir automaticamente (quando possível)
 npm run lint:fix
@@ -242,6 +248,7 @@ cd backend && npm run lint
 ### Prettier não formata
 
 **Solução:**
+
 ```bash
 # Verificar se .prettierrc existe na raiz
 cat .prettierrc
@@ -356,4 +363,3 @@ Após configurar tudo:
 
 **Última atualização**: 2024-01-XX  
 **Versão**: 1.0.0
-

@@ -280,7 +280,9 @@ function ManagementDashboard() {
   const [statisticsPeriod, setStatisticsPeriod] = useState<
     '7d' | '30d' | '90d'
   >('7d');
-  const [activeTab, setActiveTab] = useState<'gerencial' | 'enfermeira'>('gerencial');
+  const [activeTab, setActiveTab] = useState<'gerencial' | 'enfermeira'>(
+    'gerencial'
+  );
 
   // Inicializar autenticação
   useEffect(() => {
@@ -368,12 +370,16 @@ function ManagementDashboard() {
       <main className="flex-1 p-6 overflow-y-auto">
         <div className="container mx-auto space-y-6">
           {/* Tabs para alternar entre visões */}
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'gerencial' | 'enfermeira')} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) =>
+              setActiveTab(value as 'gerencial' | 'enfermeira')
+            }
+            className="w-full"
+          >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Dashboard
-                </h1>
+                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
                 <TabsList>
                   <TabsTrigger value="gerencial">Gerencial</TabsTrigger>
                   <TabsTrigger value="enfermeira">Enfermeira</TabsTrigger>
@@ -386,7 +392,9 @@ function ManagementDashboard() {
                     <select
                       value={statisticsPeriod}
                       onChange={(e) =>
-                        setStatisticsPeriod(e.target.value as '7d' | '30d' | '90d')
+                        setStatisticsPeriod(
+                          e.target.value as '7d' | '30d' | '90d'
+                        )
                       }
                       className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:border-indigo-500 focus:ring-indigo-500"
                     >
@@ -505,13 +513,16 @@ function ManagementDashboard() {
                   onPriorityFilter={handlePriorityFilter}
                   onCancerTypeFilter={handleCancerTypeFilter}
                   onJourneyStageFilter={handleJourneyStageFilter}
-                  onPeriodChange={(period) => setStatisticsPeriod(period as '7d' | '30d' | '90d')}
+                  onPeriodChange={(period) =>
+                    setStatisticsPeriod(period as '7d' | '30d' | '90d')
+                  }
                   currentPeriod={statisticsPeriod}
                 />
               ) : metricsError || statisticsError ? (
                 <div className="bg-white rounded-lg border p-6">
                   <p className="text-gray-500 text-center">
-                    Não foi possível carregar os gráficos. Verifique os erros acima.
+                    Não foi possível carregar os gráficos. Verifique os erros
+                    acima.
                   </p>
                 </div>
               ) : null}

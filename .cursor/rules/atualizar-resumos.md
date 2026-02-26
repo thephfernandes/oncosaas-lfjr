@@ -9,6 +9,7 @@ Esta regra define a metodologia para atualizar automaticamente resumos médicos 
 ### Informações que DEVEM ser atualizadas
 
 **Temporais (sempre verificar atualização):**
+
 - Protocolos e diretrizes de tratamento
 - Tratamentos farmacológicos (doses, escalonamento, novas medicações)
 - Classificações e critérios diagnósticos atualizados
@@ -18,6 +19,7 @@ Esta regra define a metodologia para atualizar automaticamente resumos médicos 
 - Aprovação de novas medicações/tecnologias
 
 **Critérios de atualização:**
+
 - Diretrizes/Guidelines: **SEMPRE** verificar versão mais recente (independente da idade)
 - Tratamentos: Se fonte >2 anos, buscar atualização
 - Epidemiologia: Se dados >3 anos, buscar atualização
@@ -27,6 +29,7 @@ Esta regra define a metodologia para atualizar automaticamente resumos médicos 
 ### Informações que NÃO devem ser atualizadas
 
 **Atemporais (preservar):**
+
 - Fisiopatologia fundamental (mecanismos básicos)
 - Semiologia clássica (técnicas de exame físico)
 - Anatomia e histologia básica
@@ -44,6 +47,7 @@ Informações conceituais e técnicas básicas permanecem válidas mesmo em font
 ### Padrões de Busca no Texto
 
 **Seções específicas a analisar:**
+
 - `## Tratamento` ou `### Tratamento`
 - `## Protocolo` ou `### Protocolo`
 - `## Epidemiologia`
@@ -53,6 +57,7 @@ Informações conceituais e técnicas básicas permanecem válidas mesmo em font
 - `**Fontes e Versões:**` ou `## Fontes e Versões`
 
 **Padrões de citação a extrair:**
+
 - `([ano])` - Diretrizes e protocolos
 - `([edição]ª edição, [ano])` - Livros
 - `- [Nome] - [Org] ([ano]) ([site.com])` - Diretrizes formatadas
@@ -61,6 +66,7 @@ Informações conceituais e técnicas básicas permanecem válidas mesmo em font
 - `Guideline [Nome] ([ano])` - Guidelines mencionadas
 
 **Marcadores de diretrizes/protocolos:**
+
 - "Diretriz", "Guideline", "Protocolo", "PCDT"
 - Nomes de sociedades médicas (SBC, SBD, SBPT, etc.)
 - Nomes de organizações (AHA, ACC, ESC, MS, etc.)
@@ -68,21 +74,23 @@ Informações conceituais e técnicas básicas permanecem válidas mesmo em font
 ### Mapeamento de Especialidade para Domínios
 
 **Identificar especialidade do resumo:**
+
 - Extrair do caminho: `resumos/[especialidade]/[tema].md`
 - Identificar por conteúdo (temas cardiológicos, endocrinológicos, etc.)
 
 **Mapeamento especialidade → domínios prioritários:**
 
-| Especialidade | Domínios Primários (BR) | Domínios Secundários (INT) |
-|---------------|------------------------|---------------------------|
-| Cardiologia | diretrizes.cardiol.br | heart.org, acc.org, escardio.org |
-| Endocrinologia | diabetes.org.br | diabetes.org, easd.org |
-| Pneumologia | sbpt.org.br | chestnet.org, ersnet.org |
-| Nefrologia | sbn.org.br | - |
-| Emergências | - | heart.org (RCP), cdc.gov |
-| Geral | saude.gov.br | - |
+| Especialidade  | Domínios Primários (BR) | Domínios Secundários (INT)       |
+| -------------- | ----------------------- | -------------------------------- |
+| Cardiologia    | diretrizes.cardiol.br   | heart.org, acc.org, escardio.org |
+| Endocrinologia | diabetes.org.br         | diabetes.org, easd.org           |
+| Pneumologia    | sbpt.org.br             | chestnet.org, ersnet.org         |
+| Nefrologia     | sbn.org.br              | -                                |
+| Emergências    | -                       | heart.org (RCP), cdc.gov         |
+| Geral          | saude.gov.br            | -                                |
 
 **Estratégia de busca:**
+
 1. Priorizar domínio brasileiro se especialidade mapeada
 2. Usar domínio internacional como complemento
 3. Para protocolos MS: sempre `saude.gov.br`
@@ -93,10 +101,12 @@ Informações conceituais e técnicas básicas permanecem válidas mesmo em font
 ### Guardrails Obrigatórios
 
 **SEMPRE seguir:**
+
 - `.cursor/rules/guardrail-fontes-web.md`: Usar apenas whitelist de domínios
 - `.cursor/rules/guardrail-versao-fontes.md`: Incluir ano/edição em todas as citações
 
 **Validação antes de buscar:**
+
 1. Identificar domínio apropriado da whitelist
 2. Validar que domínio está autorizado
 3. Adicionar `site:[domínio]` à query
@@ -107,11 +117,13 @@ Informações conceituais e técnicas básicas permanecem válidas mesmo em font
 **1. Diretrizes e Guidelines:**
 
 **Identificar:**
+
 - Nome da diretriz (ex: "Diretriz Brasileira de Hipertensão Arterial")
 - Organização (ex: SBC)
 - Ano atual citado (ex: 2020)
 
 **Buscar:**
+
 ```python
 # Exemplo de query
 query = f"[tema] diretriz {ano_atual+1} {ano_atual+2} {organizacao} site:{dominio}"
@@ -120,17 +132,20 @@ query = f"[tema] diretriz {ano_atual+1} {ano_atual+2} {organizacao} site:{domini
 **Ferramenta:** `mcp_Firecrawl_Web_Search_firecrawl_search` (scraping completo)
 
 **Comparar:**
+
 - Se ano encontrado > ano citado → atualização disponível
 - Extrair conteúdo relevante da diretriz
 
 **2. Protocolos Clínicos (PCDT):**
 
 **Identificar:**
+
 - Nome do protocolo (ex: "Protocolo Clínico de Diabetes")
 - Órgão (ex: Ministério da Saúde)
 - Ano atual citado
 
 **Buscar:**
+
 ```python
 query = f"[tema] protocolo clínico PCDT {ano_atual+1} {ano_atual+2} site:saude.gov.br"
 ```
@@ -140,11 +155,13 @@ query = f"[tema] protocolo clínico PCDT {ano_atual+1} {ano_atual+2} site:saude.
 **3. Dados Epidemiológicos:**
 
 **Identificar:**
+
 - Tipo de dado (prevalência, incidência)
 - Fonte atual (ex: Vigitel)
 - Ano atual dos dados
 
 **Buscar:**
+
 ```python
 query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov.br"
 ```
@@ -154,21 +171,25 @@ query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov
 **4. Critérios Diagnósticos e Classificações:**
 
 **Identificar:**
+
 - Nome da classificação/escala (ex: "Classificação de Wagner", "Critérios de Framingham")
 - Ano da fonte atual
 
 **Buscar:**
+
 - Verificar se há atualização na diretriz mais recente do tema
 - Buscar diretriz específica que contém os critérios
 
 **5. Tratamentos Farmacológicos:**
 
 **Identificar:**
+
 - Medicações mencionadas
 - Doses citadas
 - Ano da diretriz que estabelece o protocolo
 
 **Buscar:**
+
 - Buscar diretriz mais recente do tema
 - Verificar se há mudanças em:
   - Doses recomendadas
@@ -179,18 +200,22 @@ query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov
 ### Ordem de Prioridade de Busca
 
 **1. Máxima prioridade (buscar primeiro):**
+
 - Diretrizes principais do tema (ex: Diretriz SBC de Hipertensão)
 - Protocolos clínicos oficiais (PCDT)
 
 **2. Alta prioridade:**
+
 - Guidelines internacionais (AHA, ESC, ADA)
 - Dados epidemiológicos recentes
 
 **3. Média prioridade:**
+
 - Atualizações em classificações
 - Novas medicações aprovadas
 
 **4. Baixa prioridade:**
+
 - Critérios diagnósticos (só se fonte >5 anos)
 
 ## Processo de Atualização
@@ -198,6 +223,7 @@ query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov
 ### Passo 1: Análise do Resumo
 
 **Leitura e extração:**
+
 1. Ler arquivo completo do resumo
 2. Identificar todas as citações de fontes com padrões reconhecidos
 3. Extrair:
@@ -207,6 +233,7 @@ query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov
    - Seção onde está citada
 
 **Mapeamento:**
+
 1. Identificar especialidade do tema
 2. Mapear para domínios apropriados da whitelist
 3. Listar todas as fontes temporais encontradas
@@ -216,18 +243,22 @@ query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov
 **Classificar fontes por prioridade:**
 
 **Prioridade 1 - Atualização obrigatória:**
+
 - Diretrizes/Guidelines citadas (sempre verificar versão mais recente)
 - Protocolos clínicos (PCDT)
 
 **Prioridade 2 - Atualização recomendada:**
+
 - Tratamentos com fonte >2 anos
 - Epidemiologia com dados >3 anos
 
 **Prioridade 3 - Verificação opcional:**
+
 - Critérios diagnósticos com fonte >5 anos
 - Classificações antigas (verificar se foram atualizadas)
 
 **Ordenar:**
+
 1. Por prioridade (1 > 2 > 3)
 2. Por ano (mais antigas primeiro)
 3. Por relevância clínica (protocolos > dados > classificações)
@@ -260,6 +291,7 @@ query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov
 **Comparar conteúdo:**
 
 **Para diretrizes/protocolos:**
+
 - Identificar mudanças em:
   - Novos algoritmos de tratamento
   - Mudanças em doses recomendadas
@@ -268,16 +300,19 @@ query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov
   - Atualizações em metas terapêuticas
 
 **Para epidemiologia:**
+
 - Comparar valores (prevalência, incidência)
 - Identificar tendências (aumento/diminuição)
 - Atualizar números e percentuais
 
 **Para critérios diagnósticos:**
+
 - Verificar se critérios foram modificados
 - Identificar novos critérios adicionados
 - Verificar se há nova classificação
 
 **Identificar mudanças significativas:**
+
 - ⚠️ **Críticas**: Mudanças que alteram conduta clínica (novas medicações, mudanças de dose)
 - ⚠️ **Importantes**: Atualizações em protocolos, novos critérios
 - ℹ️ **Menores**: Atualizações em dados, pequenos ajustes
@@ -285,6 +320,7 @@ query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov
 ### Passo 5: Atualização do Arquivo
 
 **Preservar estrutura:**
+
 - Manter todos os cabeçalhos (##, ###)
 - Preservar formatação markdown
 - Manter listas e tabelas existentes
@@ -293,27 +329,32 @@ query = f"[tema] prevalência {ano_atual+1} {ano_atual+2} Vigitel site:saude.gov
 **Atualizar conteúdo:**
 
 **Seções de Tratamento:**
+
 - Atualizar protocolos de tratamento com nova diretriz
 - Atualizar doses se houver mudanças
 - Adicionar novas medicações aprovadas
 - Atualizar contraindicações
 
 **Seções de Epidemiologia:**
+
 - Atualizar números e percentuais
 - Atualizar ano dos dados
 - Manter contexto e explicações
 
 **Seções de Classificação/Critérios:**
+
 - Atualizar apenas se houver mudança confirmada
 - Preservar explicações e contexto
 - Adicionar nota se classificação foi atualizada
 
 **Seções "Fontes e Versões":**
+
 - Atualizar TODAS as citações com novos anos
 - Manter formato: `[Nome] - [Org] ([ano]) ([site.com])`
 - Atualizar "Última atualização consultada"
 
 **Preservar:**
+
 - Fisiopatologia (não alterar)
 - Semiologia (não alterar)
 - Exemplos práticos (não alterar)
@@ -360,7 +401,7 @@ Após atualização, gerar relatório estruturado:
 - ⚠️ Protocolo de Tratamento:
   • Diretriz SBC 2020 → Diretriz SBC 2024
   • Mudanças: [descrição das mudanças significativas]
-  
+
 - ⚠️ [Outra atualização crítica]
 
 [Prioridade 2 - Importantes]
@@ -390,18 +431,21 @@ Após atualização, gerar relatório estruturado:
 ### Classificação de Mudanças no Relatório
 
 **Críticas (⚠️):**
+
 - Mudanças que alteram conduta clínica diretamente
 - Novas medicações aprovadas
 - Mudanças significativas em doses
 - Mudanças em contraindicações importantes
 
 **Importantes (📈):**
+
 - Atualizações em protocolos
 - Novos critérios diagnósticos
 - Atualizações em dados epidemiológicos
 - Mudanças em metas terapêuticas
 
 **Menores (ℹ️):**
+
 - Pequenos ajustes em classificação
 - Atualizações de citações sem mudança de conteúdo
 - Dados mantidos (já atualizados)
@@ -411,11 +455,13 @@ Após atualização, gerar relatório estruturado:
 ### Arquivo não encontrado
 
 **Ação:**
+
 - Verificar se caminho está correto
 - Verificar se arquivo existe em `resumos/[especialidade]/[tema].md`
 - Sugerir arquivos similares se houver
 
 **Mensagem:**
+
 ```
 ❌ Erro: Arquivo não encontrado
 Caminho procurado: resumos/[especialidade]/[tema].md
@@ -427,11 +473,13 @@ Arquivos similares encontrados:
 ### Nenhuma atualização encontrada
 
 **Ação:**
+
 - Informar que resumo já está atualizado
 - Listar versões consultadas
 - Confirmar que buscas foram realizadas
 
 **Mensagem:**
+
 ```
 ℹ️ Nenhuma atualização disponível
 
@@ -446,11 +494,13 @@ Versões mais recentes verificadas:
 ### Erro ao buscar atualização
 
 **Ação:**
+
 - Continuar com outras atualizações
 - Reportar erro específico no relatório
 - Tentar fonte alternativa se disponível
 
 **Mensagem:**
+
 ```
 ⚠️ Erro ao buscar atualização de [fonte]:
 - Erro: [descrição do erro]
@@ -460,11 +510,13 @@ Versões mais recentes verificadas:
 ### Fonte não encontrada na whitelist
 
 **Ação:**
+
 - Não buscar em fonte não autorizada
 - Informar no relatório
 - Sugerir fonte alternativa da whitelist
 
 **Mensagem:**
+
 ```
 ❌ Erro: Fonte não autorizada
 - Fonte tentada: [domínio]
@@ -475,11 +527,13 @@ Versões mais recentes verificadas:
 ### Conflito entre fontes
 
 **Ação:**
+
 - Priorizar fonte mais recente
 - Mencionar ambas as fontes no relatório
 - Explicar escolha
 
 **Mensagem:**
+
 ```
 ⚠️ Conflito entre fontes detectado:
 - Fonte A: [nome] ([ano])
@@ -493,6 +547,7 @@ Versões mais recentes verificadas:
 ### Guardrail de Fontes Web
 
 **Seguir rigorosamente:**
+
 - Usar apenas domínios da whitelist em `.cursor/rules/guardrail-fontes-web.md`
 - Validar todos os domínios antes de buscar
 - Incluir `site:[domínio]` em todas as queries
@@ -500,6 +555,7 @@ Versões mais recentes verificadas:
 ### Guardrail de Versão de Fontes
 
 **Seguir rigorosamente:**
+
 - Sempre incluir ano/edição em citações atualizadas
 - Formato: `[Nome] - [Org] ([ano]) ([site.com])`
 - Incluir seção "Fontes e Versões" atualizada
@@ -508,6 +564,7 @@ Versões mais recentes verificadas:
 ### Regra de Resumo Médico Estruturado
 
 **Respeitar:**
+
 - Estrutura definida em `.cursor/rules/resumo-medico-estruturado`
 - Não alterar seções obrigatórias
 - Manter formato de citações estabelecido
@@ -554,4 +611,3 @@ Versões mais recentes verificadas:
 - `.cursor/rules/guardrail-versao-fontes.md` - Formato de citações com ano/edição
 - `.cursor/commands/resumo.md` - Estratégia de busca em fontes externas
 - `.cursor/commands/resumo-conciso.md` - Metodologia de resumos
-

@@ -196,13 +196,23 @@ export function NavigationMetricsPanel() {
                   }))}
                 >
                   <defs>
-                    <linearGradient id="gradientCompletion" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient
+                      id="gradientCompletion"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#059669" stopOpacity={0.7} />
+                      <stop
+                        offset="100%"
+                        stopColor="#059669"
+                        stopOpacity={0.7}
+                      />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid 
-                    strokeDasharray="4 4" 
+                  <CartesianGrid
+                    strokeDasharray="4 4"
                     stroke="rgba(148, 163, 184, 0.2)"
                     vertical={false}
                   />
@@ -218,7 +228,12 @@ export function NavigationMetricsPanel() {
                     domain={[0, 100]}
                     tick={{ fontSize: 11, fill: '#64748b' }}
                     axisLine={{ stroke: '#e2e8f0' }}
-                    label={{ value: '%', angle: -90, position: 'insideLeft', style: { fill: '#64748b' } }}
+                    label={{
+                      value: '%',
+                      angle: -90,
+                      position: 'insideLeft',
+                      style: { fill: '#64748b' },
+                    }}
                   />
                   <Tooltip content={<CustomTooltip unit="%" />} />
                   <Bar
@@ -231,8 +246,12 @@ export function NavigationMetricsPanel() {
                     className="chart-hover"
                   >
                     {metrics.stageMetrics.map((entry, index) => {
-                      const color = entry.completionRate >= 80 ? '#10b981' :
-                                   entry.completionRate >= 60 ? '#f59e0b' : '#dc2626';
+                      const color =
+                        entry.completionRate >= 80
+                          ? '#10b981'
+                          : entry.completionRate >= 60
+                            ? '#f59e0b'
+                            : '#dc2626';
                       return <Cell key={`cell-${index}`} fill={color} />;
                     })}
                   </Bar>
@@ -261,13 +280,23 @@ export function NavigationMetricsPanel() {
                     }))}
                 >
                   <defs>
-                    <linearGradient id="gradientTime" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient
+                      id="gradientTime"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#0284c7" stopOpacity={0.7} />
+                      <stop
+                        offset="100%"
+                        stopColor="#0284c7"
+                        stopOpacity={0.7}
+                      />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid 
-                    strokeDasharray="4 4" 
+                  <CartesianGrid
+                    strokeDasharray="4 4"
                     stroke="rgba(148, 163, 184, 0.2)"
                     vertical={false}
                   />
@@ -282,7 +311,12 @@ export function NavigationMetricsPanel() {
                   <YAxis
                     tick={{ fontSize: 11, fill: '#64748b' }}
                     axisLine={{ stroke: '#e2e8f0' }}
-                    label={{ value: 'Dias', angle: -90, position: 'insideLeft', style: { fill: '#64748b' } }}
+                    label={{
+                      value: 'Dias',
+                      angle: -90,
+                      position: 'insideLeft',
+                      style: { fill: '#64748b' },
+                    }}
                   />
                   <Tooltip content={<CustomTooltip unit="dias" />} />
                   <Bar
@@ -316,7 +350,8 @@ export function NavigationMetricsPanel() {
                   >
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold">
-                        {JOURNEY_STAGE_LABELS[stageMetric.stage] || stageMetric.stage}
+                        {JOURNEY_STAGE_LABELS[stageMetric.stage] ||
+                          stageMetric.stage}
                       </h4>
                       <Badge variant="outline">
                         {stageMetric.patientsCount} pacientes
@@ -324,11 +359,17 @@ export function NavigationMetricsPanel() {
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
                       <div>
-                        <p className="text-xs text-muted-foreground">Taxa de Conclusão</p>
-                        <p className="text-lg font-bold">{stageMetric.completionRate}%</p>
+                        <p className="text-xs text-muted-foreground">
+                          Taxa de Conclusão
+                        </p>
+                        <p className="text-lg font-bold">
+                          {stageMetric.completionRate}%
+                        </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Tempo Médio</p>
+                        <p className="text-xs text-muted-foreground">
+                          Tempo Médio
+                        </p>
                         <p className="text-lg font-bold">
                           {stageMetric.averageTimeDays !== null
                             ? `${stageMetric.averageTimeDays} dias`
@@ -336,17 +377,25 @@ export function NavigationMetricsPanel() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Etapas Concluídas</p>
+                        <p className="text-xs text-muted-foreground">
+                          Etapas Concluídas
+                        </p>
                         <p className="text-lg font-bold text-green-600">
                           {stageMetric.completedSteps}/{stageMetric.totalSteps}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Etapas Atrasadas</p>
-                        <p className={cn(
-                          'text-lg font-bold',
-                          stageMetric.overdueSteps > 0 ? 'text-red-600' : 'text-gray-600'
-                        )}>
+                        <p className="text-xs text-muted-foreground">
+                          Etapas Atrasadas
+                        </p>
+                        <p
+                          className={cn(
+                            'text-lg font-bold',
+                            stageMetric.overdueSteps > 0
+                              ? 'text-red-600'
+                              : 'text-gray-600'
+                          )}
+                        >
                           {stageMetric.overdueSteps}
                         </p>
                       </div>
@@ -382,13 +431,23 @@ export function NavigationMetricsPanel() {
                   layout="vertical"
                 >
                   <defs>
-                    <linearGradient id="gradientBottleneck" x1="0" y1="0" x2="1" y2="0">
+                    <linearGradient
+                      id="gradientBottleneck"
+                      x1="0"
+                      y1="0"
+                      x2="1"
+                      y2="0"
+                    >
                       <stop offset="0%" stopColor="#ea580c" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#c2410c" stopOpacity={0.7} />
+                      <stop
+                        offset="100%"
+                        stopColor="#c2410c"
+                        stopOpacity={0.7}
+                      />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid 
-                    strokeDasharray="4 4" 
+                  <CartesianGrid
+                    strokeDasharray="4 4"
                     stroke="rgba(148, 163, 184, 0.2)"
                     horizontal={false}
                   />
@@ -396,7 +455,12 @@ export function NavigationMetricsPanel() {
                     type="number"
                     tick={{ fontSize: 11, fill: '#64748b' }}
                     axisLine={{ stroke: '#e2e8f0' }}
-                    label={{ value: '% dos Pacientes', position: 'insideBottom', offset: -5, style: { fill: '#64748b' } }}
+                    label={{
+                      value: '% dos Pacientes',
+                      position: 'insideBottom',
+                      offset: -5,
+                      style: { fill: '#64748b' },
+                    }}
                   />
                   <YAxis
                     type="category"
@@ -436,17 +500,22 @@ export function NavigationMetricsPanel() {
                         {bottleneck.reason}
                       </p>
                     </div>
-                    <Badge variant="outline" className="bg-orange-100 text-orange-800">
+                    <Badge
+                      variant="outline"
+                      className="bg-orange-100 text-orange-800"
+                    >
                       {bottleneck.percentage}% dos pacientes
                     </Badge>
                   </div>
                   <div className="flex gap-4 text-sm text-gray-600 mt-2">
                     <span>
-                      <strong>{bottleneck.patientsCount}</strong> pacientes nesta fase
+                      <strong>{bottleneck.patientsCount}</strong> pacientes
+                      nesta fase
                     </span>
                     {bottleneck.averageTimeDays !== null && (
                       <span>
-                        Tempo médio: <strong>{bottleneck.averageTimeDays} dias</strong>
+                        Tempo médio:{' '}
+                        <strong>{bottleneck.averageTimeDays} dias</strong>
                       </span>
                     )}
                   </div>

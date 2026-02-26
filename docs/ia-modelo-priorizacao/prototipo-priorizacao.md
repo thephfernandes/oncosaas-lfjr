@@ -9,6 +9,7 @@ Desenvolver modelo de machine learning que prioriza pacientes oncológicos basea
 ### Features de Entrada
 
 **Dados Clínicos**:
+
 - Tipo de câncer (categorical)
 - Estadiamento (TNM ou estágio)
 - Performance status (ECOG, Karnofsky)
@@ -17,6 +18,7 @@ Desenvolver modelo de machine learning que prioriza pacientes oncológicos basea
 - Tempo desde diagnóstico
 
 **Dados de Sintomas (via WhatsApp)**:
+
 - Escala de dor (0-10)
 - Escala de náusea (0-10)
 - Escala de fadiga (0-10)
@@ -24,18 +26,21 @@ Desenvolver modelo de machine learning que prioriza pacientes oncológicos basea
 - Outros sintomas (lista)
 
 **Dados Temporais**:
+
 - Tempo desde última consulta (dias)
 - Tempo desde último exame (dias)
 - Tempo desde início do tratamento (dias)
 - Próxima consulta agendada (dias)
 
 **Dados de Tratamento**:
+
 - Tipo de tratamento (quimioterapia, radioterapia, cirurgia)
 - Ciclo atual / total de ciclos
 - Protocolo de tratamento
 - Efeitos adversos recentes
 
 **Dados de Engajamento**:
+
 - Última interação com agente WhatsApp (dias)
 - Taxa de resposta ao agente (%)
 - Número de alertas gerados
@@ -43,11 +48,13 @@ Desenvolver modelo de machine learning que prioriza pacientes oncológicos basea
 ### Features Derivadas
 
 **Score de Sintomas**:
+
 - Soma ponderada de sintomas
 - Sintoma mais severo
 - Mudança em relação ao baseline
 
 **Score de Risco**:
+
 - Risco de complicação (baseado em tipo de câncer + tratamento)
 - Risco de readmissão
 - Risco de atraso no tratamento
@@ -55,18 +62,21 @@ Desenvolver modelo de machine learning que prioriza pacientes oncológicos basea
 ### Target (Saída)
 
 **Score de Prioridade**: 0-100
+
 - **0-20**: Baixa prioridade
 - **21-50**: Média prioridade
 - **51-75**: Alta prioridade
 - **76-100**: Crítica
 
 **Categoria**:
+
 - `critico`: Casos que precisam atenção imediata
 - `alto`: Casos que precisam atenção em 24-48h
 - `medio`: Casos que precisam atenção em 1 semana
 - `baixo`: Casos de rotina
 
 **Razão da Priorização**:
+
 - Explicação do score (explicabilidade)
 
 ## Dataset Sintético
@@ -74,12 +84,14 @@ Desenvolver modelo de machine learning que prioriza pacientes oncológicos basea
 ### Geração de Dados
 
 **Distribuição Realista**:
+
 - Tipos de câncer comuns: mama, pulmão, colorretal, próstata
 - Estadiamentos: I, II, III, IV (distribuição realista)
 - Performance status: 0-4 (distribuição realista)
 - Sintomas: distribuição baseada em literatura
 
 **Exemplo de Dados**:
+
 ```python
 import pandas as pd
 import numpy as np
@@ -89,7 +101,7 @@ n_samples = 1000
 
 data = {
     'cancer_type': np.random.choice(
-        ['mama', 'pulmao', 'colorectal', 'prostata', 'kidney', 'bladder', 'testicular'], 
+        ['mama', 'pulmao', 'colorectal', 'prostata', 'kidney', 'bladder', 'testicular'],
         n_samples,
         p=[0.25, 0.20, 0.20, 0.15, 0.08, 0.08, 0.04]
     ),
@@ -109,10 +121,11 @@ df = pd.DataFrame(data)
 ### Labels Sintéticos (Prioridade)
 
 **Regras de Negócio para Labels**:
+
 ```python
 def calculate_priority_label(row):
     score = 0
-    
+
     # Critérios críticos
     if row['pain_score'] >= 8:
         score += 30
@@ -122,7 +135,7 @@ def calculate_priority_label(row):
         score += 25
     if row['days_since_last_visit'] > 60:
         score += 15
-    
+
     # Critérios de alta prioridade
     if row['pain_score'] >= 6:
         score += 15
@@ -130,10 +143,10 @@ def calculate_priority_label(row):
         score += 10
     if row['stage'] == 'III':
         score += 10
-    
+
     # Normalizar para 0-100
     score = min(100, score)
-    
+
     # Categorizar
     if score >= 75:
         category = 'critico'
@@ -143,7 +156,7 @@ def calculate_priority_label(row):
         category = 'medio'
     else:
         category = 'baixo'
-    
+
     return score, category
 
 df['priority_score'], df['priority_category'] = zip(*df.apply(calculate_priority_label, axis=1))
@@ -154,11 +167,13 @@ df['priority_score'], df['priority_category'] = zip(*df.apply(calculate_priority
 ### Abordagem: Ensemble
 
 **Modelos Base**:
+
 1. **Random Forest**: Bom para features categóricas e não-lineares
 2. **XGBoost**: Alta performance, lida bem com dados faltantes
 3. **LightGBM**: Rápido, eficiente em memória
 
 **Ensemble**:
+
 - Voting ou Stacking
 - Pesos baseados em performance
 
@@ -173,7 +188,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_absolute_error, r2_score
 
 # Preparar dados
-X = df[['cancer_type', 'stage', 'performance_status', 'age', 
+X = df[['cancer_type', 'stage', 'performance_status', 'age',
         'pain_score', 'nausea_score', 'fatigue_score',
         'days_since_last_visit', 'treatment_cycle']]
 y = df['priority_score']
@@ -215,6 +230,7 @@ print(f"R²: {r2:.2f}")
 ### Explicabilidade
 
 **SHAP Values**:
+
 ```python
 import shap
 
@@ -227,6 +243,7 @@ shap.summary_plot(shap_values, X_test)
 ```
 
 **Feature Importance**:
+
 - Identificar features mais importantes
 - Usar para explicar razão da priorização
 
@@ -263,11 +280,13 @@ def categorize_priority(score):
 ### Validação Clínica
 
 **Avaliação com Oncologistas**:
+
 1. Apresentar casos com scores do modelo
 2. Comparar com priorização manual dos médicos
 3. Calcular concordância (Kappa)
 
 **Métricas Clínicas**:
+
 - **Sensibilidade**: % de casos críticos detectados
 - **Especificidade**: % de casos não-críticos corretamente classificados
 - **PPV (Positive Predictive Value)**: % de casos críticos que realmente precisam atenção
@@ -290,14 +309,14 @@ def categorize_priority(score):
 async def prioritize_patient(patient_data: PatientData):
     # Feature engineering
     features = prepare_features(patient_data)
-    
+
     # Predição
     score = model.predict(features)
     category = categorize_priority(score)
-    
+
     # Explicação
     explanation = generate_explanation(features, score)
-    
+
     return {
         "priority_score": float(score),
         "priority_category": category,
@@ -319,5 +338,3 @@ async def prioritize_patient(patient_data: PatientData):
 4. Validar com oncologistas
 5. Implementar API de inferência
 6. Integrar com backend
-
-

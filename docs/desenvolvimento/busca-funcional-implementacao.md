@@ -24,6 +24,7 @@ Implementação da busca funcional de pacientes por nome ou CPF parcial, com deb
 - ✅ Melhora performance e UX
 
 **Uso:**
+
 ```typescript
 const [searchTerm, setSearchTerm] = useState('');
 const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -39,6 +40,7 @@ const debouncedSearchTerm = useDebounce(searchTerm, 300);
 - ✅ Se termo vazio, retorna todos os pacientes
 
 **Lógica:**
+
 ```typescript
 // Busca por nome
 const nameMatch = patient.name.toLowerCase().includes(normalizedSearch);
@@ -92,14 +94,17 @@ const cpfMatch = patient.cpf
 ## 🎨 Comportamento da UI
 
 ### Estado Vazio (sem busca)
+
 - Exibe todos os pacientes ordenados por prioridade
 
 ### Durante Digitação
+
 - Input atualiza imediatamente (feedback visual)
 - Lista não filtra até 300ms sem digitação
 - Evita "piscar" de resultados
 
 ### Após Busca
+
 - Lista filtrada mantém ordenação por prioridade
 - Casos críticos ainda aparecem primeiro
 - Mensagem clara quando nenhum resultado
@@ -107,10 +112,12 @@ const cpfMatch = patient.cpf
 ### Exemplos de Busca
 
 **Por Nome:**
+
 - "João" → encontra "João Silva", "João Pedro", etc.
 - "maria" → encontra "Maria", "Maria José" (case-insensitive)
 
 **Por CPF:**
+
 - "123" → encontra CPFs contendo "123"
 - "123.456" → remove pontos, busca "123456"
 - "123456789" → busca parcial em qualquer parte do CPF
@@ -122,6 +129,7 @@ const cpfMatch = patient.cpf
 ### Frontend
 
 **Criado:**
+
 - `frontend/src/lib/utils/use-debounce.ts`
   - Hook customizado para debounce
 
@@ -129,6 +137,7 @@ const cpfMatch = patient.cpf
   - Função de filtro por nome/CPF
 
 **Modificado:**
+
 - `frontend/src/app/chat/page.tsx`
   - Adicionado estado `searchTerm` e `debouncedSearchTerm`
   - Conectado input ao estado
@@ -142,6 +151,7 @@ const cpfMatch = patient.cpf
 ### Documentação
 
 **Modificado:**
+
 - `docs/desenvolvimento/estado-atual-proximos-passos.md`
   - Marca busca funcional como implementada
 
@@ -231,4 +241,3 @@ const cpfMatch = patient.cpf
 ---
 
 **Última atualização:** 2024-01-XX
-

@@ -30,4 +30,3 @@ export class UpdateUserDto {
   @IsBoolean()
   mfaEnabled?: boolean;
 }
-

@@ -1,4 +1,5 @@
 <!-- 8936a4b7-14da-4a3d-ad73-2a3b342aeddf c0ad78e1-686b-4266-aa33-30cecb78d43a -->
+
 # Plataforma de Otimização de Processos Oncológicos - Plano Atualizado
 
 ## Principais Atualizações
@@ -244,7 +245,6 @@
 1. **Lead Generation**: Inbound (conteúdo sobre oncologia + tecnologia), Outbound (cold email para oncologistas e coordenadores de enfermagem)
 2. **Qualificação**: BANT (Budget, Authority, Need, Timeline)
 3. **Demo**: Apresentação customizada mostrando:
-
    - Agente de IA no WhatsApp em ação
    - Dashboard de enfermagem com alertas
    - Integração com EHR
@@ -401,8 +401,7 @@
 
 1. **Product Discovery**: 10 entrevistas com oncologistas, coordenadores de enfermagem e enfermeiros oncológicos
 2. **Arquitetura Inicial**: Definir stack, estrutura de dados, arquitetura do agente WhatsApp
-3. **Protótipo de IA**: 
-
+3. **Protótipo de IA**:
    - Modelo de priorização básico
    - Agente conversacional básico (teste com dados sintéticos)
 
@@ -419,8 +418,7 @@
 3. **Diagnóstico**: Acompanhamento de resultados, estadiamento
 4. **Tratamento**: Protocolo definido, monitoramento de efeitos adversos
 5. **Seguimento**: Consultas periódicas, exames de controle
-6. **Acompanhamento Remoto via WhatsApp**: 
-
+6. **Acompanhamento Remoto via WhatsApp**:
    - Agente inicia conversa semanal
    - Coleta sintomas de forma conversacional
    - Detecta urgências → alerta enfermagem

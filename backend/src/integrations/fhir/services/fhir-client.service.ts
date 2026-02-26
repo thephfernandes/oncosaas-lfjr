@@ -24,7 +24,9 @@ export class FHIRClientService {
   /**
    * Obter cliente HTTP configurado para um tenant
    */
-  private async getClient(config: FHIRIntegrationConfig): Promise<AxiosInstance> {
+  private async getClient(
+    config: FHIRIntegrationConfig
+  ): Promise<AxiosInstance> {
     const cacheKey = config.tenantId;
     let client = this.clients.get(cacheKey);
 
@@ -41,7 +43,7 @@ export class FHIRClientService {
       // Interceptor para adicionar autenticação
       client.interceptors.request.use(async (requestConfig) => {
         const token = await this.authService.getToken(config);
-        
+
         if (config.auth.type === 'basic') {
           // Basic Auth já está no token como base64
           requestConfig.headers.Authorization = `Basic ${token}`;
@@ -144,7 +146,10 @@ export class FHIRClientService {
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        this.logger.error('Erro ao criar/atualizar paciente', error.response?.data);
+        this.logger.error(
+          'Erro ao criar/atualizar paciente',
+          error.response?.data
+        );
       }
       throw error;
     }
@@ -239,7 +244,10 @@ export class FHIRClientService {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        this.logger.error('Erro ao atualizar observação FHIR', error.response?.data);
+        this.logger.error(
+          'Erro ao atualizar observação FHIR',
+          error.response?.data
+        );
       }
       throw error;
     }
@@ -269,9 +277,10 @@ export class FHIRClientService {
    * Extrair ID de uma URL de localização FHIR
    */
   private extractIdFromLocation(location?: string): string | null {
-    if (!location) return null;
+    if (!location) {
+      return null;
+    }
     const match = location.match(/\/(Observation|Patient)\/([^/]+)/);
     return match ? match[2] : null;
   }
 }
-

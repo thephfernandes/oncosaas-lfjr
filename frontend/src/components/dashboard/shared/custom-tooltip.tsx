@@ -3,13 +3,13 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { 
-  AlertTriangle, 
-  CheckCircle2, 
-  Clock, 
-  TrendingUp, 
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  TrendingUp,
   TrendingDown,
-  Info 
+  Info,
 } from 'lucide-react';
 
 interface CustomTooltipProps {
@@ -59,21 +59,21 @@ export function CustomTooltip({
   const formatValue = (value: number | string | undefined): string => {
     if (value === undefined || value === null) return 'N/A';
     if (typeof value === 'string') return value;
-    
+
     // Formatação de números em português
     const numValue = Number(value);
     if (isNaN(numValue)) return String(value);
-    
+
     // Se for um número grande, usar separador de milhar
     if (numValue >= 1000) {
       return numValue.toLocaleString('pt-BR');
     }
-    
+
     // Se for decimal, mostrar 1-2 casas decimais
     if (numValue % 1 !== 0) {
       return numValue.toFixed(1).replace('.', ',');
     }
-    
+
     return numValue.toString();
   };
 
@@ -90,25 +90,29 @@ export function CustomTooltip({
           <p className="text-white font-semibold text-sm">{label}</p>
         </div>
       )}
-      
+
       <div className="space-y-2">
         {payload.map((entry, index) => {
           const value = entry.value;
           const name = entry.name || entry.dataKey || 'Valor';
           const color = entry.color || '#0ea5e9';
-          
+
           // Calcular percentual se necessário
-          const percent = showPercent && total 
-            ? formatPercent(Number(value) || 0, total)
-            : null;
-          
+          const percent =
+            showPercent && total
+              ? formatPercent(Number(value) || 0, total)
+              : null;
+
           // Formatação customizada se fornecida
-          const [formattedValue, formattedName] = formatter 
+          const [formattedValue, formattedName] = formatter
             ? formatter(value, name)
             : [formatValue(value), name];
 
           return (
-            <div key={index} className="flex items-center justify-between gap-3">
+            <div
+              key={index}
+              className="flex items-center justify-between gap-3"
+            >
               <div className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full"
@@ -206,11 +210,15 @@ export function BenchmarkTooltip({
     return null;
   }
 
-  const getStatus = (value: number | undefined): 'ideal' | 'acceptable' | 'critical' | 'info' => {
+  const getStatus = (
+    value: number | undefined
+  ): 'ideal' | 'acceptable' | 'critical' | 'info' => {
     if (value === undefined || idealValue === undefined) return 'info';
     if (value <= idealValue) return 'ideal';
-    if (acceptableValue !== undefined && value <= acceptableValue) return 'acceptable';
-    if (criticalValue !== undefined && value <= criticalValue) return 'critical';
+    if (acceptableValue !== undefined && value <= acceptableValue)
+      return 'acceptable';
+    if (criticalValue !== undefined && value <= criticalValue)
+      return 'critical';
     return 'critical';
   };
 
@@ -246,7 +254,12 @@ export function BenchmarkTooltip({
               <StatusIcon className={cn('w-4 h-4', statusColors[status])} />
               <span className="text-gray-300 text-sm">Valor Atual</span>
             </div>
-            <span className={cn('text-white font-semibold text-sm', statusColors[status])}>
+            <span
+              className={cn(
+                'text-white font-semibold text-sm',
+                statusColors[status]
+              )}
+            >
               {currentValue.toLocaleString('pt-BR')} dias
             </span>
           </div>
@@ -304,4 +317,3 @@ export function BenchmarkTooltip({
     </div>
   );
 }
-

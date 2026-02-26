@@ -31,4 +31,3 @@ export class CreateUserDto {
   @IsBoolean()
   mfaEnabled?: boolean;
 }
-

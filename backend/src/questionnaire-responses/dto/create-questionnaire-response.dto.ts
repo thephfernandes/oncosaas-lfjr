@@ -29,4 +29,3 @@ export class CreateQuestionnaireResponseDto {
   @IsOptional()
   appliedBy?: ProcessedBy; // AGENT ou NURSING
 }
-

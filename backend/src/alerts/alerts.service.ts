@@ -27,7 +27,8 @@ export class AlertsService {
     }
 
     // Limite padrão de 100 registros para evitar problemas de performance
-    const limit = options?.limit && options.limit > 0 ? Math.min(options.limit, 500) : 100;
+    const limit =
+      options?.limit && options.limit > 0 ? Math.min(options.limit, 500) : 100;
     const offset = options?.offset && options.offset > 0 ? options.offset : 0;
 
     return this.prisma.alert.findMany({

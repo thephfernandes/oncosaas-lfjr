@@ -27,4 +27,3 @@ export class CriticalTimelinesDto {
     metricsWithNoData: number;
   };
 }
-

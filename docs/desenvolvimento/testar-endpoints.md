@@ -7,6 +7,7 @@
 **Endpoint**: `POST http://localhost:3002/api/v1/auth/login`
 
 **Body (JSON)**:
+
 ```json
 {
   "email": "admin@hospitalteste.com",
@@ -15,6 +16,7 @@
 ```
 
 **Resposta esperada**:
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -37,6 +39,7 @@
 **Endpoint**: `POST http://localhost:3002/api/v1/auth/register`
 
 **Body (JSON)**:
+
 ```json
 {
   "email": "novo@hospitalteste.com",
@@ -56,12 +59,14 @@
 **Endpoint**: `GET http://localhost:3002/api/v1/patients`
 
 **Headers**:
+
 ```
 Authorization: Bearer {access_token}
 X-Tenant-Id: {tenant-id}
 ```
 
 **Resposta esperada**:
+
 ```json
 {
   "data": [
@@ -95,6 +100,7 @@ X-Tenant-Id: {tenant-id}
 **Headers**: Mesmos do pacientes
 
 **Query Parameters**:
+
 - `patientId` (opcional): Filtrar por paciente
 - `status` (opcional): `PENDING`, `PROCESSED`, `ERROR`
 
@@ -113,6 +119,7 @@ X-Tenant-Id: {tenant-id}
 **Headers**: Mesmos do pacientes
 
 **Query Parameters**:
+
 - `status` (opcional): `ACTIVE`, `RESOLVED`, `DISMISSED`
 - `severity` (opcional): `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`
 - `patientId` (opcional): Filtrar por paciente
@@ -122,6 +129,7 @@ X-Tenant-Id: {tenant-id}
 **Endpoint**: `POST http://localhost:3002/api/v1/alerts`
 
 **Body (JSON)**:
+
 ```json
 {
   "patientId": "patient-id",
@@ -139,11 +147,11 @@ X-Tenant-Id: {tenant-id}
 
 Após executar `npm run prisma:seed`, você terá:
 
-| Email | Senha | Role |
-|-------|-------|------|
-| `admin@hospitalteste.com` | `senha123` | ADMIN |
-| `oncologista@hospitalteste.com` | `senha123` | ONCOLOGIST |
-| `enfermeira@hospitalteste.com` | `senha123` | NURSE |
+| Email                           | Senha      | Role        |
+| ------------------------------- | ---------- | ----------- |
+| `admin@hospitalteste.com`       | `senha123` | ADMIN       |
+| `oncologista@hospitalteste.com` | `senha123` | ONCOLOGIST  |
+| `enfermeira@hospitalteste.com`  | `senha123` | NURSE       |
 | `coordenador@hospitalteste.com` | `senha123` | COORDINATOR |
 
 **⚠️ IMPORTANTE**: Todos os usuários de teste usam a mesma senha: `senha123`
@@ -155,6 +163,7 @@ Após executar `npm run prisma:seed`, você terá:
 ## 📝 Exemplo com cURL
 
 ### Login:
+
 ```bash
 curl -X POST http://localhost:3002/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -165,6 +174,7 @@ curl -X POST http://localhost:3002/api/v1/auth/login \
 ```
 
 ### Listar Pacientes:
+
 ```bash
 curl -X GET http://localhost:3002/api/v1/patients \
   -H "Authorization: Bearer {access_token}" \
@@ -185,20 +195,23 @@ curl -X GET http://localhost:3002/api/v1/patients \
 ## ⚠️ Erros Comuns
 
 ### 401 Unauthorized
+
 - Verificar se o token JWT está correto
 - Verificar se o token não expirou (24h por padrão)
 
 ### 403 Forbidden
+
 - Verificar se o `X-Tenant-Id` está correto
 - Verificar se o usuário tem permissão (role) para a ação
 
 ### 404 Not Found
+
 - Verificar se o método HTTP está correto (GET vs POST)
 - Verificar se a URL está correta (`/api/v1/...`)
 - Verificar se o servidor está rodando (`npm run start:dev`)
 
 ### 500 Internal Server Error
+
 - Verificar logs do servidor
 - Verificar se o banco de dados está rodando (`docker-compose up -d`)
 - Verificar se as migrations foram aplicadas (`npm run prisma:migrate`)
-

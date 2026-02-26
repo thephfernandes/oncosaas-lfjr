@@ -56,4 +56,3 @@ export const createTreatmentSchema = z.object({
 
 export type CreateTreatmentFormData = z.infer<typeof createTreatmentSchema>;
 export type UpdateTreatmentFormData = Partial<CreateTreatmentFormData>;
-

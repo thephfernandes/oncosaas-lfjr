@@ -41,9 +41,8 @@ export function PatientListEnhanced({
   const [cancerTypeFilter, setCancerTypeFilter] = useState<CancerTypeFilter>(
     externalFilters?.cancerType || null
   );
-  const [journeyStageFilter, setJourneyStageFilter] = useState<JourneyStageFilter>(
-    externalFilters?.journeyStage || null
-  );
+  const [journeyStageFilter, setJourneyStageFilter] =
+    useState<JourneyStageFilter>(externalFilters?.journeyStage || null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
   const [hasAlertsFilter, setHasAlertsFilter] = useState(
     externalFilters?.hasAlerts || false
@@ -60,17 +59,17 @@ export function PatientListEnhanced({
       if (externalFilters.priority) setPriorityFilter(externalFilters.priority);
       if (externalFilters.hasAlerts) setHasAlertsFilter(true);
       if (externalFilters.hasOverdueSteps) setHasOverdueStepsFilter(true);
-      if (externalFilters.cancerType) setCancerTypeFilter(externalFilters.cancerType);
-      if (externalFilters.journeyStage) setJourneyStageFilter(externalFilters.journeyStage);
+      if (externalFilters.cancerType)
+        setCancerTypeFilter(externalFilters.cancerType);
+      if (externalFilters.journeyStage)
+        setJourneyStageFilter(externalFilters.journeyStage);
     }
   }, [externalFilters]);
 
   // Obter valores únicos para filtros
   const uniqueCancerTypes = useMemo(() => {
     const types = new Set(
-      patients
-        .map((p) => p.cancerType)
-        .filter((t): t is string => !!t)
+      patients.map((p) => p.cancerType).filter((t): t is string => !!t)
     );
     return Array.from(types).sort();
   }, [patients]);
@@ -97,12 +96,18 @@ export function PatientListEnhanced({
       }
 
       // Filtro de prioridade
-      if (priorityFilter && (patient.priorityCategory || 'MEDIUM') !== priorityFilter) {
+      if (
+        priorityFilter &&
+        (patient.priorityCategory || 'MEDIUM') !== priorityFilter
+      ) {
         return false;
       }
 
       // Filtro de score mínimo (para pacientes críticos)
-      if (externalFilters?.minScore !== undefined && (patient.priorityScore || 0) < externalFilters.minScore) {
+      if (
+        externalFilters?.minScore !== undefined &&
+        (patient.priorityScore || 0) < externalFilters.minScore
+      ) {
         return false;
       }
 
@@ -301,9 +306,7 @@ export function PatientListEnhanced({
                 </label>
                 <select
                   value={cancerTypeFilter || ''}
-                  onChange={(e) =>
-                    setCancerTypeFilter(e.target.value || null)
-                  }
+                  onChange={(e) => setCancerTypeFilter(e.target.value || null)}
                   className="w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Todos</option>
@@ -375,8 +378,10 @@ export function PatientListEnhanced({
 
         {/* Contador de resultados */}
         <div className="text-sm text-gray-600">
-          Mostrando {Math.min(visibleCount, filteredPatients.length)} de {filteredPatients.length} pacientes
-          {filteredPatients.length < patients.length && ` (${patients.length} total)`}
+          Mostrando {Math.min(visibleCount, filteredPatients.length)} de{' '}
+          {filteredPatients.length} pacientes
+          {filteredPatients.length < patients.length &&
+            ` (${patients.length} total)`}
         </div>
       </div>
 
@@ -389,120 +394,124 @@ export function PatientListEnhanced({
         ) : (
           <>
             {filteredPatients.slice(0, visibleCount).map((patient) => (
-            <div
-              key={patient.id}
-              className={cn(
-                'p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden',
-                getPriorityColor(patient.priorityCategory)
-              )}
-              onClick={() => onPatientClick(patient.id)}
-            >
-              <div className="flex flex-col gap-3">
-                {/* Header com nome e informações básicas */}
-                <div className="flex items-start gap-2">
-                  <span className="text-xl flex-shrink-0">
-                    {getPriorityIcon(patient.priorityCategory)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-lg truncate">
-                      {patient.name}
-                    </h3>
-                    <span className="text-sm text-muted-foreground">
-                      {patient.cancerType || 'Não informado'} -{' '}
-                      {patient.stage || 'N/A'}
+              <div
+                key={patient.id}
+                className={cn(
+                  'p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden',
+                  getPriorityColor(patient.priorityCategory)
+                )}
+                onClick={() => onPatientClick(patient.id)}
+              >
+                <div className="flex flex-col gap-3">
+                  {/* Header com nome e informações básicas */}
+                  <div className="flex items-start gap-2">
+                    <span className="text-xl flex-shrink-0">
+                      {getPriorityIcon(patient.priorityCategory)}
                     </span>
-                  </div>
-                </div>
-
-                {/* Informações expandidas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      Última consulta:{' '}
-                      {patient.journey?.lastFollowUpDate
-                        ? formatDistanceToNow(
-                            new Date(patient.journey.lastFollowUpDate),
-                            { addSuffix: true, locale: ptBR }
-                          )
-                        : 'N/A'}
-                    </span>
-                  </div>
-                  {patient.journey?.nextFollowUpDate && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-blue-600" />
-                      <span>
-                        Próxima consulta:{' '}
-                        {formatDistanceToNow(
-                          new Date(patient.journey.nextFollowUpDate),
-                          { addSuffix: true, locale: ptBR }
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-lg truncate">
+                        {patient.name}
+                      </h3>
+                      <span className="text-sm text-muted-foreground">
+                        {patient.cancerType || 'Não informado'} -{' '}
+                        {patient.stage || 'N/A'}
                       </span>
                     </div>
-                  )}
-                  {patient.journey?.currentCycle &&
-                    patient.journey?.totalCycles && (
+                  </div>
+
+                  {/* Informações expandidas */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        Última consulta:{' '}
+                        {patient.journey?.lastFollowUpDate
+                          ? formatDistanceToNow(
+                              new Date(patient.journey.lastFollowUpDate),
+                              { addSuffix: true, locale: ptBR }
+                            )
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    {patient.journey?.nextFollowUpDate && (
                       <div className="flex items-center gap-2">
-                        <Pill className="h-4 w-4" />
+                        <Calendar className="h-4 w-4 text-blue-600" />
                         <span>
-                          Ciclo {patient.journey.currentCycle}/
-                          {patient.journey.totalCycles}
+                          Próxima consulta:{' '}
+                          {formatDistanceToNow(
+                            new Date(patient.journey.nextFollowUpDate),
+                            { addSuffix: true, locale: ptBR }
+                          )}
                         </span>
                       </div>
                     )}
-                  {patient.priorityReason && (
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 mt-0.5" />
-                      <span className="text-xs">
-                        {patient.priorityReason}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Informações de score e alertas */}
-                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground pt-2 border-t border-gray-200">
-                  <div className="flex items-center gap-1">
-                    <span>
-                      Score: {patient.priorityScore}/100 (
-                      {patient.priorityCategory?.toUpperCase() || 'N/A'})
-                    </span>
-                    <ScoreBreakdownTooltip patient={patient} />
-                  </div>
-                  {patient.lastInteraction && (
-                    <span className="hidden sm:inline">
-                      Última interação:{' '}
-                      {formatDistanceToNow(
-                        new Date(patient.lastInteraction),
-                        { addSuffix: true, locale: ptBR }
+                    {patient.journey?.currentCycle &&
+                      patient.journey?.totalCycles && (
+                        <div className="flex items-center gap-2">
+                          <Pill className="h-4 w-4" />
+                          <span>
+                            Ciclo {patient.journey.currentCycle}/
+                            {patient.journey.totalCycles}
+                          </span>
+                        </div>
                       )}
-                    </span>
-                  )}
-                  {(patient._count?.alerts || 0) > 0 && (
-                    <span className="text-red-600 font-semibold">
-                      {patient._count?.alerts} alerta(s)
-                    </span>
-                  )}
+                    {patient.priorityReason && (
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 mt-0.5" />
+                        <span className="text-xs">
+                          {patient.priorityReason}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Informações de score e alertas */}
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground pt-2 border-t border-gray-200">
+                    <div className="flex items-center gap-1">
+                      <span>
+                        Score: {patient.priorityScore}/100 (
+                        {patient.priorityCategory?.toUpperCase() || 'N/A'})
+                      </span>
+                      <ScoreBreakdownTooltip patient={patient} />
+                    </div>
+                    {patient.lastInteraction && (
+                      <span className="hidden sm:inline">
+                        Última interação:{' '}
+                        {formatDistanceToNow(
+                          new Date(patient.lastInteraction),
+                          { addSuffix: true, locale: ptBR }
+                        )}
+                      </span>
+                    )}
+                    {(patient._count?.alerts || 0) > 0 && (
+                      <span className="text-red-600 font-semibold">
+                        {patient._count?.alerts} alerta(s)
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          
-          {/* Botão "Carregar Mais" */}
-          {filteredPatients.length > visibleCount && (
-            <div className="flex justify-center pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setVisibleCount(prev => Math.min(prev + 20, filteredPatients.length))}
-              >
-                Carregar mais ({filteredPatients.length - visibleCount} restantes)
-              </Button>
-            </div>
-          )}
+            ))}
+
+            {/* Botão "Carregar Mais" */}
+            {filteredPatients.length > visibleCount && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setVisibleCount((prev) =>
+                      Math.min(prev + 20, filteredPatients.length)
+                    )
+                  }
+                >
+                  Carregar mais ({filteredPatients.length - visibleCount}{' '}
+                  restantes)
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>
     </div>
   );
 }
-

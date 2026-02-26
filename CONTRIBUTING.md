@@ -72,5 +72,3 @@ cd backend && npm test
 # AI Service
 cd ai-service && pytest
 ```
-
-

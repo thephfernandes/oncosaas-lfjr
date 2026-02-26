@@ -11,13 +11,15 @@ export const usePatientImport = () => {
     onSuccess: (data) => {
       // Invalidar cache de pacientes para refetch
       queryClient.invalidateQueries({ queryKey: ['patients'] });
-      
+
       if (data.success > 0) {
         toast.success(`${data.success} pacientes importados com sucesso!`);
       }
-      
+
       if (data.errors.length > 0) {
-        toast.warning(`${data.errors.length} linhas com erros. Verifique os detalhes.`);
+        toast.warning(
+          `${data.errors.length} linhas com erros. Verifique os detalhes.`
+        );
       }
     },
     onError: (error) => {
@@ -25,4 +27,3 @@ export const usePatientImport = () => {
     },
   });
 };
-

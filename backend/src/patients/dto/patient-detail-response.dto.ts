@@ -1,4 +1,9 @@
-import { Patient, JourneyStage, PriorityCategory, PatientStatus } from '@prisma/client';
+import {
+  Patient,
+  JourneyStage,
+  PriorityCategory,
+  PatientStatus,
+} from '@prisma/client';
 
 export interface PatientDetailResponse {
   id: string;
@@ -92,4 +97,3 @@ export interface PatientDetailResponse {
     observations: number;
   };
 }
-

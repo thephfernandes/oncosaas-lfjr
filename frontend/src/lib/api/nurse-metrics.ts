@@ -20,4 +20,3 @@ export const nurseMetricsApi = {
     return response;
   },
 };
-

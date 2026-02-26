@@ -49,4 +49,3 @@ export default function PatientDetailRoute({ params }: PatientDetailPageProps) {
     </div>
   );
 }
-

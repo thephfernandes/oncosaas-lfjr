@@ -5,7 +5,10 @@ import { usePatientUpdate } from '@/hooks/use-patient-update';
 import { patientsApi } from '@/lib/api/patients';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createPatientSchema, CreatePatientFormData } from '@/lib/validations/patient';
+import {
+  createPatientSchema,
+  CreatePatientFormData,
+} from '@/lib/validations/patient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -91,14 +94,14 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
   // Função para formatar telefone para exibição (converte 55XXXXXXXXXXX para formato brasileiro)
   const formatPhoneForDisplay = (phone: string | null | undefined): string => {
     if (!phone) return '';
-    
+
     // Remover caracteres não numéricos
     const digits = phone.replace(/\D/g, '');
-    
+
     // Se começa com 55 (código do país), remover
     if (digits.startsWith('55') && digits.length >= 12) {
       const withoutCountryCode = digits.substring(2);
-      
+
       // Formatar como (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
       if (withoutCountryCode.length === 11) {
         // Celular: (XX) XXXXX-XXXX
@@ -107,10 +110,10 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
         // Fixo: (XX) XXXX-XXXX
         return `(${withoutCountryCode.substring(0, 2)}) ${withoutCountryCode.substring(2, 6)}-${withoutCountryCode.substring(6)}`;
       }
-      
+
       return withoutCountryCode;
     }
-    
+
     // Se já está formatado ou em outro formato, retornar como está
     return phone;
   };
@@ -119,33 +122,41 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
   useEffect(() => {
     if (patient && !isLoading) {
       // Obter cancerType do primeiro diagnóstico ativo ou do campo legacy
-      const primaryDiagnosis = patient.cancerDiagnoses?.find(d => d.isPrimary && d.isActive) 
-        || patient.cancerDiagnoses?.[0];
-      const cancerType = primaryDiagnosis?.cancerType 
-        || (patient.cancerType && patient.cancerType.trim() !== '' ? patient.cancerType : null)
-        || null;
-      
+      const primaryDiagnosis =
+        patient.cancerDiagnoses?.find((d) => d.isPrimary && d.isActive) ||
+        patient.cancerDiagnoses?.[0];
+      const cancerType =
+        primaryDiagnosis?.cancerType ||
+        (patient.cancerType && patient.cancerType.trim() !== ''
+          ? patient.cancerType
+          : null) ||
+        null;
+
       // Obter stage do primeiro diagnóstico ativo ou do campo legacy
-      const stage = primaryDiagnosis?.stage 
-        || (patient.stage && patient.stage.trim() !== '' ? patient.stage : null)
-        || null;
-      
+      const stage =
+        primaryDiagnosis?.stage ||
+        (patient.stage && patient.stage.trim() !== '' ? patient.stage : null) ||
+        null;
+
       // Obter campos TNM estruturados do primeiro diagnóstico ativo
       const tStage = primaryDiagnosis?.tStage || null;
       const nStage = primaryDiagnosis?.nStage || null;
       const mStage = primaryDiagnosis?.mStage || null;
       const grade = primaryDiagnosis?.grade || null;
-      
+
       // Obter diagnosisDate do primeiro diagnóstico ativo ou do campo legacy
-      const diagnosisDate = primaryDiagnosis?.diagnosisDate 
+      const diagnosisDate = primaryDiagnosis?.diagnosisDate
         ? format(new Date(primaryDiagnosis.diagnosisDate), 'yyyy-MM-dd')
         : patient.diagnosisDate
-        ? format(new Date(patient.diagnosisDate), 'yyyy-MM-dd')
-        : null;
+          ? format(new Date(patient.diagnosisDate), 'yyyy-MM-dd')
+          : null;
 
       // Converter performanceStatus para número se vier como string
       let performanceStatusValue: number | undefined = undefined;
-      if (patient.performanceStatus !== null && patient.performanceStatus !== undefined) {
+      if (
+        patient.performanceStatus !== null &&
+        patient.performanceStatus !== undefined
+      ) {
         if (typeof patient.performanceStatus === 'string') {
           const parsed = parseInt(patient.performanceStatus, 10);
           performanceStatusValue = isNaN(parsed) ? undefined : parsed;
@@ -157,11 +168,14 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
       const formData: Partial<CreatePatientFormData> = {
         name: patient.name || '',
         cpf: patient.cpf || '',
-        birthDate: patient.birthDate ? format(new Date(patient.birthDate), 'yyyy-MM-dd') : '',
+        birthDate: patient.birthDate
+          ? format(new Date(patient.birthDate), 'yyyy-MM-dd')
+          : '',
         // Garantir que gender seja uma string válida ou undefined (não null)
-        gender: patient.gender && ['male', 'female', 'other'].includes(patient.gender)
-          ? (patient.gender as 'male' | 'female' | 'other')
-          : undefined,
+        gender:
+          patient.gender && ['male', 'female', 'other'].includes(patient.gender)
+            ? (patient.gender as 'male' | 'female' | 'other')
+            : undefined,
         phone: formatPhoneForDisplay(patient.phone),
         email: patient.email || '',
         // Manter valores como strings quando existirem
@@ -174,38 +188,51 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
         grade: grade || undefined,
         diagnosisDate: diagnosisDate || undefined,
         // currentStage deve ser uma string válida do enum JourneyStage
-        currentStage: patient.currentStage && typeof patient.currentStage === 'string' && patient.currentStage.trim() !== ''
-          ? patient.currentStage
-          : undefined,
+        currentStage:
+          patient.currentStage &&
+          typeof patient.currentStage === 'string' &&
+          patient.currentStage.trim() !== ''
+            ? patient.currentStage
+            : undefined,
         // performanceStatus deve ser um número (não string) para o schema Zod
         performanceStatus: performanceStatusValue,
         smokingHistory: patient.smokingHistory || '',
         alcoholHistory: patient.alcoholHistory || '',
         occupationalExposure: patient.occupationalExposure || '',
-        comorbidities: Array.isArray(patient.comorbidities) ? patient.comorbidities : [],
-        familyHistory: Array.isArray(patient.familyHistory) ? patient.familyHistory : [],
+        comorbidities: Array.isArray(patient.comorbidities)
+          ? patient.comorbidities
+          : [],
+        familyHistory: Array.isArray(patient.familyHistory)
+          ? patient.familyHistory
+          : [],
         ehrPatientId: patient.ehrPatientId || undefined,
       };
-      
+
       // Usar reset com keepDefaultValues: false para garantir que todos os valores sejam aplicados
       reset(formData, {
         keepDefaultValues: false,
         keepValues: false,
       });
-      
+
       // Garantir que os valores sejam aplicados explicitamente nos campos Select
       // Isso é necessário porque alguns componentes Select podem não sincronizar corretamente com reset
       if (formData.cancerType) {
         setValue('cancerType', formData.cancerType, { shouldValidate: false });
       }
       if (formData.currentStage) {
-        setValue('currentStage', formData.currentStage, { shouldValidate: false });
+        setValue('currentStage', formData.currentStage, {
+          shouldValidate: false,
+        });
       }
       if (formData.performanceStatus !== undefined) {
-        setValue('performanceStatus', formData.performanceStatus, { shouldValidate: false });
+        setValue('performanceStatus', formData.performanceStatus, {
+          shouldValidate: false,
+        });
       }
       if (formData.diagnosisDate) {
-        setValue('diagnosisDate', formData.diagnosisDate, { shouldValidate: false });
+        setValue('diagnosisDate', formData.diagnosisDate, {
+          shouldValidate: false,
+        });
       }
       // Campos TNM
       if (formData.tStage) {
@@ -220,7 +247,6 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
       if (formData.grade) {
         setValue('grade', formData.grade, { shouldValidate: false });
       }
-      
     }
   }, [patient, isLoading, reset, setValue]);
 
@@ -231,7 +257,12 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
   const grade = watch('grade');
 
   useEffect(() => {
-    const calculatedStage = calculateStageFromTNM(tStage, nStage, mStage, grade);
+    const calculatedStage = calculateStageFromTNM(
+      tStage,
+      nStage,
+      mStage,
+      grade
+    );
     if (calculatedStage !== null) {
       setValue('stage', calculatedStage, { shouldValidate: false });
     } else {
@@ -246,29 +277,29 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
     // O backend normaliza depois para 55XXXXXXXXXXX
     const normalizePhone = (phone: string): string => {
       // Remover caracteres não numéricos exceto + e espaços/parenteses/hífens
-      let cleaned = phone.trim();
-      
+      const cleaned = phone.trim();
+
       // Se já está no formato E.164 (+55...), manter
       if (cleaned.startsWith('+55')) {
         return cleaned;
       }
-      
+
       // Se já começa com 55, adicionar +
       if (cleaned.replace(/\D/g, '').startsWith('55')) {
         return '+' + cleaned.replace(/\D/g, '');
       }
-      
+
       // Para outros formatos brasileiros, converter para E.164
       const digits = cleaned.replace(/\D/g, '');
-      
+
       // Se começa com 0, remover
       const withoutZero = digits.startsWith('0') ? digits.substring(1) : digits;
-      
+
       // Validar tamanho (DDD (2) + número (8-9) = 10-11 dígitos)
       if (withoutZero.length < 10 || withoutZero.length > 11) {
         throw new Error('Telefone inválido. Use o formato (XX) XXXXX-XXXX');
       }
-      
+
       // Adicionar código do país e retornar no formato E.164
       return '+55' + withoutZero;
     };
@@ -282,16 +313,25 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
     if (data.gender !== undefined) updateData.gender = data.gender;
     if (data.phone) updateData.phone = normalizePhone(data.phone);
     if (data.email !== undefined) updateData.email = data.email || undefined;
-    if (data.cancerType !== undefined) updateData.cancerType = data.cancerType || undefined;
+    if (data.cancerType !== undefined)
+      updateData.cancerType = data.cancerType || undefined;
     // Permitir valores vazios para stage (converter string vazia para undefined)
     if (data.stage !== undefined) {
-      updateData.stage = data.stage && data.stage.trim().length > 0 ? data.stage.trim() : undefined;
+      updateData.stage =
+        data.stage && data.stage.trim().length > 0
+          ? data.stage.trim()
+          : undefined;
     }
-    if (data.diagnosisDate !== undefined) updateData.diagnosisDate = data.diagnosisDate || undefined;
-    if (data.smokingHistory !== undefined) updateData.smokingHistory = data.smokingHistory || undefined;
-    if (data.alcoholHistory !== undefined) updateData.alcoholHistory = data.alcoholHistory || undefined;
-    if (data.occupationalExposure !== undefined) updateData.occupationalExposure = data.occupationalExposure || undefined;
-    if (data.ehrPatientId !== undefined) updateData.ehrId = data.ehrPatientId || undefined;
+    if (data.diagnosisDate !== undefined)
+      updateData.diagnosisDate = data.diagnosisDate || undefined;
+    if (data.smokingHistory !== undefined)
+      updateData.smokingHistory = data.smokingHistory || undefined;
+    if (data.alcoholHistory !== undefined)
+      updateData.alcoholHistory = data.alcoholHistory || undefined;
+    if (data.occupationalExposure !== undefined)
+      updateData.occupationalExposure = data.occupationalExposure || undefined;
+    if (data.ehrPatientId !== undefined)
+      updateData.ehrId = data.ehrPatientId || undefined;
 
     // Comorbidades - apenas se houver itens válidos e completos
     if (data.comorbidities !== undefined) {
@@ -355,32 +395,45 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
 
     try {
       // Atualizar paciente
-      await updateMutation.mutateAsync(
-        { id: patientId, data: updateData },
-      );
+      await updateMutation.mutateAsync({ id: patientId, data: updateData });
 
       // Se houver campos TNM ou outros campos de diagnóstico, atualizar o diagnóstico primário
-      const primaryDiagnosis = patient?.cancerDiagnoses?.find(d => d.isPrimary && d.isActive) 
-        || patient?.cancerDiagnoses?.[0];
-      
-      if (primaryDiagnosis && (data.tStage !== undefined || data.nStage !== undefined || 
-          data.mStage !== undefined || data.grade !== undefined || 
-          data.cancerType !== undefined || data.diagnosisDate !== undefined)) {
-        
+      const primaryDiagnosis =
+        patient?.cancerDiagnoses?.find((d) => d.isPrimary && d.isActive) ||
+        patient?.cancerDiagnoses?.[0];
+
+      if (
+        primaryDiagnosis &&
+        (data.tStage !== undefined ||
+          data.nStage !== undefined ||
+          data.mStage !== undefined ||
+          data.grade !== undefined ||
+          data.cancerType !== undefined ||
+          data.diagnosisDate !== undefined)
+      ) {
         const diagnosisUpdateData: any = {};
-        
-        if (data.tStage !== undefined) diagnosisUpdateData.tStage = data.tStage || undefined;
-        if (data.nStage !== undefined) diagnosisUpdateData.nStage = data.nStage || undefined;
-        if (data.mStage !== undefined) diagnosisUpdateData.mStage = data.mStage || undefined;
-        if (data.grade !== undefined) diagnosisUpdateData.grade = data.grade || undefined;
-        if (data.cancerType !== undefined) diagnosisUpdateData.cancerType = data.cancerType || undefined;
+
+        if (data.tStage !== undefined)
+          diagnosisUpdateData.tStage = data.tStage || undefined;
+        if (data.nStage !== undefined)
+          diagnosisUpdateData.nStage = data.nStage || undefined;
+        if (data.mStage !== undefined)
+          diagnosisUpdateData.mStage = data.mStage || undefined;
+        if (data.grade !== undefined)
+          diagnosisUpdateData.grade = data.grade || undefined;
+        if (data.cancerType !== undefined)
+          diagnosisUpdateData.cancerType = data.cancerType || undefined;
         if (data.diagnosisDate !== undefined) {
           diagnosisUpdateData.diagnosisDate = data.diagnosisDate || undefined;
         }
 
         // Atualizar diagnóstico se houver campos para atualizar
         if (Object.keys(diagnosisUpdateData).length > 0) {
-          await patientsApi.updateCancerDiagnosis(patientId, primaryDiagnosis.id, diagnosisUpdateData);
+          await patientsApi.updateCancerDiagnosis(
+            patientId,
+            primaryDiagnosis.id,
+            diagnosisUpdateData
+          );
         }
       }
 
@@ -405,7 +458,8 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
     return (
       <div className="p-6">
         <div className="text-destructive">
-          Erro ao carregar paciente: {error?.message || 'Paciente não encontrado'}
+          Erro ao carregar paciente:{' '}
+          {error?.message || 'Paciente não encontrado'}
         </div>
         <Button
           variant="outline"
@@ -435,9 +489,7 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Editar Paciente</h1>
-            <p className="text-muted-foreground mt-1">
-              {patient.name}
-            </p>
+            <p className="text-muted-foreground mt-1">{patient.name}</p>
           </div>
         </div>
       </div>
@@ -483,10 +535,7 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                 <label className="text-sm font-medium mb-2 block">
                   Data de Nascimento *
                 </label>
-                <Input
-                  type="date"
-                  {...register('birthDate')}
-                />
+                <Input type="date" {...register('birthDate')} />
                 {errors.birthDate && (
                   <p className="text-sm text-destructive mt-1">
                     {errors.birthDate.message}
@@ -495,16 +544,16 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Sexo *
-                </label>
+                <label className="text-sm font-medium mb-2 block">Sexo *</label>
                 <Select
                   value={watch('gender') || ''}
                   onValueChange={(value) => {
                     if (value === '') {
                       setValue('gender', undefined, { shouldValidate: true });
                     } else {
-                      setValue('gender', value as 'male' | 'female' | 'other', { shouldValidate: true });
+                      setValue('gender', value as 'male' | 'female' | 'other', {
+                        shouldValidate: true,
+                      });
                     }
                   }}
                 >
@@ -528,10 +577,7 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                 <label className="text-sm font-medium mb-2 block">
                   Telefone *
                 </label>
-                <Input
-                  {...register('phone')}
-                  placeholder="(00) 00000-0000"
-                />
+                <Input {...register('phone')} placeholder="(00) 00000-0000" />
                 {errors.phone && (
                   <p className="text-sm text-destructive mt-1">
                     {errors.phone.message}
@@ -570,7 +616,9 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                   value={watch('currentStage') || ''}
                   onValueChange={(value) => {
                     if (value === '') {
-                      setValue('currentStage', undefined, { shouldValidate: true });
+                      setValue('currentStage', undefined, {
+                        shouldValidate: true,
+                      });
                     } else {
                       setValue('currentStage', value, { shouldValidate: true });
                     }
@@ -602,7 +650,9 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                   value={watch('cancerType') || ''}
                   onValueChange={(value) => {
                     if (value === '') {
-                      setValue('cancerType', undefined, { shouldValidate: true });
+                      setValue('cancerType', undefined, {
+                        shouldValidate: true,
+                      });
                     } else {
                       setValue('cancerType', value, { shouldValidate: true });
                     }
@@ -630,7 +680,9 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">Estágio (calculado automaticamente)</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Estágio (calculado automaticamente)
+                </label>
                 <Input
                   {...register('stage')}
                   placeholder="Preencha os campos TNM abaixo"
@@ -649,7 +701,9 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
 
             {/* Campos TNM Estruturados */}
             <div className="mt-3">
-              <label className="text-sm font-medium mb-2 block">Estadiamento TNM Estruturado</label>
+              <label className="text-sm font-medium mb-2 block">
+                Estadiamento TNM Estruturado
+              </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div>
                   <label className="text-sm font-medium mb-1 block">T</label>
@@ -659,7 +713,11 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                       if (value === '') {
                         setValue('tStage', undefined, { shouldValidate: true });
                       } else {
-                        setValue('tStage', value as typeof T_STAGE_VALUES[number], { shouldValidate: true });
+                        setValue(
+                          'tStage',
+                          value as (typeof T_STAGE_VALUES)[number],
+                          { shouldValidate: true }
+                        );
                       }
                     }}
                   >
@@ -689,7 +747,11 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                       if (value === '') {
                         setValue('nStage', undefined, { shouldValidate: true });
                       } else {
-                        setValue('nStage', value as typeof N_STAGE_VALUES[number], { shouldValidate: true });
+                        setValue(
+                          'nStage',
+                          value as (typeof N_STAGE_VALUES)[number],
+                          { shouldValidate: true }
+                        );
                       }
                     }}
                   >
@@ -719,7 +781,11 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                       if (value === '') {
                         setValue('mStage', undefined, { shouldValidate: true });
                       } else {
-                        setValue('mStage', value as typeof M_STAGE_VALUES[number], { shouldValidate: true });
+                        setValue(
+                          'mStage',
+                          value as (typeof M_STAGE_VALUES)[number],
+                          { shouldValidate: true }
+                        );
                       }
                     }}
                   >
@@ -749,7 +815,11 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                       if (value === '') {
                         setValue('grade', undefined, { shouldValidate: true });
                       } else {
-                        setValue('grade', value as typeof GRADE_VALUES[number], { shouldValidate: true });
+                        setValue(
+                          'grade',
+                          value as (typeof GRADE_VALUES)[number],
+                          { shouldValidate: true }
+                        );
                       }
                     }}
                   >
@@ -772,7 +842,8 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                O campo "Estágio" acima será calculado automaticamente a partir dos campos TNM preenchidos.
+                O campo "Estágio" acima será calculado automaticamente a partir
+                dos campos TNM preenchidos.
               </p>
 
               <div>
@@ -780,10 +851,7 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                   Data de Diagnóstico
                   {currentStage !== 'SCREENING' && ' *'}
                 </label>
-                <Input
-                  type="date"
-                  {...register('diagnosisDate')}
-                />
+                <Input type="date" {...register('diagnosisDate')} />
                 {errors.diagnosisDate && (
                   <p className="text-sm text-destructive mt-1">
                     {errors.diagnosisDate.message}
@@ -797,18 +865,22 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                 </label>
                 <Select
                   value={
-                    watch('performanceStatus') !== null && 
-                    watch('performanceStatus') !== undefined 
-                      ? String(watch('performanceStatus')) 
+                    watch('performanceStatus') !== null &&
+                    watch('performanceStatus') !== undefined
+                      ? String(watch('performanceStatus'))
                       : ''
                   }
                   onValueChange={(value) => {
                     if (value === '' || value === undefined) {
-                      setValue('performanceStatus', undefined, { shouldValidate: true });
+                      setValue('performanceStatus', undefined, {
+                        shouldValidate: true,
+                      });
                     } else {
                       const numValue = parseInt(value, 10);
                       if (!isNaN(numValue)) {
-                        setValue('performanceStatus', numValue, { shouldValidate: true });
+                        setValue('performanceStatus', numValue, {
+                          shouldValidate: true,
+                        });
                       }
                     }
                   }}
@@ -887,7 +959,9 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
             <div>
               <ComorbiditiesForm
                 value={watch('comorbidities') as any}
-                onChange={(comorbidities) => setValue('comorbidities', comorbidities as any)}
+                onChange={(comorbidities) =>
+                  setValue('comorbidities', comorbidities as any)
+                }
               />
               {errors.comorbidities && (
                 <p className="text-sm text-destructive mt-1">
@@ -899,7 +973,9 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
             <div>
               <FamilyHistoryForm
                 value={watch('familyHistory') as any}
-                onChange={(familyHistory) => setValue('familyHistory', familyHistory as any)}
+                onChange={(familyHistory) =>
+                  setValue('familyHistory', familyHistory as any)
+                }
               />
               {errors.familyHistory && (
                 <p className="text-sm text-destructive mt-1">
@@ -940,10 +1016,7 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
           >
             Cancelar
           </Button>
-          <Button
-            type="submit"
-            disabled={updateMutation.isPending}
-          >
+          <Button type="submit" disabled={updateMutation.isPending}>
             <Save className="h-4 w-4 mr-2" />
             {updateMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
           </Button>
@@ -952,4 +1025,3 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
     </div>
   );
 }
-

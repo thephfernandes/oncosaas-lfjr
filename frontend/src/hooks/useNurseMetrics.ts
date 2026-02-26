@@ -9,4 +9,3 @@ export const useNurseMetrics = () => {
     refetchOnWindowFocus: true,
   });
 };
-

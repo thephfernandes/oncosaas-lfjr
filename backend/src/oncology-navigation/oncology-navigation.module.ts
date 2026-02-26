@@ -12,4 +12,3 @@ import { AlertsModule } from '../alerts/alerts.module';
   exports: [OncologyNavigationService],
 })
 export class OncologyNavigationModule {}
-

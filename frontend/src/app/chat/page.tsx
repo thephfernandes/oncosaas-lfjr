@@ -4,7 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { useDebounce } from '@/lib/utils/use-debounce';
-import { saveFiltersToStorage, loadFiltersFromStorage, clearFiltersFromStorage, PatientFilters } from '@/lib/utils/filter-storage';
+import {
+  saveFiltersToStorage,
+  loadFiltersFromStorage,
+  clearFiltersFromStorage,
+  PatientFilters,
+} from '@/lib/utils/filter-storage';
 import { PatientListConnected } from '@/components/dashboard/patient-list-connected';
 import { AlertsPanel } from '@/components/dashboard/alerts-panel';
 import { ConversationView } from '@/components/dashboard/conversation-view';
@@ -181,7 +186,10 @@ export default function ChatPage() {
       });
     } catch (error) {
       toast.error('Erro ao enviar mensagem', {
-        description: error instanceof Error ? error.message : 'Tente novamente em alguns instantes.',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Tente novamente em alguns instantes.',
       });
     }
   };
@@ -205,7 +213,10 @@ export default function ChatPage() {
         toast.success('Conversa assumida com sucesso');
       } catch (error) {
         toast.error('Erro ao assumir conversa', {
-          description: error instanceof Error ? error.message : 'Tente novamente em alguns instantes.',
+          description:
+            error instanceof Error
+              ? error.message
+              : 'Tente novamente em alguns instantes.',
         });
       }
     } else {
@@ -378,18 +389,18 @@ export default function ChatPage() {
 
               {/* Conteúdo da aba ativa */}
               <div className="flex-1 overflow-y-auto p-4 min-h-0">
-                      {activeTab === 'patients' ? (
-                        <PatientListConnected
-                          onPatientSelect={setSelectedPatient}
-                          filters={{
-                            searchTerm: debouncedSearchTerm,
-                            priorityCategory: priorityFilter || undefined,
-                            cancerType: cancerTypeFilter || undefined,
-                          }}
-                          selectedPatientId={selectedPatient}
-                          onClearFilters={handleClearFilters}
-                        />
-                      ) : (
+                {activeTab === 'patients' ? (
+                  <PatientListConnected
+                    onPatientSelect={setSelectedPatient}
+                    filters={{
+                      searchTerm: debouncedSearchTerm,
+                      priorityCategory: priorityFilter || undefined,
+                      cancerType: cancerTypeFilter || undefined,
+                    }}
+                    selectedPatientId={selectedPatient}
+                    onClearFilters={handleClearFilters}
+                  />
+                ) : (
                   <AlertsPanel
                     onAlertSelect={(alert) => {
                       // Selecionar o alerta para mostrar detalhes
@@ -487,7 +498,9 @@ export default function ChatPage() {
                     }}
                     onSendMessage={handleSendMessage}
                     onTakeOver={handleTakeOver}
-                    isNursingActive={isNursingActive || isConversationAssumedByCurrentUser}
+                    isNursingActive={
+                      isNursingActive || isConversationAssumedByCurrentUser
+                    }
                     isSending={sendMessageMutation.isPending}
                     assumedBy={assumedByName}
                     assumedAt={

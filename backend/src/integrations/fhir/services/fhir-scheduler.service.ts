@@ -113,4 +113,3 @@ export class FHIRSchedulerService {
     this.logger.log('Pull periódico concluído');
   }
 }
-

@@ -288,6 +288,7 @@ SCHEDULER EXECUTA (6h DA MANHÃ)
 ```
 
 **Transições permitidas**:
+
 - `PENDING` → `ACKNOWLEDGED` (reconhecer)
 - `PENDING` → `RESOLVED` (resolver direto)
 - `PENDING` → `DISMISSED` (descartar)
@@ -326,6 +327,7 @@ SCHEDULER EXECUTA (6h DA MANHÃ)
 ```
 
 **Isolamento Multi-Tenant**:
+
 - Cada tenant tem sua própria room
 - Eventos são emitidos apenas para o tenant correto
 - Clientes só recebem alertas do seu tenant
@@ -389,6 +391,7 @@ SCHEDULER EXECUTA (6h DA MANHÃ)
 ```
 
 **Resumo de Permissões**:
+
 - **Ver alertas**: ADMIN, ONCOLOGIST, NURSE, COORDINATOR
 - **Criar alertas**: ADMIN, COORDINATOR (sistema/AI)
 - **Reconhecer/Resolver**: ADMIN, ONCOLOGIST, NURSE, COORDINATOR
@@ -396,4 +399,3 @@ SCHEDULER EXECUTA (6h DA MANHÃ)
 ---
 
 📖 **Documentação completa**: [como-funcionam-alertas.md](./como-funcionam-alertas.md)
-
