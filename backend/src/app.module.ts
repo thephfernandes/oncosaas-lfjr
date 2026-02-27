@@ -18,6 +18,9 @@ import { UsersModule } from './users/users.module';
 import { InternalNotesModule } from './internal-notes/internal-notes.module';
 import { InterventionsModule } from './interventions/interventions.module';
 import { TreatmentsModule } from './treatments/treatments.module';
+import { ChannelGatewayModule } from './channel-gateway/channel-gateway.module';
+import { AgentModule } from './agent/agent.module';
+import { ClinicalProtocolsModule } from './clinical-protocols/clinical-protocols.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { ThrottleGuard } from './common/guards/throttle.guard';
 
@@ -43,6 +46,9 @@ import { ThrottleGuard } from './common/guards/throttle.guard';
     InternalNotesModule,
     InterventionsModule,
     TreatmentsModule,
+    ChannelGatewayModule,
+    AgentModule,
+    ClinicalProtocolsModule,
   ],
   controllers: [AppController],
   providers: [

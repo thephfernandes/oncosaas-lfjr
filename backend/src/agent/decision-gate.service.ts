@@ -1,0 +1,150 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { AgentDecision } from './interfaces/agent-decision.interface';
+
+/**
+ * Actions the agent can take autonomously
+ */
+const AUTO_APPROVED_ACTIONS = new Set([
+  'RESPOND_TO_QUESTION',
+  'APPLY_QUESTIONNAIRE',
+  'SCHEDULE_CHECK_IN',
+  'SEND_REMINDER',
+  'RECORD_SYMPTOM',
+  'CREATE_LOW_ALERT',
+  'UPDATE_NAVIGATION_STEP',
+]);
+
+/**
+ * Actions requiring human approval
+ */
+const NEEDS_APPROVAL_ACTIONS = new Set([
+  'CRITICAL_ESCALATION',
+  'CHANGE_TREATMENT_STATUS',
+  'CREATE_HIGH_CRITICAL_ALERT',
+  'RECOMMEND_APPOINTMENT',
+  'HANDOFF_TO_SPECIALIST',
+]);
+
+@Injectable()
+export class DecisionGateService {
+  private readonly logger = new Logger(DecisionGateService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Evaluate a list of agent decisions and separate them into
+   * auto-approved and needs-approval buckets
+   */
+  evaluate(decisions: AgentDecision[]): {
+    autoApproved: AgentDecision[];
+    needsApproval: AgentDecision[];
+  } {
+    const autoApproved: AgentDecision[] = [];
+    const needsApproval: AgentDecision[] = [];
+
+    for (const decision of decisions) {
+      const actionType = decision.outputAction?.type || '';
+
+      if (decision.requiresApproval || NEEDS_APPROVAL_ACTIONS.has(actionType)) {
+        decision.requiresApproval = true;
+        needsApproval.push(decision);
+      } else if (AUTO_APPROVED_ACTIONS.has(actionType)) {
+        decision.requiresApproval = false;
+        autoApproved.push(decision);
+      } else {
+        // Unknown action type → require approval by default
+        this.logger.warn(
+          `Unknown action type: ${actionType}, requiring approval`
+        );
+        decision.requiresApproval = true;
+        needsApproval.push(decision);
+      }
+    }
+
+    return { autoApproved, needsApproval };
+  }
+
+  /**
+   * Log a decision to the audit trail
+   */
+  async logDecision(
+    tenantId: string,
+    conversationId: string,
+    patientId: string,
+    decision: AgentDecision
+  ) {
+    return this.prisma.agentDecisionLog.create({
+      data: {
+        tenantId,
+        conversationId,
+        patientId,
+        decisionType: decision.decisionType,
+        reasoning: decision.reasoning,
+        confidence: decision.confidence,
+        inputData: decision.inputData,
+        outputAction: decision.outputAction,
+        requiresApproval: decision.requiresApproval,
+      },
+    });
+  }
+
+  /**
+   * Approve a pending decision
+   */
+  async approveDecision(decisionId: string, tenantId: string, userId: string) {
+    return this.prisma.agentDecisionLog.updateMany({
+      where: { id: decisionId, tenantId },
+      data: {
+        approvedBy: userId,
+        approvedAt: new Date(),
+        rejected: false,
+      },
+    });
+  }
+
+  /**
+   * Reject a pending decision
+   */
+  async rejectDecision(
+    decisionId: string,
+    tenantId: string,
+    userId: string,
+    reason: string
+  ) {
+    return this.prisma.agentDecisionLog.updateMany({
+      where: { id: decisionId, tenantId },
+      data: {
+        approvedBy: userId,
+        approvedAt: new Date(),
+        rejected: true,
+        rejectionReason: reason,
+      },
+    });
+  }
+
+  /**
+   * Get pending decisions requiring approval
+   */
+  async getPendingDecisions(tenantId: string, limit: number = 50) {
+    return this.prisma.agentDecisionLog.findMany({
+      where: {
+        tenantId,
+        requiresApproval: true,
+        approvedBy: null,
+        rejected: false,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        conversation: {
+          include: {
+            patient: {
+              select: { id: true, name: true, cancerType: true },
+            },
+          },
+        },
+      },
+    });
+  }
+}

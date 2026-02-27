@@ -1,0 +1,220 @@
+import * as crypto from 'crypto';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { ChannelType } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import {
+  IChannel,
+  OutgoingMessage,
+  SendResult,
+} from '../interfaces/channel.interface';
+import { decryptSensitiveData } from '../../whatsapp-connections/utils/encryption.util';
+
+@Injectable()
+export class WhatsAppChannel implements IChannel {
+  readonly channelType = ChannelType.WHATSAPP;
+  private readonly logger = new Logger(WhatsAppChannel.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService
+  ) {}
+
+  async send(message: OutgoingMessage): Promise<SendResult> {
+    try {
+      // Find active WhatsApp connection for the tenant
+      // The tenantId is resolved by the gateway service before calling send
+      const connection = await this.getDefaultConnection(message.to);
+
+      if (!connection) {
+        return {
+          success: false,
+          error: 'No active WhatsApp connection found',
+        };
+      }
+
+      const accessToken = this.getAccessToken(connection);
+      if (!accessToken) {
+        return {
+          success: false,
+          error: 'No access token configured for WhatsApp connection',
+        };
+      }
+
+      const apiVersion =
+        this.configService.get<string>('META_API_VERSION') || 'v18.0';
+      const url = `https://graph.facebook.com/${apiVersion}/${connection.phoneNumberId}/messages`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: message.to,
+          type: 'text',
+          text: { body: message.content },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        this.logger.error(
+          `WhatsApp API error: ${response.status} ${errorBody}`
+        );
+        return {
+          success: false,
+          error: `WhatsApp API returned ${response.status}`,
+        };
+      }
+
+      const data = await response.json();
+      return {
+        success: true,
+        externalMessageId: data.messages?.[0]?.id,
+      };
+    } catch (error) {
+      this.logger.error('Failed to send WhatsApp message', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Validates Meta webhook signature (X-Hub-Signature-256)
+   */
+  validateWebhookSignature(payload: Buffer, signature: string): boolean {
+    const appSecret = this.configService.get<string>('META_APP_SECRET');
+    if (!appSecret) {
+      this.logger.warn(
+        'META_APP_SECRET not configured, skipping signature validation'
+      );
+      return true; // Skip validation in development
+    }
+
+    const expectedSignature =
+      'sha256=' +
+      crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
+
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+  }
+
+  /**
+   * Find default WhatsApp connection (used for sending)
+   */
+  private async getDefaultConnection(recipientPhone: string) {
+    // Find connections that are connected and active
+    return this.prisma.whatsAppConnection.findFirst({
+      where: {
+        isActive: true,
+        isDefault: true,
+        status: 'CONNECTED',
+      },
+    });
+  }
+
+  /**
+   * Extract access token from connection (decrypting if needed)
+   */
+  private getAccessToken(connection: any): string | null {
+    const encryptionKey =
+      this.configService.get<string>('ENCRYPTION_KEY') ||
+      'default-encryption-key-change-in-production';
+
+    if (connection.oauthAccessToken) {
+      try {
+        return decryptSensitiveData(connection.oauthAccessToken, encryptionKey);
+      } catch {
+        this.logger.error('Failed to decrypt OAuth access token');
+        return null;
+      }
+    }
+
+    if (connection.apiToken) {
+      try {
+        return decryptSensitiveData(connection.apiToken, encryptionKey);
+      } catch {
+        this.logger.error('Failed to decrypt API token');
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Parse incoming Meta webhook payload into normalized messages
+   */
+  parseWebhookPayload(body: any): Array<{
+    phone: string;
+    content: string;
+    messageId: string;
+    timestamp: Date;
+    type: 'TEXT' | 'AUDIO' | 'IMAGE' | 'DOCUMENT';
+    mediaUrl?: string;
+  }> {
+    const messages: any[] = [];
+
+    if (!body?.entry) {
+      return messages;
+    }
+
+    for (const entry of body.entry) {
+      for (const change of entry.changes || []) {
+        if (change.field !== 'messages') {
+          continue;
+        }
+
+        const value = change.value;
+        if (!value?.messages) {
+          continue;
+        }
+
+        for (const msg of value.messages) {
+          const parsed: any = {
+            phone: msg.from,
+            messageId: msg.id,
+            timestamp: new Date(parseInt(msg.timestamp) * 1000),
+            type: 'TEXT',
+            content: '',
+          };
+
+          switch (msg.type) {
+            case 'text':
+              parsed.content = msg.text?.body || '';
+              parsed.type = 'TEXT';
+              break;
+            case 'audio':
+              parsed.type = 'AUDIO';
+              parsed.mediaUrl = msg.audio?.id;
+              parsed.content = '[Áudio recebido]';
+              break;
+            case 'image':
+              parsed.type = 'IMAGE';
+              parsed.mediaUrl = msg.image?.id;
+              parsed.content = msg.image?.caption || '[Imagem recebida]';
+              break;
+            case 'document':
+              parsed.type = 'DOCUMENT';
+              parsed.mediaUrl = msg.document?.id;
+              parsed.content = msg.document?.caption || '[Documento recebido]';
+              break;
+            default:
+              parsed.content = `[Mensagem tipo ${msg.type}]`;
+          }
+
+          messages.push(parsed);
+        }
+      }
+    }
+
+    return messages;
+  }
+}
