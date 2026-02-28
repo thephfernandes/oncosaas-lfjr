@@ -91,7 +91,9 @@ export function WhatsAppConnectionForm({
                 <strong>Como funciona:</strong>
               </p>
               <ol className="list-decimal list-inside text-sm text-blue-700 mt-2 space-y-1">
-                <li>Você será redirecionado para a página de autorização da Meta</li>
+                <li>
+                  Você será redirecionado para a página de autorização da Meta
+                </li>
                 <li>Autorize o acesso à sua Business Manager</li>
                 <li>Seus números WhatsApp serão conectados automaticamente</li>
               </ol>
@@ -281,4 +283,3 @@ export function WhatsAppConnectionForm({
     </Dialog>
   );
 }
-

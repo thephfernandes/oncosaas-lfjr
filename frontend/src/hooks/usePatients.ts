@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { patientsApi, Patient, CreatePatientDto, UpdatePatientDto } from '@/lib/api/patients';
+import {
+  patientsApi,
+  Patient,
+  CreatePatientDto,
+  UpdatePatientDto,
+} from '@/lib/api/patients';
 
 export const usePatients = () => {
   return useQuery({
@@ -73,4 +78,3 @@ export const useDeletePatient = () => {
     },
   });
 };
-

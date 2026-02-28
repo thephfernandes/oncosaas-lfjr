@@ -85,7 +85,11 @@ export const navigationApi = {
     patientId: string,
     journeyStage: string
   ): Promise<{ created: number; skipped: number; message: string }> => {
-    return apiClient.post<{ created: number; skipped: number; message: string }>(
+    return apiClient.post<{
+      created: number;
+      skipped: number;
+      message: string;
+    }>(
       `/oncology-navigation/patients/${patientId}/stages/${journeyStage}/create-missing`
     );
   },

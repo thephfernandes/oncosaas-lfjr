@@ -2,18 +2,18 @@
 
 ## Tipos de Alertas
 
-| Tipo | Severidade Típica | Quando é Criado |
-|------|-------------------|-----------------|
-| `CRITICAL_SYMPTOM` | CRITICAL | Sintoma crítico detectado em mensagem |
-| `NAVIGATION_DELAY` | HIGH/CRITICAL | Etapa da jornada atrasada |
-| `NO_RESPONSE` | MEDIUM | Paciente não responde há ≥3 dias |
-| `DELAYED_APPOINTMENT` | HIGH | Consulta/exame não realizado |
-| `SCORE_CHANGE` | MEDIUM | Score de priorização mudou significativamente |
-| `SYMPTOM_WORSENING` | HIGH | Sintomas pioraram rapidamente |
-| `MISSING_EXAM` | HIGH | Exame necessário não realizado |
-| `STAGING_INCOMPLETE` | HIGH | Estadiamento incompleto |
-| `TREATMENT_DELAY` | CRITICAL | Atraso no início do tratamento |
-| `FOLLOW_UP_OVERDUE` | MEDIUM | Seguimento atrasado |
+| Tipo                  | Severidade Típica | Quando é Criado                               |
+| --------------------- | ----------------- | --------------------------------------------- |
+| `CRITICAL_SYMPTOM`    | CRITICAL          | Sintoma crítico detectado em mensagem         |
+| `NAVIGATION_DELAY`    | HIGH/CRITICAL     | Etapa da jornada atrasada                     |
+| `NO_RESPONSE`         | MEDIUM            | Paciente não responde há ≥3 dias              |
+| `DELAYED_APPOINTMENT` | HIGH              | Consulta/exame não realizado                  |
+| `SCORE_CHANGE`        | MEDIUM            | Score de priorização mudou significativamente |
+| `SYMPTOM_WORSENING`   | HIGH              | Sintomas pioraram rapidamente                 |
+| `MISSING_EXAM`        | HIGH              | Exame necessário não realizado                |
+| `STAGING_INCOMPLETE`  | HIGH              | Estadiamento incompleto                       |
+| `TREATMENT_DELAY`     | CRITICAL          | Atraso no início do tratamento                |
+| `FOLLOW_UP_OVERDUE`   | MEDIUM            | Seguimento atrasado                           |
 
 ---
 
@@ -35,17 +35,22 @@ DISMISSED
 ## Como Criar Alerta
 
 ### Via API (Backend)
+
 ```typescript
-await alertsService.create({
-  patientId: 'uuid',
-  type: 'CRITICAL_SYMPTOM',
-  severity: 'CRITICAL',
-  message: 'Paciente relatou febre alta',
-  context: { conversationId: '...', symptom: 'febre' }
-}, tenantId);
+await alertsService.create(
+  {
+    patientId: 'uuid',
+    type: 'CRITICAL_SYMPTOM',
+    severity: 'CRITICAL',
+    message: 'Paciente relatou febre alta',
+    context: { conversationId: '...', symptom: 'febre' },
+  },
+  tenantId
+);
 ```
 
 ### Via Frontend
+
 ```typescript
 const createAlert = useCreateAlert();
 createAlert.mutate({
@@ -53,7 +58,7 @@ createAlert.mutate({
   type: 'CRITICAL_SYMPTOM',
   severity: 'CRITICAL',
   message: 'Mensagem do alerta',
-  context: {}
+  context: {},
 });
 ```
 
@@ -69,6 +74,7 @@ createAlert.mutate({
 - `open_alerts_count` - Contagem de alertas abertos atualizada
 
 ### Exemplo de Uso
+
 ```typescript
 const { socket } = useSocket('/alerts');
 
@@ -82,17 +88,17 @@ socket.on('critical_alert', (alert: Alert) => {
 
 ## Endpoints da API
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `GET` | `/alerts` | Listar alertas (filtro: `?status=PENDING`) |
-| `GET` | `/alerts/critical` | Alertas críticos pendentes |
-| `GET` | `/alerts/open/count` | Contagem de alertas abertos |
-| `GET` | `/alerts/critical/count` | Contagem de alertas críticos |
-| `GET` | `/alerts/:id` | Detalhes de um alerta |
-| `POST` | `/alerts` | Criar alerta |
-| `PATCH` | `/alerts/:id` | Atualizar alerta |
-| `PATCH` | `/alerts/:id/acknowledge` | Reconhecer alerta |
-| `PATCH` | `/alerts/:id/resolve` | Resolver alerta |
+| Método  | Endpoint                  | Descrição                                  |
+| ------- | ------------------------- | ------------------------------------------ |
+| `GET`   | `/alerts`                 | Listar alertas (filtro: `?status=PENDING`) |
+| `GET`   | `/alerts/critical`        | Alertas críticos pendentes                 |
+| `GET`   | `/alerts/open/count`      | Contagem de alertas abertos                |
+| `GET`   | `/alerts/critical/count`  | Contagem de alertas críticos               |
+| `GET`   | `/alerts/:id`             | Detalhes de um alerta                      |
+| `POST`  | `/alerts`                 | Criar alerta                               |
+| `PATCH` | `/alerts/:id`             | Atualizar alerta                           |
+| `PATCH` | `/alerts/:id/acknowledge` | Reconhecer alerta                          |
+| `PATCH` | `/alerts/:id/resolve`     | Resolver alerta                            |
 
 ---
 
@@ -119,10 +125,12 @@ resolveAlert.mutate(alertId);
 ## Criação Automática
 
 ### 1. Agente de IA (Mensagens WhatsApp)
+
 - Detecta sintomas críticos
 - Cria `CRITICAL_SYMPTOM` automaticamente
 
 ### 2. Scheduler (Navegação Oncológica)
+
 - Executa diariamente às 6h
 - Verifica etapas atrasadas
 - Cria `NAVIGATION_DELAY` se etapa está atrasada
@@ -131,12 +139,12 @@ resolveAlert.mutate(alertId);
 
 ## Severidade por Tipo
 
-| Severidade | Quando Usar |
-|------------|-------------|
+| Severidade   | Quando Usar                                              |
+| ------------ | -------------------------------------------------------- |
 | **CRITICAL** | Sintomas críticos, atraso em tratamento, etapas críticas |
-| **HIGH** | Etapas importantes atrasadas, piora de sintomas |
-| **MEDIUM** | Atrasos menores, mudanças de score |
-| **LOW** | Informativo, não urgente |
+| **HIGH**     | Etapas importantes atrasadas, piora de sintomas          |
+| **MEDIUM**   | Atrasos menores, mudanças de score                       |
+| **LOW**      | Informativo, não urgente                                 |
 
 ---
 
@@ -159,5 +167,3 @@ resolveAlert.mutate(alertId);
 ---
 
 📖 **Documentação completa**: [como-funcionam-alertas.md](./como-funcionam-alertas.md)
-
-

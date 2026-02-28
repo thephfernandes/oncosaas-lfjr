@@ -32,7 +32,9 @@ export interface PatientsCriticalStepsFilters {
 }
 
 export const patientsCriticalStepsApi = {
-  async getAll(filters?: PatientsCriticalStepsFilters): Promise<PatientWithCriticalStep[]> {
+  async getAll(
+    filters?: PatientsCriticalStepsFilters
+  ): Promise<PatientWithCriticalStep[]> {
     const params: Record<string, string> = {};
     if (filters?.journeyStage) params.journeyStage = filters.journeyStage;
     if (filters?.cancerType) params.cancerType = filters.cancerType;
@@ -45,4 +47,3 @@ export const patientsCriticalStepsApi = {
     return response;
   },
 };
-

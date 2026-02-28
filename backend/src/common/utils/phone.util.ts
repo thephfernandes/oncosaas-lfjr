@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 /**
  * Normaliza número de telefone para formato internacional brasileiro
  * Remove caracteres não numéricos e garante formato: 55XXXXXXXXXXX
- * 
+ *
  * @param phone Número de telefone em qualquer formato
  * @returns Número normalizado (ex: "5511999999999")
  */
@@ -35,7 +35,7 @@ export function normalizePhoneNumber(phone: string): string {
 
 /**
  * Gera hash SHA-256 do telefone normalizado para busca eficiente
- * 
+ *
  * @param phone Número de telefone normalizado
  * @returns Hash hexadecimal do telefone
  */
@@ -46,7 +46,7 @@ export function hashPhoneNumber(phone: string): string {
 
 /**
  * Valida formato de telefone brasileiro
- * 
+ *
  * @param phone Número de telefone
  * @returns true se válido, false caso contrário
  */
@@ -60,4 +60,3 @@ export function isValidPhoneNumber(phone: string): boolean {
     return false;
   }
 }
-

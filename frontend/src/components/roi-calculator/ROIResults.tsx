@@ -1,24 +1,24 @@
-"use client"
+'use client';
 
-import { ROIOutputData } from "./ROICalculator"
+import { ROIOutputData } from './ROICalculator';
 
 interface ROIResultsProps {
-  results: ROIOutputData
+  results: ROIOutputData;
 }
 
 export function ROIResults({ results }: ROIResultsProps) {
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(value)
-  }
+    }).format(value);
+  };
 
   const formatNumber = (value: number, decimals: number = 1) => {
-    return value.toFixed(decimals).replace(".", ",")
-  }
+    return value.toFixed(decimals).replace('.', ',');
+  };
 
   return (
     <div className="space-y-6">
@@ -133,7 +133,5 @@ export function ROIResults({ results }: ROIResultsProps) {
         </button>
       </div>
     </div>
-  )
+  );
 }
-
-

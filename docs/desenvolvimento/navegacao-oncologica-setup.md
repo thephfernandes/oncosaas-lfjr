@@ -51,6 +51,7 @@ A migration `20251113014913_add_oncology_navigation` foi aplicada com sucesso e 
 Após regenerar o Prisma Client:
 
 1. Criar paciente com câncer colorretal:
+
 ```bash
 POST /api/v1/patients
 {
@@ -63,6 +64,7 @@ POST /api/v1/patients
 ```
 
 2. Verificar etapas criadas:
+
 ```bash
 GET /api/v1/oncology-navigation/patients/{patientId}/steps
 ```
@@ -75,4 +77,3 @@ GET /api/v1/oncology-navigation/patients/{patientId}/steps
 ---
 
 **Última atualização:** 2024-01-XX
-

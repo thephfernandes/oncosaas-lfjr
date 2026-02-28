@@ -10,7 +10,13 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { usePatientImport } from '@/hooks/use-patient-import';
-import { Upload, AlertCircle, CheckCircle2, Download, Info } from 'lucide-react';
+import {
+  Upload,
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  Info,
+} from 'lucide-react';
 import Papa from 'papaparse';
 import { csvRowSchema, CsvRow } from '@/lib/validations/import-csv';
 
@@ -31,7 +37,9 @@ export function PatientImportDialog({
 }: PatientImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<CsvRow[]>([]);
-  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
+    []
+  );
   const [showInstructions, setShowInstructions] = useState(true);
   const { mutate: importPatients, isPending } = usePatientImport();
 
@@ -140,8 +148,8 @@ export function PatientImportDialog({
         <DialogHeader>
           <DialogTitle>Importar Pacientes via CSV</DialogTitle>
           <DialogDescription>
-            Selecione um arquivo CSV com os dados dos pacientes ou baixe o template para
-            ver o formato esperado.
+            Selecione um arquivo CSV com os dados dos pacientes ou baixe o
+            template para ver o formato esperado.
           </DialogDescription>
         </DialogHeader>
 
@@ -157,8 +165,8 @@ export function PatientImportDialog({
                       Estrutura do Arquivo CSV
                     </h3>
                     <p className="text-sm text-blue-800 mb-3">
-                      O arquivo CSV deve conter as seguintes colunas na primeira linha
-                      (cabeçalho):
+                      O arquivo CSV deve conter as seguintes colunas na primeira
+                      linha (cabeçalho):
                     </p>
                     <div className="bg-white rounded border border-blue-200 overflow-hidden">
                       <table className="w-full text-sm">
@@ -180,10 +188,14 @@ export function PatientImportDialog({
                         </thead>
                         <tbody className="divide-y divide-blue-100">
                           <tr>
-                            <td className="px-3 py-2 font-mono text-xs">name</td>
+                            <td className="px-3 py-2 font-mono text-xs">
+                              name
+                            </td>
                             <td className="px-3 py-2">Texto</td>
                             <td className="px-3 py-2">
-                              <span className="text-red-600 font-semibold">Sim</span>
+                              <span className="text-red-600 font-semibold">
+                                Sim
+                              </span>
                             </td>
                             <td className="px-3 py-2">João Silva</td>
                           </tr>
@@ -191,7 +203,9 @@ export function PatientImportDialog({
                             <td className="px-3 py-2 font-mono text-xs">cpf</td>
                             <td className="px-3 py-2">Texto (11 dígitos)</td>
                             <td className="px-3 py-2">
-                              <span className="text-red-600 font-semibold">Sim</span>
+                              <span className="text-red-600 font-semibold">
+                                Sim
+                              </span>
                             </td>
                             <td className="px-3 py-2">12345678900</td>
                           </tr>
@@ -201,28 +215,42 @@ export function PatientImportDialog({
                             </td>
                             <td className="px-3 py-2">Data (YYYY-MM-DD)</td>
                             <td className="px-3 py-2">
-                              <span className="text-red-600 font-semibold">Sim</span>
+                              <span className="text-red-600 font-semibold">
+                                Sim
+                              </span>
                             </td>
                             <td className="px-3 py-2">1980-05-15</td>
                           </tr>
                           <tr>
-                            <td className="px-3 py-2 font-mono text-xs">sexo</td>
+                            <td className="px-3 py-2 font-mono text-xs">
+                              sexo
+                            </td>
                             <td className="px-3 py-2">male, female ou other</td>
                             <td className="px-3 py-2">
-                              <span className="text-red-600 font-semibold">Sim</span>
+                              <span className="text-red-600 font-semibold">
+                                Sim
+                              </span>
                             </td>
                             <td className="px-3 py-2">male</td>
                           </tr>
                           <tr>
-                            <td className="px-3 py-2 font-mono text-xs">telefone</td>
-                            <td className="px-3 py-2">Texto (mín. 10 dígitos)</td>
+                            <td className="px-3 py-2 font-mono text-xs">
+                              telefone
+                            </td>
                             <td className="px-3 py-2">
-                              <span className="text-red-600 font-semibold">Sim</span>
+                              Texto (mín. 10 dígitos)
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="text-red-600 font-semibold">
+                                Sim
+                              </span>
                             </td>
                             <td className="px-3 py-2">11987654321</td>
                           </tr>
                           <tr>
-                            <td className="px-3 py-2 font-mono text-xs">email</td>
+                            <td className="px-3 py-2 font-mono text-xs">
+                              email
+                            </td>
                             <td className="px-3 py-2">Email válido</td>
                             <td className="px-3 py-2">
                               <span className="text-green-600">Não</span>
@@ -230,13 +258,17 @@ export function PatientImportDialog({
                             <td className="px-3 py-2">joao@email.com</td>
                           </tr>
                           <tr>
-                            <td className="px-3 py-2 font-mono text-xs">tipoCancer</td>
-                            <td className="px-3 py-2">
-                              breast, lung, colorectal, prostate, kidney, bladder,
-                              testicular, other
+                            <td className="px-3 py-2 font-mono text-xs">
+                              tipoCancer
                             </td>
                             <td className="px-3 py-2">
-                              <span className="text-red-600 font-semibold">Sim</span>
+                              breast, lung, colorectal, prostate, kidney,
+                              bladder, testicular, other
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="text-red-600 font-semibold">
+                                Sim
+                              </span>
                             </td>
                             <td className="px-3 py-2">breast</td>
                           </tr>
@@ -253,7 +285,9 @@ export function PatientImportDialog({
                             <td className="px-3 py-2">2024-01-10</td>
                           </tr>
                           <tr>
-                            <td className="px-3 py-2 font-mono text-xs">estagio</td>
+                            <td className="px-3 py-2 font-mono text-xs">
+                              estagio
+                            </td>
                             <td className="px-3 py-2">Texto</td>
                             <td className="px-3 py-2">
                               <span className="text-green-600">Não</span>
@@ -284,8 +318,8 @@ export function PatientImportDialog({
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-blue-200">
                 <p className="text-xs text-blue-700">
-                  💡 Dica: Baixe o template para ver um exemplo completo do formato
-                  esperado
+                  💡 Dica: Baixe o template para ver um exemplo completo do
+                  formato esperado
                 </p>
                 <Button
                   variant="outline"
@@ -361,7 +395,9 @@ export function PatientImportDialog({
                         <th className="px-3 py-2 text-left">Nome</th>
                         <th className="px-3 py-2 text-left">CPF</th>
                         <th className="px-3 py-2 text-left">Tipo Câncer</th>
-                        <th className="px-3 py-2 text-left">Data Diagnóstico</th>
+                        <th className="px-3 py-2 text-left">
+                          Data Diagnóstico
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -388,12 +424,15 @@ export function PatientImportDialog({
           {/* Erros */}
           {validationErrors.length > 0 && (
             <div className="space-y-2">
-              <h3 className="font-semibold text-destructive">Erros de Validação</h3>
+              <h3 className="font-semibold text-destructive">
+                Erros de Validação
+              </h3>
               <div className="border border-destructive/50 rounded-lg p-4 max-h-48 overflow-y-auto">
                 <div className="space-y-2 text-sm">
                   {validationErrors.map((error, index) => (
                     <div key={index} className="text-destructive">
-                      <strong>Linha {error.row}</strong> - {error.field}: {error.message}
+                      <strong>Linha {error.row}</strong> - {error.field}:{' '}
+                      {error.message}
                     </div>
                   ))}
                 </div>
@@ -410,7 +449,9 @@ export function PatientImportDialog({
               onClick={handleImport}
               disabled={!file || previewData.length === 0 || isPending}
             >
-              {isPending ? 'Importando...' : `Importar ${previewData.length} paciente(s)`}
+              {isPending
+                ? 'Importando...'
+                : `Importar ${previewData.length} paciente(s)`}
             </Button>
           </div>
         </div>
@@ -418,4 +459,3 @@ export function PatientImportDialog({
     </Dialog>
   );
 }
-

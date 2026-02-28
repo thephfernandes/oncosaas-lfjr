@@ -85,7 +85,7 @@ const STATUS_ICONS: Record<string, JSX.Element> = {
 export default function OncologyNavigationPage() {
   const router = useRouter();
   const { user, isAuthenticated, isInitializing, initialize } = useAuthStore();
-  
+
   // Obter URL da API dinamicamente (HTTP/HTTPS)
   const apiUrl = useMemo(() => {
     if (typeof window !== 'undefined') {
@@ -93,7 +93,7 @@ export default function OncologyNavigationPage() {
     }
     return 'http://localhost:3002'; // Fallback para SSR
   }, []);
-  
+
   const { data: patients, isLoading: isLoadingPatients } = usePatients();
   const [selectedCancerType, setSelectedCancerType] = useState<string | null>(
     null
@@ -384,6 +384,7 @@ export default function OncologyNavigationPage() {
                           cancerType={cancerType}
                           isExpanded={expandedPatients.has(patient.id)}
                           onToggle={() => togglePatient(patient.id)}
+                          apiUrl={apiUrl}
                         />
                       ))}
                     </div>
@@ -403,6 +404,7 @@ interface PatientNavigationCardProps {
   cancerType: string;
   isExpanded: boolean;
   onToggle: () => void;
+  apiUrl: string;
 }
 
 function PatientNavigationCard({
@@ -410,6 +412,7 @@ function PatientNavigationCard({
   cancerType,
   isExpanded,
   onToggle,
+  apiUrl,
 }: PatientNavigationCardProps) {
   const { data: navigationSteps, isLoading } = usePatientNavigationSteps(
     patient.id || null
@@ -447,7 +450,9 @@ function PatientNavigationCard({
   const isPalliativeCare = patient.status === 'PALLIATIVE_CARE';
 
   return (
-    <div className={`p-4 hover:bg-gray-50 transition-colors ${isPalliativeCare ? 'border-l-4 border-purple-500 bg-purple-50/30' : ''}`}>
+    <div
+      className={`p-4 hover:bg-gray-50 transition-colors ${isPalliativeCare ? 'border-l-4 border-purple-500 bg-purple-50/30' : ''}`}
+    >
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between text-left"
@@ -538,7 +543,7 @@ function PatientNavigationCard({
                   </div>
                   <div className="p-4 space-y-2">
                     {steps.map((step) => (
-                      <StepCard key={step.id} step={step} />
+                      <StepCard key={step.id} step={step} apiUrl={apiUrl} />
                     ))}
                   </div>
                 </div>
@@ -553,17 +558,22 @@ function PatientNavigationCard({
 
 interface StepCardProps {
   step: NavigationStep;
+  apiUrl: string;
 }
 
-function StepCard({ step }: StepCardProps) {
+function StepCard({ step, apiUrl }: StepCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [notes, setNotes] = useState(step.notes || '');
   const [isCompleted, setIsCompleted] = useState(step.isCompleted);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
+
   // Novos campos do formulário
-  const [institutionName, setInstitutionName] = useState(step.institutionName || '');
-  const [professionalName, setProfessionalName] = useState(step.professionalName || '');
+  const [institutionName, setInstitutionName] = useState(
+    step.institutionName || ''
+  );
+  const [professionalName, setProfessionalName] = useState(
+    step.professionalName || ''
+  );
   const [result, setResult] = useState(step.result || '');
   const [findings, setFindings] = useState<string[]>(step.findings || []);
   const [newFinding, setNewFinding] = useState('');
@@ -573,7 +583,7 @@ function StepCard({ step }: StepCardProps) {
   const [dueDate, setDueDate] = useState(
     step.dueDate ? new Date(step.dueDate).toISOString().split('T')[0] : ''
   );
-  
+
   const updateStep = useUpdateNavigationStep();
   const uploadFile = useUploadStepFile();
 
@@ -588,9 +598,26 @@ function StepCard({ step }: StepCardProps) {
     setProfessionalName(step.professionalName || '');
     setResult(step.result || '');
     setFindings(step.findings || []);
-    setActualDate(step.actualDate ? new Date(step.actualDate).toISOString().split('T')[0] : '');
-    setDueDate(step.dueDate ? new Date(step.dueDate).toISOString().split('T')[0] : '');
-  }, [step.id, step.notes, step.isCompleted, step.status, step.institutionName, step.professionalName, step.result, step.findings, step.actualDate, step.dueDate]);
+    setActualDate(
+      step.actualDate
+        ? new Date(step.actualDate).toISOString().split('T')[0]
+        : ''
+    );
+    setDueDate(
+      step.dueDate ? new Date(step.dueDate).toISOString().split('T')[0] : ''
+    );
+  }, [
+    step.id,
+    step.notes,
+    step.isCompleted,
+    step.status,
+    step.institutionName,
+    step.professionalName,
+    step.result,
+    step.findings,
+    step.actualDate,
+    step.dueDate,
+  ]);
 
   const handleSave = async (): Promise<void> => {
     try {
@@ -607,7 +634,9 @@ function StepCard({ step }: StepCardProps) {
           professionalName: professionalName || undefined,
           result: result || undefined,
           findings: findings.length > 0 ? findings : undefined,
-          actualDate: actualDate ? new Date(actualDate).toISOString() : undefined,
+          actualDate: actualDate
+            ? new Date(actualDate).toISOString()
+            : undefined,
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         },
       });
@@ -737,7 +766,7 @@ function StepCard({ step }: StepCardProps) {
               <h4 className="text-sm font-semibold text-gray-700 mb-3">
                 Informações Básicas
               </h4>
-              
+
               {/* Data Limite (para gerar alarmes de atraso) */}
               <div className="mb-3">
                 <label className="block text-sm font-medium mb-1">
@@ -776,7 +805,9 @@ function StepCard({ step }: StepCardProps) {
                   onChange={(e) => setIsCompleted(e.target.checked)}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-medium">Marcar como concluída</span>
+                <span className="text-sm font-medium">
+                  Marcar como concluída
+                </span>
               </label>
             </div>
 
@@ -785,7 +816,7 @@ function StepCard({ step }: StepCardProps) {
               <h4 className="text-sm font-semibold text-gray-700 mb-3">
                 Local e Profissional
               </h4>
-              
+
               {/* Instituição de Saúde */}
               <div className="mb-3">
                 <label className="block text-sm font-medium mb-1">
@@ -820,7 +851,7 @@ function StepCard({ step }: StepCardProps) {
               <h4 className="text-sm font-semibold text-gray-700 mb-3">
                 Resultados
               </h4>
-              
+
               {/* Resultado */}
               <div className="mb-3">
                 <label className="block text-sm font-medium mb-1">
@@ -894,7 +925,7 @@ function StepCard({ step }: StepCardProps) {
               <h4 className="text-sm font-semibold text-gray-700 mb-3">
                 Observações e Documentos
               </h4>
-              
+
               {/* Campo de observações */}
               <div className="mb-3">
                 <label className="block text-sm font-medium mb-1">
@@ -917,7 +948,9 @@ function StepCard({ step }: StepCardProps) {
                 <div className="flex items-center gap-2">
                   <input
                     type="file"
-                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      setSelectedFile(e.target.files?.[0] || null)
+                    }
                     className="text-sm"
                     accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
                   />
@@ -988,8 +1021,16 @@ function StepCard({ step }: StepCardProps) {
                   setProfessionalName(step.professionalName || '');
                   setResult(step.result || '');
                   setFindings(step.findings || []);
-                  setActualDate(step.actualDate ? new Date(step.actualDate).toISOString().split('T')[0] : '');
-                  setDueDate(step.dueDate ? new Date(step.dueDate).toISOString().split('T')[0] : '');
+                  setActualDate(
+                    step.actualDate
+                      ? new Date(step.actualDate).toISOString().split('T')[0]
+                      : ''
+                  );
+                  setDueDate(
+                    step.dueDate
+                      ? new Date(step.dueDate).toISOString().split('T')[0]
+                      : ''
+                  );
                   setNewFinding('');
                 }}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 flex items-center gap-2"
@@ -1091,7 +1132,11 @@ function StepCard({ step }: StepCardProps) {
                 </span>
               )}
               {step.dueDate && (
-                <span className={step.status === 'OVERDUE' ? 'text-red-600 font-medium' : ''}>
+                <span
+                  className={
+                    step.status === 'OVERDUE' ? 'text-red-600 font-medium' : ''
+                  }
+                >
                   Prazo: {new Date(step.dueDate).toLocaleDateString('pt-BR')}
                   {step.status === 'OVERDUE' && ' (ATRASADO)'}
                 </span>

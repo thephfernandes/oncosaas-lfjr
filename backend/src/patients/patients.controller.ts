@@ -59,10 +59,7 @@ export class PatientsController {
     UserRole.NURSE,
     UserRole.COORDINATOR
   )
-  async findByPhone(
-    @Param('phone') phone: string,
-    @CurrentUser() user: any
-  ) {
+  async findByPhone(@Param('phone') phone: string, @CurrentUser() user: any) {
     const patient = await this.patientsService.findByPhone(
       phone,
       user.tenantId

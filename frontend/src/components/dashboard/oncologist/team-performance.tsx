@@ -19,10 +19,7 @@ export function TeamPerformance({
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div
-            key={i}
-            className="bg-white rounded-lg border p-4 animate-pulse"
-          >
+          <div key={i} className="bg-white rounded-lg border p-4 animate-pulse">
             <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
             <div className="h-8 bg-gray-200 rounded w-1/2"></div>
           </div>
@@ -36,8 +33,7 @@ export function TeamPerformance({
     (sum, day) => sum + day.total,
     0
   );
-  const totalAlerts7d =
-    resolvedAlerts7d + metrics.totalPendingAlerts;
+  const totalAlerts7d = resolvedAlerts7d + metrics.totalPendingAlerts;
   const resolutionRate7d =
     totalAlerts7d > 0
       ? Math.round((resolvedAlerts7d / totalAlerts7d) * 100)
@@ -111,9 +107,7 @@ export function TeamPerformance({
 
   return (
     <div className="bg-white rounded-lg border p-6">
-      <h3 className="text-lg font-semibold mb-4">
-        Performance da Equipe
-      </h3>
+      <h3 className="text-lg font-semibold mb-4">Performance da Equipe</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {performanceCards.map((card, index) => {
           const Icon = card.icon;
@@ -145,13 +139,9 @@ export function TeamPerformance({
               </div>
               <div>
                 <p className="text-sm text-gray-600 mb-1">{card.title}</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {card.value}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{card.value}</p>
                 {card.subtitle && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {card.subtitle}
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{card.subtitle}</p>
                 )}
               </div>
             </div>
@@ -161,4 +151,3 @@ export function TeamPerformance({
     </div>
   );
 }
-

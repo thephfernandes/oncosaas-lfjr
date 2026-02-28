@@ -57,4 +57,3 @@ export class CreateObservationDto {
   @IsOptional()
   fhirResourceId?: string; // ID no FHIR server externo
 }
-

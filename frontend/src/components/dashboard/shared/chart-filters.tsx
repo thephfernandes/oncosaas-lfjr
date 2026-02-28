@@ -23,7 +23,7 @@ const PERIOD_LABELS: Record<PeriodFilter, string> = {
   '7d': '7 dias',
   '30d': '30 dias',
   '90d': '90 dias',
-  'all': 'Todos',
+  all: 'Todos',
 };
 
 export function ChartFilters({
@@ -36,7 +36,7 @@ export function ChartFilters({
   showCancerTypeFilter = false,
   className,
 }: ChartFiltersProps) {
-  const hasActiveFilters = 
+  const hasActiveFilters =
     (showPeriodFilter && period !== '30d') ||
     (showCancerTypeFilter && cancerType !== null);
 
@@ -129,4 +129,3 @@ export function ChartFilters({
     </div>
   );
 }
-

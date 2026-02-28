@@ -5,4 +5,3 @@ export class ProcessEmbeddedSignupDto {
   @IsNotEmpty()
   code: string; // Código trocável retornado pelo Embedded Signup
 }
-

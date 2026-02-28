@@ -42,7 +42,9 @@ export const observationsApi = {
     if (patientId) params.append('patientId', patientId);
     if (code) params.append('code', code);
     const query = params.toString();
-    return apiClient.get<Observation[]>(`/observations${query ? `?${query}` : ''}`);
+    return apiClient.get<Observation[]>(
+      `/observations${query ? `?${query}` : ''}`
+    );
   },
 
   async getById(id: string): Promise<Observation> {
@@ -66,7 +68,8 @@ export const observationsApi = {
   },
 
   async markAsSynced(id: string, fhirResourceId: string): Promise<Observation> {
-    return apiClient.patch<Observation>(`/observations/${id}/sync`, { fhirResourceId });
+    return apiClient.patch<Observation>(`/observations/${id}/sync`, {
+      fhirResourceId,
+    });
   },
 };
-

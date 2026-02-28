@@ -99,4 +99,3 @@ export const cancerDiagnosisSchema = z.object({
 });
 
 export type CancerDiagnosisFormData = z.infer<typeof cancerDiagnosisSchema>;
-

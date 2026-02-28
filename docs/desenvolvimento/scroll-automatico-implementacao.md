@@ -37,6 +37,7 @@ const patientRefs = useRef<Record<string, HTMLDivElement | null>>({});
 ```
 
 **Características:**
+
 - Objeto que mapeia `patientId` para o elemento DOM correspondente
 - Permite acessar o elemento específico quando necessário
 
@@ -53,6 +54,7 @@ const patientRefs = useRef<Record<string, HTMLDivElement | null>>({});
 ```
 
 **Características:**
+
 - Cada card de paciente armazena sua referência no objeto `patientRefs`
 - Usa callback ref para atualizar o objeto quando o elemento é renderizado
 
@@ -75,6 +77,7 @@ useEffect(() => {
 ```
 
 **Características:**
+
 - Executa apenas quando `selectedPatientId` muda
 - Verifica se o paciente existe na lista antes de fazer scroll
 - Delay de 100ms para garantir que o DOM foi atualizado (especialmente importante após filtros)
@@ -107,6 +110,7 @@ useEffect(() => {
 **Cenário**: Usuário clica em um alerta crítico no painel de alertas.
 
 **Fluxo**:
+
 1. `onAlertSelect` é chamado
 2. `setSelectedAlert(alert)` atualiza o alerta selecionado
 3. `setSelectedPatient(alert.patientId)` atualiza o paciente selecionado
@@ -119,6 +123,7 @@ useEffect(() => {
 **Cenário**: Sistema seleciona automaticamente um paciente (ex: após receber mensagem crítica).
 
 **Fluxo**:
+
 1. Sistema atualiza `selectedPatient` programaticamente
 2. `PatientList` recebe novo `selectedPatientId`
 3. Scroll automático rola até o card do paciente
@@ -128,6 +133,7 @@ useEffect(() => {
 **Cenário**: Usuário aplica filtros e um paciente específico é selecionado.
 
 **Fluxo**:
+
 1. Filtros são aplicados, lista é filtrada
 2. Paciente é selecionado
 3. Delay de 100ms garante que a lista filtrada foi renderizada
@@ -138,6 +144,7 @@ useEffect(() => {
 ### Delay de 100ms
 
 O delay de 100ms é necessário para:
+
 - Garantir que o DOM foi atualizado após filtros
 - Evitar scroll antes do elemento estar visível
 - Melhorar experiência do usuário (scroll mais suave)
@@ -145,6 +152,7 @@ O delay de 100ms é necessário para:
 ### Cleanup do Timeout
 
 O cleanup do timeout previne:
+
 - Vazamentos de memória
 - Scrolls múltiplos se `selectedPatientId` mudar rapidamente
 - Comportamento inesperado
@@ -152,6 +160,7 @@ O cleanup do timeout previne:
 ### `block: 'nearest'`
 
 A opção `block: 'nearest'`:
+
 - Rola apenas o necessário para tornar o elemento visível
 - Não força scroll completo se o elemento já está parcialmente visível
 - Melhora a experiência do usuário (menos movimento desnecessário)
@@ -206,4 +215,3 @@ A opção `block: 'nearest'`:
 - [React - useRef](https://react.dev/reference/react/useRef)
 - [React - useEffect](https://react.dev/reference/react/useEffect)
 - [Documentação de Melhorias de UX](./melhorias-ux-implementacao.md)
-

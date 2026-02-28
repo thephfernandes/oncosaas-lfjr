@@ -67,7 +67,8 @@ export class InternalNotesService {
     }
 
     // Limite padrão de 100 registros para evitar problemas de performance
-    const limit = options?.limit && options.limit > 0 ? Math.min(options.limit, 500) : 100;
+    const limit =
+      options?.limit && options.limit > 0 ? Math.min(options.limit, 500) : 100;
     const offset = options?.offset && options.offset > 0 ? options.offset : 0;
 
     return this.prisma.internalNote.findMany({
@@ -144,7 +145,11 @@ export class InternalNotesService {
     }
 
     // Apenas autor ou ADMIN/NURSE_CHIEF pode atualizar
-    if (note.authorId !== userId && userRole !== UserRole.ADMIN && userRole !== UserRole.NURSE_CHIEF) {
+    if (
+      note.authorId !== userId &&
+      userRole !== UserRole.ADMIN &&
+      userRole !== UserRole.NURSE_CHIEF
+    ) {
       throw new ForbiddenException(
         'You can only update your own notes or you must be ADMIN/NURSE_CHIEF'
       );
@@ -190,7 +195,11 @@ export class InternalNotesService {
     }
 
     // Apenas autor ou ADMIN/NURSE_CHIEF pode deletar
-    if (note.authorId !== userId && userRole !== UserRole.ADMIN && userRole !== UserRole.NURSE_CHIEF) {
+    if (
+      note.authorId !== userId &&
+      userRole !== UserRole.ADMIN &&
+      userRole !== UserRole.NURSE_CHIEF
+    ) {
       throw new ForbiddenException(
         'You can only delete your own notes or you must be ADMIN/NURSE_CHIEF'
       );
@@ -201,4 +210,3 @@ export class InternalNotesService {
     });
   }
 }
-

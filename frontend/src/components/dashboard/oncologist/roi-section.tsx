@@ -14,32 +14,41 @@ export function ROISection({ metrics, statistics }: ROISectionProps) {
   const roiMetrics = useMemo(() => {
     // Estimativas baseadas em dados reais
     // Cada mensagem respondida pode evitar uma consulta presencial
-    const totalMessages = metrics.unassumedMessagesCount + metrics.resolvedTodayCount;
+    const totalMessages =
+      metrics.unassumedMessagesCount + metrics.resolvedTodayCount;
     const estimatedConsultationsAvoided = Math.floor(totalMessages * 0.3); // 30% das mensagens evitam consulta
-    
+
     // Tempo economizado: baseado em tempo médio de resposta
     // Assumindo que cada alerta resolvido economiza tempo de deslocamento + espera
     const avgResponseTimeHours = metrics.averageResponseTimeMinutes
       ? metrics.averageResponseTimeMinutes / 60
       : 0;
     const timeSavedHours = metrics.resolvedTodayCount * avgResponseTimeHours;
-    
+
     // Economia estimada: cada consulta presencial custa ~R$ 150-300
     // Usando média conservadora de R$ 200 por consulta evitada
     const costPerConsultation = 200;
-    const estimatedSavings = estimatedConsultationsAvoided * costPerConsultation;
-    
+    const estimatedSavings =
+      estimatedConsultationsAvoided * costPerConsultation;
+
     // Comparação com baseline (últimos 30 dias vs últimos 7 dias)
     const last7Days = statistics.alertStatistics.slice(-7);
     const previous7Days = statistics.alertStatistics.slice(-14, -7);
-    
-    const avgAlertsLast7Days = last7Days.reduce((sum, day) => sum + day.total, 0) / 7;
-    const avgAlertsPrevious7Days = previous7Days.reduce((sum, day) => sum + day.total, 0) / 7;
-    
-    const improvementPercentage = avgAlertsPrevious7Days > 0
-      ? Math.round(((avgAlertsPrevious7Days - avgAlertsLast7Days) / avgAlertsPrevious7Days) * 100)
-      : 0;
-    
+
+    const avgAlertsLast7Days =
+      last7Days.reduce((sum, day) => sum + day.total, 0) / 7;
+    const avgAlertsPrevious7Days =
+      previous7Days.reduce((sum, day) => sum + day.total, 0) / 7;
+
+    const improvementPercentage =
+      avgAlertsPrevious7Days > 0
+        ? Math.round(
+            ((avgAlertsPrevious7Days - avgAlertsLast7Days) /
+              avgAlertsPrevious7Days) *
+              100
+          )
+        : 0;
+
     return {
       consultationsAvoided: estimatedConsultationsAvoided,
       timeSavedHours: Math.round(timeSavedHours * 10) / 10,
@@ -54,9 +63,7 @@ export function ROISection({ metrics, statistics }: ROISectionProps) {
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
       <div className="flex items-center gap-2 mb-6">
         <TrendingUp className="h-6 w-6 text-blue-600" />
-        <h2 className="text-xl font-semibold text-gray-900">
-          Impacto e ROI
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-900">Impacto e ROI</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -116,8 +123,11 @@ export function ROISection({ metrics, statistics }: ROISectionProps) {
               Redução de Alertas
             </h3>
           </div>
-          <p className={`text-2xl font-bold ${roiMetrics.improvementPercentage > 0 ? 'text-green-600' : 'text-gray-900'}`}>
-            {roiMetrics.improvementPercentage > 0 ? '+' : ''}{roiMetrics.improvementPercentage}%
+          <p
+            className={`text-2xl font-bold ${roiMetrics.improvementPercentage > 0 ? 'text-green-600' : 'text-gray-900'}`}
+          >
+            {roiMetrics.improvementPercentage > 0 ? '+' : ''}
+            {roiMetrics.improvementPercentage}%
           </p>
           <p className="text-xs text-gray-500 mt-1">
             Últimos 7 dias vs. 7 dias anteriores
@@ -132,13 +142,17 @@ export function ROISection({ metrics, statistics }: ROISectionProps) {
         </h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-gray-500 mb-1">Média de Alertas (7 dias anteriores)</p>
+            <p className="text-xs text-gray-500 mb-1">
+              Média de Alertas (7 dias anteriores)
+            </p>
             <p className="text-lg font-semibold text-gray-700">
               {roiMetrics.avgAlertsPrevious7Days} alertas/dia
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-1">Média de Alertas (últimos 7 dias)</p>
+            <p className="text-xs text-gray-500 mb-1">
+              Média de Alertas (últimos 7 dias)
+            </p>
             <p className="text-lg font-semibold text-gray-700">
               {roiMetrics.avgAlertsLast7Days} alertas/dia
             </p>
@@ -147,7 +161,8 @@ export function ROISection({ metrics, statistics }: ROISectionProps) {
         {roiMetrics.improvementPercentage > 0 && (
           <div className="mt-3 p-3 bg-green-50 rounded-md border border-green-200">
             <p className="text-sm text-green-800">
-              ✅ Redução de {roiMetrics.improvementPercentage}% na média diária de alertas indica melhoria na gestão proativa.
+              ✅ Redução de {roiMetrics.improvementPercentage}% na média diária
+              de alertas indica melhoria na gestão proativa.
             </p>
           </div>
         )}
@@ -155,4 +170,3 @@ export function ROISection({ metrics, statistics }: ROISectionProps) {
     </div>
   );
 }
-

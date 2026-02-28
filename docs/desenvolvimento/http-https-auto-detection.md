@@ -111,6 +111,7 @@ NEXT_PUBLIC_WS_URL=ws://localhost:3002
 ### Erro de CORS
 
 O backend aceita ambos os protocolos em desenvolvimento. Se ainda houver erro:
+
 1. Verifique se `FRONTEND_URL` no backend está correto
 2. Verifique se o frontend está acessando a URL correta (http://localhost:3000 ou https://localhost:3000)
 

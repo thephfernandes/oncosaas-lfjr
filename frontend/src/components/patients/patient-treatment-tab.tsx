@@ -134,7 +134,9 @@ export function PatientTreatmentTab({ patient }: PatientTreatmentTabProps) {
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold">
                               {treatment.treatmentName ||
-                                TREATMENT_TYPE_LABELS[treatment.treatmentType] ||
+                                TREATMENT_TYPE_LABELS[
+                                  treatment.treatmentType
+                                ] ||
                                 treatment.treatmentType}
                             </h4>
                             {treatment.line && (
@@ -185,9 +187,13 @@ export function PatientTreatmentTab({ patient }: PatientTreatmentTabProps) {
                                 Início:
                               </span>
                               <p className="mt-1">
-                                {format(new Date(treatment.startDate), 'dd/MM/yyyy', {
-                                  locale: ptBR,
-                                })}
+                                {format(
+                                  new Date(treatment.startDate),
+                                  'dd/MM/yyyy',
+                                  {
+                                    locale: ptBR,
+                                  }
+                                )}
                               </p>
                             </div>
                           )}
@@ -232,7 +238,9 @@ export function PatientTreatmentTab({ patient }: PatientTreatmentTabProps) {
                               <span className="font-medium text-muted-foreground">
                                 Ciclos Completados:
                               </span>
-                              <p className="mt-1">{treatment.cyclesCompleted}</p>
+                              <p className="mt-1">
+                                {treatment.cyclesCompleted}
+                              </p>
                             </div>
                           )}
                         </div>
@@ -284,4 +292,3 @@ export function PatientTreatmentTab({ patient }: PatientTreatmentTabProps) {
     </div>
   );
 }
-

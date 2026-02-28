@@ -15,7 +15,10 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { NavigationStep } from '@/lib/api/oncology-navigation';
-import { usePatientNavigationSteps, useUpdateNavigationStep } from '@/hooks/useOncologyNavigation';
+import {
+  usePatientNavigationSteps,
+  useUpdateNavigationStep,
+} from '@/hooks/useOncologyNavigation';
 import { Button } from '@/components/ui/button';
 
 interface OncologyNavigationPanelProps {
@@ -40,13 +43,9 @@ const JOURNEY_STAGE_LABELS_SHORT: Record<string, string> = {
   FOLLOW_UP: 'Seguimento',
 };
 
-const STAGE_ORDER: Array<'SCREENING' | 'NAVIGATION' | 'DIAGNOSIS' | 'TREATMENT' | 'FOLLOW_UP'> = [
-  'SCREENING',
-  'NAVIGATION',
-  'DIAGNOSIS',
-  'TREATMENT',
-  'FOLLOW_UP',
-];
+const STAGE_ORDER: Array<
+  'SCREENING' | 'NAVIGATION' | 'DIAGNOSIS' | 'TREATMENT' | 'FOLLOW_UP'
+> = ['SCREENING', 'NAVIGATION', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'];
 
 export function OncologyNavigationPanel({
   patientId,
@@ -86,7 +85,10 @@ export function OncologyNavigationPanel({
     }
   };
 
-  const getStatusColor = (status: NavigationStep['status'], isRequired: boolean) => {
+  const getStatusColor = (
+    status: NavigationStep['status'],
+    isRequired: boolean
+  ) => {
     switch (status) {
       case 'COMPLETED':
         return 'bg-green-50 border-green-200 text-green-800';
@@ -139,7 +141,10 @@ export function OncologyNavigationPanel({
         <div className="h-6 bg-gray-200 rounded animate-pulse w-1/2"></div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-100 rounded animate-pulse"></div>
+            <div
+              key={i}
+              className="h-20 bg-gray-100 rounded animate-pulse"
+            ></div>
           ))}
         </div>
       </div>
@@ -171,13 +176,16 @@ export function OncologyNavigationPanel({
   }
 
   // Agrupar etapas por fase da jornada
-  const stepsByStage = steps.reduce((acc, step) => {
-    if (!acc[step.journeyStage]) {
-      acc[step.journeyStage] = [];
-    }
-    acc[step.journeyStage].push(step);
-    return acc;
-  }, {} as Record<string, NavigationStep[]>);
+  const stepsByStage = steps.reduce(
+    (acc, step) => {
+      if (!acc[step.journeyStage]) {
+        acc[step.journeyStage] = [];
+      }
+      acc[step.journeyStage].push(step);
+      return acc;
+    },
+    {} as Record<string, NavigationStep[]>
+  );
 
   // Ordenar etapas dentro de cada fase
   Object.keys(stepsByStage).forEach((stage) => {
@@ -188,7 +196,10 @@ export function OncologyNavigationPanel({
       }
       // Por data esperada
       if (a.expectedDate && b.expectedDate) {
-        return new Date(a.expectedDate).getTime() - new Date(b.expectedDate).getTime();
+        return (
+          new Date(a.expectedDate).getTime() -
+          new Date(b.expectedDate).getTime()
+        );
       }
       return 0;
     });
@@ -203,7 +214,9 @@ export function OncologyNavigationPanel({
 
           const isExpanded = expandedStages.has(stage);
           const completedCount = stageSteps.filter((s) => s.isCompleted).length;
-          const overdueCount = stageSteps.filter((s) => s.status === 'OVERDUE').length;
+          const overdueCount = stageSteps.filter(
+            (s) => s.status === 'OVERDUE'
+          ).length;
           const isCurrentStage = stage === currentStage;
 
           return (
@@ -282,9 +295,13 @@ export function OncologyNavigationPanel({
                               <Clock className="h-4 w-4" />
                               <span>
                                 Esperado:{' '}
-                                {format(new Date(step.expectedDate), 'dd/MM/yyyy', {
-                                  locale: ptBR,
-                                })}
+                                {format(
+                                  new Date(step.expectedDate),
+                                  'dd/MM/yyyy',
+                                  {
+                                    locale: ptBR,
+                                  }
+                                )}
                               </span>
                             </div>
                           )}
@@ -295,9 +312,13 @@ export function OncologyNavigationPanel({
                               <CheckCircle2 className="h-4 w-4" />
                               <span>
                                 Concluída em:{' '}
-                                {format(new Date(step.completedAt), 'dd/MM/yyyy', {
-                                  locale: ptBR,
-                                })}
+                                {format(
+                                  new Date(step.completedAt),
+                                  'dd/MM/yyyy',
+                                  {
+                                    locale: ptBR,
+                                  }
+                                )}
                               </span>
                             </div>
                           )}
@@ -311,7 +332,9 @@ export function OncologyNavigationPanel({
                               disabled={updateStep.isPending}
                               className="px-3 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                             >
-                              {updateStep.isPending ? 'Salvando...' : 'Marcar como Concluída'}
+                              {updateStep.isPending
+                                ? 'Salvando...'
+                                : 'Marcar como Concluída'}
                             </button>
                           </div>
                         )}
@@ -327,4 +350,3 @@ export function OncologyNavigationPanel({
     </div>
   );
 }
-

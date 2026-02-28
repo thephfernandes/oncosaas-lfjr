@@ -1,11 +1,13 @@
 # Guardrail: Fontes de Busca na Internet
 
 ## Propósito
+
 Este guardrail estabelece regras rigorosas para garantir que apenas fontes médicas confiáveis e qualificadas sejam utilizadas em buscas na internet, protegendo a qualidade e confiabilidade das informações médicas geradas.
 
 ## Regra Principal
 
 **⚠️ REGRA OBRIGATÓRIA:**
+
 - **NUNCA** fazer buscas na internet sem especificar domínio confiável (whitelist)
 - **SEMPRE** validar que o domínio está na whitelist antes de executar query
 - **REJEITAR** automaticamente qualquer query que não especifique domínio da whitelist
@@ -14,67 +16,69 @@ Este guardrail estabelece regras rigorosas para garantir que apenas fontes médi
 
 ### 🏥 Sociedades Médicas BRASILEIRAS
 
-| Domínio | Organização | Especialidade/Temas |
-|---------|-------------|---------------------|
-| `diretrizes.cardiol.br` | SBC | Cardiologia (HAS, IC, arritmias, SCA) |
-| `abc.cardiol.br` | SBC | Cardiologia (notícias, atualizações) |
-| `diabetes.org.br` | SBD | Diabetes (DM1, DM2, gestacional) |
-| `sbpt.org.br` | SBPT | Pneumologia (DPOC, asma, pneumonia) |
-| `sbn.org.br` | SBN | Nefrologia (DRC, IRA, diálise) |
-| `amb.org.br` | AMB | Múltiplas especialidades |
-| `sbh.org.br` | SBH | Hematologia |
-| `sbcc.org.br` | SBCC | Cirurgia Cardiovascular |
-| `sbgg.org.br` | SBGG | Geriatria e Gerontologia |
-| `sbpc.org.br` | SBPC | Pediatria |
-| `febrasgo.org.br` | FEBRASGO | Ginecologia e Obstetricia |
-| `sbacv.org.br` | SBACV | Angiologia e Cirurgia Vascular |
-| `sbco.org.br` | SBCO | Coloproctologia |
-| `sbccp.org.br` | SBCCP | Colposcopia e Patologia do Trato Genital Inferior |
+| Domínio                 | Organização | Especialidade/Temas                               |
+| ----------------------- | ----------- | ------------------------------------------------- |
+| `diretrizes.cardiol.br` | SBC         | Cardiologia (HAS, IC, arritmias, SCA)             |
+| `abc.cardiol.br`        | SBC         | Cardiologia (notícias, atualizações)              |
+| `diabetes.org.br`       | SBD         | Diabetes (DM1, DM2, gestacional)                  |
+| `sbpt.org.br`           | SBPT        | Pneumologia (DPOC, asma, pneumonia)               |
+| `sbn.org.br`            | SBN         | Nefrologia (DRC, IRA, diálise)                    |
+| `amb.org.br`            | AMB         | Múltiplas especialidades                          |
+| `sbh.org.br`            | SBH         | Hematologia                                       |
+| `sbcc.org.br`           | SBCC        | Cirurgia Cardiovascular                           |
+| `sbgg.org.br`           | SBGG        | Geriatria e Gerontologia                          |
+| `sbpc.org.br`           | SBPC        | Pediatria                                         |
+| `febrasgo.org.br`       | FEBRASGO    | Ginecologia e Obstetricia                         |
+| `sbacv.org.br`          | SBACV       | Angiologia e Cirurgia Vascular                    |
+| `sbco.org.br`           | SBCO        | Coloproctologia                                   |
+| `sbccp.org.br`          | SBCCP       | Colposcopia e Patologia do Trato Genital Inferior |
 
 ### 🏛️ Fontes Governamentais BRASIL
 
-| Domínio | Organização | Temas |
-|---------|-------------|-------|
-| `saude.gov.br` | Ministério da Saúde | Protocolos clínicos (PCDT), programas, epidemiologia |
-| `anvisa.gov.br` | ANVISA | Medicamentos aprovados, alertas sanitários |
-| `conitec.gov.br` | CONITEC | Tecnologias em saúde, pareceres técnicos |
-| `bvsms.saude.gov.br` | BVS | Biblioteca Virtual em Saúde |
-| `portal.anm.org.br` | ANM | Academia Nacional de Medicina |
+| Domínio              | Organização         | Temas                                                |
+| -------------------- | ------------------- | ---------------------------------------------------- |
+| `saude.gov.br`       | Ministério da Saúde | Protocolos clínicos (PCDT), programas, epidemiologia |
+| `anvisa.gov.br`      | ANVISA              | Medicamentos aprovados, alertas sanitários           |
+| `conitec.gov.br`     | CONITEC             | Tecnologias em saúde, pareceres técnicos             |
+| `bvsms.saude.gov.br` | BVS                 | Biblioteca Virtual em Saúde                          |
+| `portal.anm.org.br`  | ANM                 | Academia Nacional de Medicina                        |
 
 ### 🌎 Sociedades Médicas INTERNACIONAIS
 
 #### Estados Unidos
-| Domínio | Organização | Especialidade |
-|---------|-------------|---------------|
-| `heart.org` | AHA | Doenças cardiovasculares |
-| `ahajournals.org` | AHA Journals | Pesquisas cardiovasculares |
-| `acc.org` | ACC | Guidelines cardiológicos |
-| `diabetes.org` | ADA | Standards of care diabetes |
-| `cdc.gov` | CDC | Epidemiologia, vacinação, doenças infecciosas |
-| `chestnet.org` | CHEST | Doenças pulmonares, TEP |
-| `fda.gov` | FDA | Aprovação de medicamentos, alertas |
-| `nih.gov` | NIH | Pesquisas, guidelines |
-| `mayoclinic.org` | Mayo Clinic | Informações sobre doenças |
-| `clevelandclinic.org` | Cleveland Clinic | Protocolos clínicos |
-| `hopkinsmedicine.org` | Johns Hopkins | Pesquisas, tratamentos |
-| `uptodate.com` | UpToDate | Referência médica evidence-based |
+
+| Domínio               | Organização      | Especialidade                                 |
+| --------------------- | ---------------- | --------------------------------------------- |
+| `heart.org`           | AHA              | Doenças cardiovasculares                      |
+| `ahajournals.org`     | AHA Journals     | Pesquisas cardiovasculares                    |
+| `acc.org`             | ACC              | Guidelines cardiológicos                      |
+| `diabetes.org`        | ADA              | Standards of care diabetes                    |
+| `cdc.gov`             | CDC              | Epidemiologia, vacinação, doenças infecciosas |
+| `chestnet.org`        | CHEST            | Doenças pulmonares, TEP                       |
+| `fda.gov`             | FDA              | Aprovação de medicamentos, alertas            |
+| `nih.gov`             | NIH              | Pesquisas, guidelines                         |
+| `mayoclinic.org`      | Mayo Clinic      | Informações sobre doenças                     |
+| `clevelandclinic.org` | Cleveland Clinic | Protocolos clínicos                           |
+| `hopkinsmedicine.org` | Johns Hopkins    | Pesquisas, tratamentos                        |
+| `uptodate.com`        | UpToDate         | Referência médica evidence-based              |
 
 #### Europa
-| Domínio | Organização | Especialidade |
-|---------|-------------|---------------|
-| `escardio.org` | ESC | Guidelines cardiológicos europeus |
-| `ersnet.org` | ERS | Doenças respiratórias |
-| `easd.org` | EASD | Diabetes guidelines europeus |
-| `nice.org.uk` | NICE | Guidelines britânicos |
-| `cochrane.org` | Cochrane | Revisões sistemáticas |
+
+| Domínio        | Organização | Especialidade                     |
+| -------------- | ----------- | --------------------------------- |
+| `escardio.org` | ESC         | Guidelines cardiológicos europeus |
+| `ersnet.org`   | ERS         | Doenças respiratórias             |
+| `easd.org`     | EASD        | Diabetes guidelines europeus      |
+| `nice.org.uk`  | NICE        | Guidelines britânicos             |
+| `cochrane.org` | Cochrane    | Revisões sistemáticas             |
 
 ### 📚 Bases de Dados Científicas
 
-| Domínio | Organização | Tipo de Conteúdo |
-|---------|-------------|------------------|
-| `pubmed.ncbi.nlm.nih.gov` | PubMed/MEDLINE | Artigos científicos, revisões |
-| `cochranelibrary.com` | Cochrane Library | Revisões sistemáticas |
-| `scholar.google.com` | Google Scholar | Artigos acadêmicos (usar com cautela) |
+| Domínio                   | Organização      | Tipo de Conteúdo                      |
+| ------------------------- | ---------------- | ------------------------------------- |
+| `pubmed.ncbi.nlm.nih.gov` | PubMed/MEDLINE   | Artigos científicos, revisões         |
+| `cochranelibrary.com`     | Cochrane Library | Revisões sistemáticas                 |
+| `scholar.google.com`      | Google Scholar   | Artigos acadêmicos (usar com cautela) |
 
 ## Regras de Validação
 
@@ -97,6 +101,7 @@ Este guardrail estabelece regras rigorosas para garantir que apenas fontes médi
 ### 2. Formato Obrigatório de Queries
 
 **✅ FORMATO CORRETO:**
+
 ```python
 # web_search
 web_search("hipertensão diretriz 2024 site:diretrizes.cardiol.br")
@@ -109,6 +114,7 @@ mcp_Firecrawl_Web_Search_firecrawl_search(
 ```
 
 **❌ FORMATO INCORRETO (REJEITAR):**
+
 ```python
 # Sem site: especificado
 web_search("hipertensão diretriz 2024")  # ❌ REJEITAR
@@ -125,6 +131,7 @@ web_search("hipertensão site:diretrizes.cardiol.br OR site:blog.com")  # ❌ RE
 **Se o usuário não especificar `site:`, você DEVE adicionar automaticamente:**
 
 **Por Especialidade:**
+
 - **Cardiologia**: `site:diretrizes.cardiol.br` (padrão) ou `site:heart.org`
 - **Diabetes**: `site:diabetes.org.br` ou `site:diabetes.org`
 - **Pneumologia**: `site:sbpt.org.br` ou `site:chestnet.org`
@@ -133,6 +140,7 @@ web_search("hipertensão site:diretrizes.cardiol.br OR site:blog.com")  # ❌ RE
 - **Protocolos MS**: `site:saude.gov.br`
 
 **Por Tipo de Conteúdo:**
+
 - **Diretrizes brasileiras**: `site:diretrizes.cardiol.br` ou domínio específico da sociedade
 - **Guidelines internacionais**: `site:heart.org`, `site:acc.org`, `site:escardio.org`
 - **Epidemiologia**: `site:saude.gov.br` (BR) ou `site:cdc.gov` (internacional)
@@ -153,6 +161,7 @@ web_search("hipertensão site:diretrizes.cardiol.br OR site:blog.com")  # ❌ RE
    - Se não autorizado → REJEITAR
 
 **Exemplo de validação:**
+
 ```python
 # Extrair domínio da URL
 url = "https://diretrizes.cardiol.br/diretriz/2024/hipertensao.pdf"
@@ -182,6 +191,7 @@ if domain not in WHITELIST_DOMAINS:
 - Bases de dados acadêmicas adicionais
 
 **Processo:**
+
 1. Identificar necessidade do novo domínio
 2. Verificar credibilidade (sociedade reconhecida? peer-reviewed?)
 3. Adicionar à whitelist APENAS após validação
@@ -199,12 +209,12 @@ WHITELIST_DOMAINS = [
     "diabetes.org.br",
     "sbpt.org.br",
     # ... (lista completa acima)
-    
+
     # Governo BR
     "saude.gov.br",
     "anvisa.gov.br",
     # ...
-    
+
     # Internacional
     "heart.org",
     "acc.org",
@@ -214,20 +224,20 @@ WHITELIST_DOMAINS = [
 def validate_web_query(query: str, tool: str) -> bool:
     """
     Valida se a query de busca web está conforme guardrail.
-    
+
     Args:
         query: String da query de busca
         tool: Ferramenta usada ('web_search', 'firecrawl_search', 'firecrawl_scrape')
-    
+
     Returns:
         bool: True se válido, False se rejeitado
-    
+
     Raises:
         ValueError: Se domínio não autorizado
     """
     # 1. Extrair domínio(s) da query
     domains = extract_domains_from_query(query, tool)
-    
+
     # 2. Se não há domínio, adicionar automaticamente (ou rejeitar)
     if not domains:
         if tool == 'web_search':
@@ -237,7 +247,7 @@ def validate_web_query(query: str, tool: str) -> bool:
                 raise ValueError("Query sem domínio especificado e sem contexto para adicionar automaticamente")
         else:
             raise ValueError(f"{tool} requer domínio explícito")
-    
+
     # 3. Validar cada domínio
     for domain in domains:
         if domain not in WHITELIST_DOMAINS:
@@ -246,13 +256,13 @@ def validate_web_query(query: str, tool: str) -> bool:
                 f"Use apenas fontes da whitelist. "
                 f"Domínios permitidos: {list_approved_domains_for_category(domain)}"
             )
-    
+
     return True
 
 def extract_domains_from_query(query: str, tool: str) -> list[str]:
     """Extrai domínios da query."""
     domains = []
-    
+
     if tool == 'firecrawl_scrape':
         # Extrair da URL
         domain = urlparse(query).netloc
@@ -264,13 +274,13 @@ def extract_domains_from_query(query: str, tool: str) -> list[str]:
         pattern = r'site:([^\s]+)'
         matches = re.findall(pattern, query)
         domains.extend(matches)
-    
+
     return domains
 
 def get_default_domain_for_topic(query: str) -> str:
     """Retorna domínio padrão baseado no tema da query."""
     query_lower = query.lower()
-    
+
     # Mapeamento tema -> domínio padrão
     topic_domain_map = {
         'cardio': 'diretrizes.cardiol.br',
@@ -282,11 +292,11 @@ def get_default_domain_for_topic(query: str) -> str:
         'pcdt': 'saude.gov.br',
         # ... mais mapeamentos
     }
-    
+
     for topic, domain in topic_domain_map.items():
         if topic in query_lower:
             return domain
-    
+
     # Se não encontrar, retornar domínio mais genérico
     return 'saude.gov.br'  # ou None para forçar especificação
 ```
@@ -308,6 +318,7 @@ web_search(query)
 ## Mensagens de Erro Padronizadas
 
 ### Erro 1: Query sem Domínio
+
 ```
 ❌ ERRO: Query de busca não especifica domínio confiável.
 
@@ -320,6 +331,7 @@ Exemplo correto: "hipertensão diretriz 2024 site:diretrizes.cardiol.br"
 ```
 
 ### Erro 2: Domínio Não Autorizado
+
 ```
 ❌ ERRO: Domínio '[domínio]' não está na whitelist de fontes confiáveis.
 
@@ -332,6 +344,7 @@ Por favor, use um domínio autorizado ou solicite adição à whitelist após va
 ```
 
 ### Erro 3: Múltiplos Domínios Não Autorizados
+
 ```
 ❌ ERRO: Query contém domínios não autorizados: [lista]
 
@@ -387,13 +400,13 @@ log_entry = {
 ✅ `web_search("hipertensão site:diretrizes.cardiol.br")`  
 ✅ `firecrawl_search(query="diabetes site:diabetes.org.br")`  
 ✅ `firecrawl_scrape(url="https://saude.gov.br/protocolo.pdf")`  
-✅ Query sem `site:` mas com auto-seleção de domínio válido  
+✅ Query sem `site:` mas com auto-seleção de domínio válido
 
 ### Testes que DEVEM Falhar
 
 ❌ `web_search("hipertensão")` (sem site:)  
 ❌ `web_search("hipertensão site:wikipedia.org")` (domínio não autorizado)  
-❌ `firecrawl_scrape(url="https://blog-medico.com/artigo")` (não autorizado)  
+❌ `firecrawl_scrape(url="https://blog-medico.com/artigo")` (não autorizado)
 
 ## Referências
 
@@ -406,22 +419,25 @@ log_entry = {
 ## Resumo Executivo
 
 **⚠️ REGRA PRINCIPAL:**
+
 - ✅ SEMPRE especificar `site:[domínio]` da whitelist
 - ✅ Se não especificado, adicionar automaticamente domínio apropriado
 - ✅ REJEITAR qualquer busca sem domínio válido
 - ✅ Validar ANTES de executar qualquer query
 
 **✅ Ações Permitidas:**
+
 - Buscar em domínios da whitelist
 - Auto-adicionar domínio se não especificado (com contexto)
 
 **❌ Ações Proibidas:**
+
 - Buscar sem especificar domínio
 - Usar domínios fora da whitelist
 - Buscar em Wikipedia, blogs, redes sociais, fóruns
 
 **🔧 Implementação:**
+
 - Validar antes de executar
 - Rejeitar com mensagem clara
 - Registrar para auditoria
-

@@ -233,7 +233,7 @@ export class FHIRSyncService {
 
       for (const entry of bundle.entry) {
         if (entry.resource?.resourceType === 'Observation') {
-          const fhirObservation = entry.resource as any;
+          const fhirObservation = entry.resource;
 
           // Verificar se já existe (por fhirResourceId)
           if (fhirObservation.id) {
@@ -278,4 +278,3 @@ export class FHIRSyncService {
     }
   }
 }
-

@@ -13,6 +13,7 @@
 **Problema:** Pacientes não estão ordenados, casos críticos podem passar despercebidos.
 
 **Solução:**
+
 ```typescript
 // backend/src/patients/patients.service.ts
 async findAll(tenantId: string): Promise<Patient[]> {
@@ -36,6 +37,7 @@ async findAll(tenantId: string): Promise<Patient[]> {
 ```
 
 **Frontend:**
+
 - Ordenação já está no backend, apenas garantir que está sendo aplicada
 - Adicionar indicador visual de ordenação atual
 
@@ -46,11 +48,13 @@ async findAll(tenantId: string): Promise<Patient[]> {
 ### 1.2 Filtros Básicos
 
 **Implementar:**
+
 - Por categoria (Crítico/Alto/Médio/Baixo)
 - Por alertas pendentes (sim/não)
 - Por tipo de câncer
 
 **Código:**
+
 ```typescript
 // frontend/src/components/dashboard/patient-list-connected.tsx
 const [filters, setFilters] = useState({
@@ -60,7 +64,10 @@ const [filters, setFilters] = useState({
 });
 
 const filteredPatients = transformedPatients.filter((patient) => {
-  if (filters.category !== 'all' && patient.priorityCategory !== filters.category) {
+  if (
+    filters.category !== 'all' &&
+    patient.priorityCategory !== filters.category
+  ) {
     return false;
   }
   if (filters.hasAlerts === 'yes' && patient.alertCount === 0) {
@@ -69,7 +76,10 @@ const filteredPatients = transformedPatients.filter((patient) => {
   if (filters.hasAlerts === 'no' && patient.alertCount > 0) {
     return false;
   }
-  if (filters.cancerType !== 'all' && patient.cancerType !== filters.cancerType) {
+  if (
+    filters.cancerType !== 'all' &&
+    patient.cancerType !== filters.cancerType
+  ) {
     return false;
   }
   return true;
@@ -83,11 +93,13 @@ const filteredPatients = transformedPatients.filter((patient) => {
 ### 1.3 Busca Funcional
 
 **Implementar:**
+
 - Busca por nome (case-insensitive)
 - Busca por CPF parcial
 - Debounce de 300ms
 
 **Código:**
+
 ```typescript
 // frontend/src/components/dashboard/patient-list-connected.tsx
 const [searchQuery, setSearchQuery] = useState('');
@@ -102,7 +114,7 @@ useEffect(() => {
 
 const filteredPatients = transformedPatients.filter((patient) => {
   if (!debouncedSearch) return true;
-  
+
   const query = debouncedSearch.toLowerCase();
   return (
     patient.name.toLowerCase().includes(query) ||
@@ -119,11 +131,13 @@ const filteredPatients = transformedPatients.filter((patient) => {
 ### 1.4 Alertas Críticos no Header
 
 **Implementar:**
+
 - Badge vermelho com contador de alertas CRITICAL pendentes
 - Notificação visual (piscante opcional)
 - Link direto para alertas críticos
 
 **Código:**
+
 ```typescript
 // frontend/src/app/dashboard/page.tsx
 const { data: criticalAlerts } = useAlerts('PENDING'); // Filtrar por severity CRITICAL no backend
@@ -140,6 +154,7 @@ const { data: criticalAlerts } = useAlerts('PENDING'); // Filtrar por severity C
 ```
 
 **Backend:**
+
 ```typescript
 // backend/src/alerts/alerts.service.ts
 async findCriticalPending(tenantId: string): Promise<Alert[]> {
@@ -163,11 +178,13 @@ async findCriticalPending(tenantId: string): Promise<Alert[]> {
 ### 2.1 Informações Clínicas no Card
 
 **Adicionar ao card:**
+
 - "Última consulta: há X dias"
 - "Próxima consulta: em X dias" (se houver)
 - Badge "Em tratamento ativo"
 
 **Requer:**
+
 - Adicionar campos `lastAppointment` e `nextAppointment` ao modelo Patient
 - Ou buscar de Observation/PatientJourney
 
@@ -176,10 +193,12 @@ async findCriticalPending(tenantId: string): Promise<Alert[]> {
 ### 2.2 Tooltip Explicativo do Score
 
 **Implementar:**
+
 - Hover no score mostra tooltip com razão
 - Exemplo: "Score 90: Dor intensa (8/10) + Estágio IV + Sem resposta há 3 dias"
 
 **Requer:**
+
 - Campo `priorityReason` já existe no schema
 - Apenas exibir em tooltip
 
@@ -188,11 +207,13 @@ async findCriticalPending(tenantId: string): Promise<Alert[]> {
 ### 2.3 Feedback Visual de Conversas Assumidas
 
 **Implementar:**
+
 - Badge "Assumido por: [Nome]" no card
 - Borda verde para conversas assumidas
 - Filtro "Minhas Conversas"
 
 **Requer:**
+
 - Endpoint para assumir conversa (já existe)
 - Armazenar `assumedBy` e `assumedAt` na Message
 - Filtrar por usuário atual
@@ -202,8 +223,11 @@ async findCriticalPending(tenantId: string): Promise<Alert[]> {
 ## 🟢 FASE 3 - MELHORIAS (Sprint 5+)
 
 ### 3.1 Métricas e KPIs
+
 ### 3.2 Timeline Completa
+
 ### 3.3 Notificações Push
+
 ### 3.4 Exportação de Dados
 
 ---
@@ -211,17 +235,20 @@ async findCriticalPending(tenantId: string): Promise<Alert[]> {
 ## 📋 Checklist de Implementação
 
 ### Sprint 1
+
 - [ ] Ordenação automática por prioridade (backend)
 - [ ] Filtros básicos (frontend)
 - [ ] Busca funcional com debounce
 - [ ] Alertas críticos no header
 
 ### Sprint 2
+
 - [ ] Testes com enfermeiros
 - [ ] Ajustes baseados em feedback
 - [ ] Documentação de uso
 
 ### Sprint 3
+
 - [ ] Informações clínicas no card
 - [ ] Tooltip explicativo do score
 - [ ] Feedback visual de conversas assumidas
@@ -231,12 +258,13 @@ async findCriticalPending(tenantId: string): Promise<Alert[]> {
 ## 🎯 Métricas de Sucesso
 
 **Após Fase 1:**
+
 - Tempo para encontrar paciente crítico: < 5 segundos
 - Taxa de alertas críticos não visualizados: < 1%
 - Satisfação da equipe de enfermagem: > 4/5
 
 **Após Fase 2:**
+
 - Redução de 30% no tempo de navegação
 - Aumento de 20% na resolução de alertas
 - Melhoria na continuidade de cuidado
-

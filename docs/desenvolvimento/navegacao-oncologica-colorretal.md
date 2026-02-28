@@ -58,26 +58,26 @@ model NavigationStep {
   tenantId        String
   patientId       String
   journeyId       String?
-  
+
   // Contexto
   cancerType      String    // "colorectal", "breast", etc.
   journeyStage    JourneyStage // SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP
   stepKey         String    // "colonoscopy", "biopsy", etc.
   stepName        String    // "Colonoscopia"
   stepDescription String?
-  
+
   // Status
   status          NavigationStepStatus
   isRequired      Boolean
   isCompleted     Boolean
   completedAt     DateTime?
   completedBy     String?
-  
+
   // Datas
   expectedDate    DateTime?
   dueDate         DateTime?
   actualDate      DateTime?
-  
+
   // Metadados
   metadata        Json?
   notes           String?
@@ -276,7 +276,7 @@ Body: {
 ### Verificar Etapas Atrasadas (Cron Job)
 
 ```typescript
-POST /api/v1/oncology-navigation/check-overdue
+POST / api / v1 / oncology - navigation / check - overdue;
 ```
 
 **Recomendação:** Executar diariamente via cron job.
@@ -391,4 +391,3 @@ O painel exibe:
 
 **Última atualização:** 2024-01-XX  
 **Versão:** 1.0.0
-

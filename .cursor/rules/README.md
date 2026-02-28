@@ -5,9 +5,11 @@ Este diretório contém as regras do Cursor que orientam o desenvolvimento e man
 ## Regras Disponíveis
 
 ### 🌐 projeto-medicina.mdc
+
 **Tipo:** Sempre aplicada (`alwaysApply: true`)
 
 Fornece contexto geral sobre o projeto, incluindo:
+
 - Estrutura do projeto
 - Scripts disponíveis
 - Lista de livros
@@ -18,9 +20,11 @@ Esta regra é carregada automaticamente em todas as interações.
 ---
 
 ### 🐍 python-conversao.mdc
+
 **Tipo:** Aplicada a arquivos Python (`globs: *.py`)
 
 Define padrões para os scripts de conversão:
+
 - Encoding e shebang
 - Nomenclatura de funções e variáveis
 - Estrutura de funções
@@ -32,9 +36,11 @@ Ativa automaticamente ao editar arquivos `.py`.
 ---
 
 ### 📁 organizacao-arquivos.mdc
+
 **Tipo:** Sob demanda (`description`)
 
 Regras de organização do projeto:
+
 - Estrutura de diretórios
 - Convenções de nomenclatura
 - Paths importantes
@@ -45,9 +51,11 @@ Use quando trabalhar com estrutura de arquivos ou organização.
 ---
 
 ### 📝 markdown-livros.mdc
+
 **Tipo:** Aplicada a arquivos Markdown (`globs: *.md`)
 
 Padrões para documentos Markdown dos livros:
+
 - Estrutura de documento
 - Formatação de cabeçalhos
 - Inserção de imagens
@@ -60,9 +68,11 @@ Ativa automaticamente ao editar arquivos `.md`.
 ## Regras de Especialidades Médicas
 
 ### 👨‍⚕️ medicina-familia.mdc
+
 **Tipo:** Sempre aplicada (`alwaysApply: true`)
 
 Conhecimento detalhado em Medicina de Família e Comunidade:
+
 - Terminologia de APS
 - Protocolos: HAS, DM, saúde da mulher, criança, idoso
 - Vacinação, pré-natal, puericultura
@@ -72,9 +82,11 @@ Conhecimento detalhado em Medicina de Família e Comunidade:
 ---
 
 ### 🩺 clinica-medica.mdc
+
 **Tipo:** Sempre aplicada (`alwaysApply: true`)
 
 Conhecimento detalhado em Clínica Médica:
+
 - Terminologia de doenças sistêmicas
 - Cardiologia: IC, FA, SCA, valvulopatias
 - Pneumologia: DPOC, asma, pneumonia, derrame pleural
@@ -87,9 +99,11 @@ Conhecimento detalhado em Clínica Médica:
 ---
 
 ### ✂️ clinica-cirurgica.mdc
+
 **Tipo:** Sempre aplicada (`alwaysApply: true`)
 
 Conhecimento detalhado em Clínica Cirúrgica:
+
 - Terminologia cirúrgica e anatomia
 - Classificação ASA, índice de Lee
 - Antibioticoprofilaxia cirúrgica
@@ -102,9 +116,11 @@ Conhecimento detalhado em Clínica Cirúrgica:
 ---
 
 ### 🚑 emergencista.mdc
+
 **Tipo:** Sempre aplicada (`alwaysApply: true`)
 
 Conhecimento detalhado em Medicina de Emergência:
+
 - Triagem de Manchester
 - Protocolos ACLS: PCR, FV/TVSP, AESP
 - Protocolo ATLS: trauma, ABCDE, choque hemorrágico
@@ -117,9 +133,11 @@ Conhecimento detalhado em Medicina de Emergência:
 ---
 
 ### 🏥 pronto-socorro.mdc
+
 **Tipo:** Sempre aplicada (`alwaysApply: true`)
 
 Conhecimento detalhado em Medicina de Pronto Socorro/UPA:
+
 - Diferenciação: Urgência vs Emergência
 - Classificação de risco adaptada
 - Urgências comuns: cólica renal, lombalgia, cefaleia
@@ -132,9 +150,11 @@ Conhecimento detalhado em Medicina de Pronto Socorro/UPA:
 ---
 
 ### 🏥 intensivista.mdc
+
 **Tipo:** Sempre aplicada (`alwaysApply: true`)
 
 Conhecimento detalhado em Medicina Intensiva:
+
 - Scores: APACHE II, SOFA, SAPS 3
 - Sepse e choque séptico (pacote de 1h)
 - Ventilação mecânica: estratégia protetora, SARA, desmame
@@ -151,24 +171,29 @@ Conhecimento detalhado em Medicina Intensiva:
 ## Regras de Resumos Médicos
 
 ### 📝 resumo-medico-estruturado.mdc
+
 **Tipo:** Sob demanda (usado pelo comando `.resumo`)
 
 Estrutura completa para criar resumos médicos detalhados:
+
 - Todas as seções obrigatórias
 - Profundidade máxima (~200+ páginas)
 - Foco em completude acadêmica
 - Inclui fisiopatologia molecular, farmacologia completa, exemplos práticos extensos
 
 ### 📄 resumo-conciso.mdc
+
 **Tipo:** Sob demanda (usado pelo comando `.resumo-conciso`)
 
 Estrutura para criar resumos médicos concisos (≤30 páginas):
+
 - 15 seções obrigatórias focadas em aplicabilidade
 - Equilibra profundidade com objetividade
 - Orientado para tomada de decisão clínica
 - Ideal para: consulta rápida, revisão pré-plantão, checklist
 
 **Use quando:**
+
 - Criar resumos para aplicação prática imediata
 - Material para plantão ou atendimento
 - Revisão focada em ação clínica
@@ -178,11 +203,13 @@ Estrutura para criar resumos médicos concisos (≤30 páginas):
 ## Meta-Regra
 
 ### 📋 template-especialista.mdc
+
 **Tipo:** Sob demanda (`alwaysApply: false`)
 
 **Template e guia para criar regras de especialidades médicas.**
 
 Esta meta-regra documenta:
+
 - Estrutura padrão completa de regras de especialidades
 - Metodologia de raciocínio clínico (7 subseções obrigatórias)
 - Stack de habilidades do especialista
@@ -192,6 +219,7 @@ Esta meta-regra documenta:
 - Exemplos de referência
 
 **Use quando:**
+
 - Criar uma nova especialidade (ex: Cardiologia, Neurologia, Pediatria)
 - Revisar/melhorar regras existentes
 - Garantir consistência entre especialidades
@@ -204,6 +232,7 @@ Esta meta-regra documenta:
 ## Como Usar
 
 As regras são automaticamente aplicadas pelo Cursor baseado em:
+
 1. **alwaysApply: true** - Sempre ativa
 2. **globs** - Ativa para tipos de arquivo específicos
 3. **description** - Pode ser referenciada manualmente
@@ -211,6 +240,7 @@ As regras são automaticamente aplicadas pelo Cursor baseado em:
 ## Manutenção
 
 Para modificar ou adicionar regras:
+
 1. Edite os arquivos `.mdc` existentes
 2. Ou crie novos arquivos `.mdc` neste diretório
 3. Use a sintaxe de frontmatter YAML para metadados
@@ -238,4 +268,3 @@ Use [nome do arquivo](mdc:caminho/arquivo.ext) para referenciar arquivos.
 
 **Criado em:** 27 de outubro de 2025  
 **Projeto:** Conversão de Livros Médicos para Markdown
-

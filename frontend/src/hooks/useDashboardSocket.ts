@@ -21,7 +21,7 @@ export const useDashboardSocket = () => {
       // Invalidar métricas do dashboard
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
-      
+
       // Notificação do navegador (opcional)
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Alerta Crítico', {
@@ -68,4 +68,3 @@ export const useDashboardSocket = () => {
     isConnected,
   };
 };
-

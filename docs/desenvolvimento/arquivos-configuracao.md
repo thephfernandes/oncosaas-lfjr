@@ -9,6 +9,7 @@ Este documento explica para que servem os arquivos de configuração adicionais 
 Os arquivos de configuração são ferramentas que **automatizam** e **padronizam** o desenvolvimento, garantindo que todo código siga as mesmas regras e padrões, mesmo com múltiplos desenvolvedores trabalhando no projeto.
 
 **Benefícios:**
+
 - ✅ Consistência de código entre desenvolvedores
 - ✅ Detecção automática de erros antes de commitar
 - ✅ Formatação automática (sem discussões sobre estilo)
@@ -33,21 +34,25 @@ Os arquivos de configuração são ferramentas que **automatizam** e **padroniza
 ### Exemplo Prático
 
 **Sem ESLint:**
+
 ```typescript
 // Código com problemas que passaria despercebido
-function getPatient(id) {  // ❌ Sem tipo, sem validação
-  return patients.find(p => p.id == id);  // ❌ == em vez de ===
+function getPatient(id) {
+  // ❌ Sem tipo, sem validação
+  return patients.find((p) => p.id == id); // ❌ == em vez de ===
 }
 
 const data = null;
-console.log(data.name);  // ❌ Vai dar erro em runtime!
+console.log(data.name); // ❌ Vai dar erro em runtime!
 ```
 
 **Com ESLint configurado:**
+
 ```typescript
 // ESLint força você a escrever melhor
-function getPatient(id: string): Patient | undefined {  // ✅ Tipado
-  return patients.find(p => p.id === id);  // ✅ === correto
+function getPatient(id: string): Patient | undefined {
+  // ✅ Tipado
+  return patients.find((p) => p.id === id); // ✅ === correto
 }
 
 const data = null;
@@ -60,18 +65,19 @@ const data = null;
 // .eslintrc.json (Frontend)
 {
   "extends": [
-    "next/core-web-vitals",           // Regras do Next.js
-    "plugin:@typescript-eslint/recommended"  // Regras TypeScript
+    "next/core-web-vitals", // Regras do Next.js
+    "plugin:@typescript-eslint/recommended" // Regras TypeScript
   ],
   "rules": {
-    "@typescript-eslint/no-explicit-any": "error",  // Proíbe usar 'any'
-    "@typescript-eslint/explicit-function-return-type": "warn",  // Avisa se falta tipo de retorno
-    "no-console": ["warn", { "allow": ["warn", "error"] }]  // Só permite console.warn/error
+    "@typescript-eslint/no-explicit-any": "error", // Proíbe usar 'any'
+    "@typescript-eslint/explicit-function-return-type": "warn", // Avisa se falta tipo de retorno
+    "no-console": ["warn", { "allow": ["warn", "error"] }] // Só permite console.warn/error
   }
 }
 ```
 
 **Como usar:**
+
 ```bash
 # Verificar erros
 npm run lint
@@ -98,24 +104,26 @@ npm run lint -- --fix
 ### Exemplo Prático
 
 **Antes do Prettier** (cada desenvolvedor formata diferente):
+
 ```typescript
 // Desenvolvedor A
-function getPatient(id:string){
-return patients.find(p=>p.id===id);
+function getPatient(id: string) {
+  return patients.find((p) => p.id === id);
 }
 
 // Desenvolvedor B
-function getPatient( id : string ) {
-  return patients.find( p => p.id === id );
+function getPatient(id: string) {
+  return patients.find((p) => p.id === id);
 }
 
 // Desenvolvedor C
 function getPatient(id: string) {
-    return patients.find((p) => p.id === id);
+  return patients.find((p) => p.id === id);
 }
 ```
 
 **Depois do Prettier** (todos ficam iguais):
+
 ```typescript
 // Prettier formata automaticamente para o mesmo estilo
 function getPatient(id: string) {
@@ -128,15 +136,16 @@ function getPatient(id: string) {
 ```json
 // .prettierrc
 {
-  "semi": true,              // Usa ponto e vírgula
-  "trailingComma": "es5",    // Vírgula final em arrays/objetos
-  "singleQuote": true,        // Aspas simples em vez de duplas
-  "printWidth": 80,          // Quebra linha em 80 caracteres
-  "tabWidth": 2              // 2 espaços por indentação
+  "semi": true, // Usa ponto e vírgula
+  "trailingComma": "es5", // Vírgula final em arrays/objetos
+  "singleQuote": true, // Aspas simples em vez de duplas
+  "printWidth": 80, // Quebra linha em 80 caracteres
+  "tabWidth": 2 // 2 espaços por indentação
 }
 ```
 
 **Como usar:**
+
 ```bash
 # Formatar todos os arquivos
 npm run format
@@ -164,6 +173,7 @@ npm run format
 ### Exemplo Prático
 
 **Sem testes:**
+
 ```typescript
 // Código sem testes - você não sabe se funciona
 function calculatePriority(patient: Patient): number {
@@ -175,6 +185,7 @@ function calculatePriority(patient: Patient): number {
 ```
 
 **Com testes:**
+
 ```typescript
 // patients.service.spec.ts
 describe('calculatePriority', () => {
@@ -183,10 +194,10 @@ describe('calculatePriority', () => {
       symptoms: { fever: 39, pain: 9 },
       stage: 'IV',
     };
-    
+
     const result = calculatePriority(patient);
-    
-    expect(result).toBeGreaterThan(80);  // ✅ Teste automático
+
+    expect(result).toBeGreaterThan(80); // ✅ Teste automático
   });
 });
 
@@ -200,26 +211,27 @@ describe('calculatePriority', () => {
 ```javascript
 // jest.config.js (Backend)
 module.exports = {
-  preset: 'ts-jest',           // Usa TypeScript
-  testEnvironment: 'node',      // Ambiente Node.js
+  preset: 'ts-jest', // Usa TypeScript
+  testEnvironment: 'node', // Ambiente Node.js
   coverageDirectory: 'coverage', // Onde salvar relatório de cobertura
   collectCoverageFrom: [
-    'src/**/*.ts',              // Testar todos os arquivos .ts
-    '!src/**/*.spec.ts',        // Exceto arquivos de teste
-    '!src/main.ts',             // Exceto entry point
+    'src/**/*.ts', // Testar todos os arquivos .ts
+    '!src/**/*.spec.ts', // Exceto arquivos de teste
+    '!src/main.ts', // Exceto entry point
   ],
   coverageThreshold: {
     global: {
-      branches: 70,             // 70% das branches testadas
-      functions: 70,            // 70% das funções testadas
-      lines: 70,                // 70% das linhas testadas
-      statements: 70,           // 70% das statements testadas
+      branches: 70, // 70% das branches testadas
+      functions: 70, // 70% das funções testadas
+      lines: 70, // 70% das linhas testadas
+      statements: 70, // 70% das statements testadas
     },
   },
 };
 ```
 
 **Como usar:**
+
 ```bash
 # Rodar todos os testes
 npm test
@@ -249,6 +261,7 @@ npm test -- --coverage
 ### Exemplo Prático
 
 **Sem Husky:**
+
 ```bash
 # Desenvolvedor commita código quebrado
 git commit -m "feat: adiciona nova feature"
@@ -259,6 +272,7 @@ git commit -m "feat: adiciona nova feature"
 ```
 
 **Com Husky:**
+
 ```bash
 # Desenvolvedor tenta commitar código quebrado
 git commit -m "feat: adiciona nova feature"
@@ -278,15 +292,15 @@ git commit -m "feat: adiciona nova feature"
 // package.json
 {
   "scripts": {
-    "prepare": "husky install"  // Instala Husky automaticamente
+    "prepare": "husky install" // Instala Husky automaticamente
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",      // Corrige erros do ESLint
-      "prettier --write"   // Formata código
+      "eslint --fix", // Corrige erros do ESLint
+      "prettier --write" // Formata código
     ],
     "*.{json,md}": [
-      "prettier --write"   // Formata JSON e Markdown
+      "prettier --write" // Formata JSON e Markdown
     ]
   }
 }
@@ -303,6 +317,7 @@ npm test              # Roda testes (rápido)
 ```
 
 **Como funciona:**
+
 1. Desenvolvedor faz `git commit`
 2. Husky executa `pre-commit` hook automaticamente
 3. Se algo falhar, commit é bloqueado
@@ -325,6 +340,7 @@ npm test              # Roda testes (rápido)
 ### Exemplo Prático
 
 **Sem lint-staged:**
+
 ```bash
 # Você modificou apenas 1 arquivo
 git add src/patients/patients.service.ts
@@ -334,6 +350,7 @@ git add src/patients/patients.service.ts
 ```
 
 **Com lint-staged:**
+
 ```bash
 # Você modificou apenas 1 arquivo
 git add src/patients/patients.service.ts
@@ -361,6 +378,7 @@ npm install --save-dev @typescript-eslint/parser @typescript-eslint/eslint-plugi
 ### 2. Criar Arquivos de Configuração
 
 **Frontend `.eslintrc.json`:**
+
 ```json
 {
   "extends": [
@@ -376,6 +394,7 @@ npm install --save-dev @typescript-eslint/parser @typescript-eslint/eslint-plugi
 ```
 
 **`.prettierrc` (raiz do projeto):**
+
 ```json
 {
   "semi": true,
@@ -387,6 +406,7 @@ npm install --save-dev @typescript-eslint/parser @typescript-eslint/eslint-plugi
 ```
 
 **`package.json` (adicionar scripts):**
+
 ```json
 {
   "scripts": {
@@ -400,13 +420,8 @@ npm install --save-dev @typescript-eslint/parser @typescript-eslint/eslint-plugi
     "prepare": "husky install"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
+    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,md}": ["prettier --write"]
   }
 }
 ```
@@ -430,13 +445,13 @@ npx husky add .husky/pre-push "npm test"
 
 ## 🎯 Resumo: Por que são Importantes?
 
-| Ferramenta | Problema que Resolve | Benefício |
-|------------|---------------------|-----------|
-| **ESLint** | Código inconsistente, erros não detectados | Detecta problemas automaticamente |
-| **Prettier** | Discussões sobre formatação, código inconsistente | Formatação automática padronizada |
-| **Jest** | Bugs em produção, código não testado | Validação automática de funcionalidades |
-| **Husky** | Commits com código quebrado | Bloqueia commits ruins automaticamente |
-| **lint-staged** | Lint lento em projetos grandes | Valida apenas arquivos modificados |
+| Ferramenta      | Problema que Resolve                              | Benefício                               |
+| --------------- | ------------------------------------------------- | --------------------------------------- |
+| **ESLint**      | Código inconsistente, erros não detectados        | Detecta problemas automaticamente       |
+| **Prettier**    | Discussões sobre formatação, código inconsistente | Formatação automática padronizada       |
+| **Jest**        | Bugs em produção, código não testado              | Validação automática de funcionalidades |
+| **Husky**       | Commits com código quebrado                       | Bloqueia commits ruins automaticamente  |
+| **lint-staged** | Lint lento em projetos grandes                    | Valida apenas arquivos modificados      |
 
 ---
 
@@ -469,4 +484,3 @@ Depois de configurar, você terá:
 
 **Última atualização**: 2024-01-XX  
 **Versão**: 1.0.0
-

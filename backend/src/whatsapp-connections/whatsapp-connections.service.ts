@@ -62,28 +62,37 @@ export class WhatsAppConnectionsService {
   ) {
     this.metaApiVersion =
       this.configService.get<string>('META_API_VERSION') || 'v18.0';
-    this.metaAppId = this.configService.get<string>('META_APP_ID') || 
-                     this.configService.get<string>('APP_META_APP_ID') || '';
-    this.metaAppSecret = this.configService.get<string>('META_APP_SECRET') || '';
-    this.metaConfigId = this.configService.get<string>('APP_META_CONFIG_ID') || '';
+    this.metaAppId =
+      this.configService.get<string>('META_APP_ID') ||
+      this.configService.get<string>('APP_META_APP_ID') ||
+      '';
+    this.metaAppSecret =
+      this.configService.get<string>('META_APP_SECRET') || '';
+    this.metaConfigId =
+      this.configService.get<string>('APP_META_CONFIG_ID') || '';
     this.metaOAuthRedirectUri =
       this.configService.get<string>('META_OAUTH_REDIRECT_URI') ||
       this.configService.get<string>('META_REDIRECT_URI') ||
       'http://localhost:3002/api/v1/whatsapp-connections/oauth/callback';
-    const configuredEncryptionKey = this.configService.get<string>('ENCRYPTION_KEY');
-    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
-    
+    const configuredEncryptionKey =
+      this.configService.get<string>('ENCRYPTION_KEY');
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
+
     if (!configuredEncryptionKey) {
       if (isProduction) {
-        throw new Error('ENCRYPTION_KEY must be configured in production environment');
+        throw new Error(
+          'ENCRYPTION_KEY must be configured in production environment'
+        );
       }
       this.logger.warn(
         '⚠️ ENCRYPTION_KEY not configured. Using insecure default key. ' +
-        'This is acceptable for development but MUST be configured for production.'
+          'This is acceptable for development but MUST be configured for production.'
       );
     }
-    
-    this.encryptionKey = configuredEncryptionKey || 'default-dev-key-32-bytes-long!!';
+
+    this.encryptionKey =
+      configuredEncryptionKey || 'default-dev-key-32-bytes-long!!';
     this.metaApiBaseUrl = `https://graph.facebook.com/${this.metaApiVersion}`;
 
     // Configurar versão da API via variável de ambiente (SDK usa FACEBOOK_ADS_API_VERSION)
@@ -111,10 +120,7 @@ export class WhatsAppConnectionsService {
   /**
    * Obter conexão específica
    */
-  async findOne(
-    id: string,
-    tenantId: string
-  ): Promise<WhatsAppConnection> {
+  async findOne(id: string, tenantId: string): Promise<WhatsAppConnection> {
     const connection = await this.prisma.whatsAppConnection.findFirst({
       where: {
         id,
@@ -193,7 +199,8 @@ export class WhatsAppConnectionsService {
       'whatsapp_business_messaging',
     ].join(',');
 
-    const authorizationUrl = `${this.metaApiBaseUrl}/dialog/oauth?` +
+    const authorizationUrl =
+      `${this.metaApiBaseUrl}/dialog/oauth?` +
       `client_id=${this.metaAppId}` +
       `&redirect_uri=${encodeURIComponent(this.metaOAuthRedirectUri)}` +
       `&scope=${scopes}` +
@@ -225,7 +232,10 @@ export class WhatsAppConnectionsService {
 
       return response.data;
     } catch (error: any) {
-      this.logger.error('Error exchanging code for token:', error.response?.data);
+      this.logger.error(
+        'Error exchanging code for token:',
+        error.response?.data
+      );
       throw new BadRequestException(
         `Failed to exchange code for token: ${error.response?.data?.error?.message || error.message}`
       );
@@ -253,7 +263,10 @@ export class WhatsAppConnectionsService {
 
       return response.data;
     } catch (error: any) {
-      this.logger.error('Error exchanging short-lived token:', error.response?.data);
+      this.logger.error(
+        'Error exchanging short-lived token:',
+        error.response?.data
+      );
       throw new BadRequestException(
         `Failed to exchange token: ${error.response?.data?.error?.message || error.message}`
       );
@@ -269,7 +282,7 @@ export class WhatsAppConnectionsService {
     try {
       // Configurar API com access token (versão já configurada via env)
       const api = FacebookAdsApi.init(accessToken);
-      
+
       // Buscar businesses do usuário
       const user = new User('me');
       const businesses = await user.getBusinesses([], {
@@ -311,7 +324,7 @@ export class WhatsAppConnectionsService {
     try {
       const api = FacebookAdsApi.init(accessToken);
       const business = new Business(businessId);
-      
+
       // Inscrever campos do WhatsApp
       await business.createSubscribedApp([], {
         subscribed_fields: ['messages', 'message_status', 'message_deliveries'],
@@ -325,7 +338,11 @@ export class WhatsAppConnectionsService {
         await axios.post(
           `${this.metaApiBaseUrl}/${businessId}/subscribed_apps`,
           {
-            subscribed_fields: ['messages', 'message_status', 'message_deliveries'],
+            subscribed_fields: [
+              'messages',
+              'message_status',
+              'message_deliveries',
+            ],
           },
           {
             params: {
@@ -333,7 +350,9 @@ export class WhatsAppConnectionsService {
             },
           }
         );
-        this.logger.log(`Business Manager ${businessId} subscribed to app (via HTTP)`);
+        this.logger.log(
+          `Business Manager ${businessId} subscribed to app (via HTTP)`
+        );
       } catch (httpError: any) {
         throw new BadRequestException(
           `Failed to subscribe business manager: ${error.message || httpError.message}`
@@ -352,7 +371,7 @@ export class WhatsAppConnectionsService {
     try {
       const api = FacebookAdsApi.init(accessToken);
       const business = new Business(businessId);
-      
+
       const accounts = await business.getOwnedWhatsAppBusinessAccounts([], {
         fields: ['id', 'name'],
       });
@@ -365,7 +384,9 @@ export class WhatsAppConnectionsService {
       this.logger.error('Error fetching WhatsApp Business Accounts:', error);
       // Fallback para HTTP direto
       try {
-        const response = await axios.get<{ data: MetaWhatsAppBusinessAccount[] }>(
+        const response = await axios.get<{
+          data: MetaWhatsAppBusinessAccount[];
+        }>(
           `${this.metaApiBaseUrl}/${businessId}/owned_whatsapp_business_accounts`,
           {
             params: {
@@ -392,7 +413,7 @@ export class WhatsAppConnectionsService {
     try {
       const api = FacebookAdsApi.init(accessToken);
       const account = new WhatsAppBusinessAccount(whatsappAccountId);
-      
+
       const phoneNumbers = await account.getPhoneNumbers([], {
         fields: ['id', 'display_phone_number', 'verified_name'],
       });
@@ -460,8 +481,10 @@ export class WhatsAppConnectionsService {
       await this.subscribeBusinessManager(businessId, longLivedToken);
 
       // Passo 5: Buscar WhatsApp Business Accounts
-      const whatsappAccounts =
-        await this.getWhatsAppBusinessAccounts(businessId, longLivedToken);
+      const whatsappAccounts = await this.getWhatsAppBusinessAccounts(
+        businessId,
+        longLivedToken
+      );
 
       if (whatsappAccounts.length === 0) {
         throw new BadRequestException(
@@ -552,19 +575,22 @@ export class WhatsAppConnectionsService {
       // Configurar webhook global (se ainda não configurado)
       await this.setupWebhookIfNeeded();
 
-      const redirectUrl = `${this.configService.get<string>(
-        'FRONTEND_URL'
-      ) || 'http://localhost:3000'}/integrations?success=true&connected=${connections.length}`;
+      const redirectUrl = `${
+        this.configService.get<string>('FRONTEND_URL') ||
+        'http://localhost:3000'
+      }/integrations?success=true&connected=${connections.length}`;
 
       return { connections, redirectUrl };
     } catch (error: any) {
       this.logger.error('Error in OAuth callback:', error);
-      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to connect WhatsApp';
-      const redirectUrl = `${this.configService.get<string>(
-        'FRONTEND_URL'
-      ) || 'http://localhost:3000'}/integrations?error=${encodeURIComponent(
-        errorMessage
-      )}`;
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.message ||
+        'Failed to connect WhatsApp';
+      const redirectUrl = `${
+        this.configService.get<string>('FRONTEND_URL') ||
+        'http://localhost:3000'
+      }/integrations?error=${encodeURIComponent(errorMessage)}`;
       // Retornar redirectUrl mesmo em caso de erro para que o controller possa redirecionar
       return { connections: [], redirectUrl };
     }
@@ -578,7 +604,9 @@ export class WhatsAppConnectionsService {
     // Se não, configurar usando app access token
     // Isso pode ser feito uma vez por app, não por tenant
     // Por enquanto, apenas logar que precisa ser configurado manualmente
-    this.logger.log('Webhook configuration should be done manually in Meta App Dashboard');
+    this.logger.log(
+      'Webhook configuration should be done manually in Meta App Dashboard'
+    );
   }
 
   /**
@@ -591,7 +619,9 @@ export class WhatsAppConnectionsService {
     // Validar campos obrigatórios para modo manual
     if (dto.authMethod === WhatsAppAuthMethod.MANUAL) {
       if (!dto.apiToken) {
-        throw new BadRequestException('API token is required for manual connection');
+        throw new BadRequestException(
+          'API token is required for manual connection'
+        );
       }
     }
 
@@ -769,9 +799,7 @@ export class WhatsAppConnectionsService {
         },
       });
 
-      throw new BadRequestException(
-        `Connection test failed: ${errorMessage}`
-      );
+      throw new BadRequestException(`Connection test failed: ${errorMessage}`);
     }
   }
 
@@ -782,9 +810,7 @@ export class WhatsAppConnectionsService {
    * Trocar código do Embedded Signup por business token
    * Conforme documentação: https://developers.facebook.com/docs/whatsapp/embedded-signup/implementation
    */
-  private async exchangeCodeForBusinessToken(
-    code: string
-  ): Promise<string> {
+  private async exchangeCodeForBusinessToken(code: string): Promise<string> {
     try {
       const response = await axios.post<MetaTokenResponse>(
         `${this.metaApiBaseUrl}/oauth/access_token`,
@@ -807,7 +833,10 @@ export class WhatsAppConnectionsService {
 
       return response.data.access_token;
     } catch (error: any) {
-      this.logger.error('Error exchanging code for business token:', error.response?.data || error.message);
+      this.logger.error(
+        'Error exchanging code for business token:',
+        error.response?.data || error.message
+      );
       throw new BadRequestException(
         `Failed to exchange code: ${error.response?.data?.error?.message || error.message}`
       );
@@ -839,8 +868,10 @@ export class WhatsAppConnectionsService {
       const businessId = businesses[0].id;
 
       // Passo 3: Buscar WhatsApp Business Accounts
-      const whatsappAccounts =
-        await this.getWhatsAppBusinessAccounts(businessId, businessToken);
+      const whatsappAccounts = await this.getWhatsAppBusinessAccounts(
+        businessId,
+        businessToken
+      );
 
       if (whatsappAccounts.length === 0) {
         throw new BadRequestException(
@@ -968,7 +999,9 @@ export class WhatsAppConnectionsService {
   ): Promise<void> {
     try {
       // CORREÇÃO: Usar BACKEND_URL ao invés de FRONTEND_URL para webhook
-      const backendUrl = this.configService.get<string>('BACKEND_URL') || 'http://localhost:3002';
+      const backendUrl =
+        this.configService.get<string>('BACKEND_URL') ||
+        'http://localhost:3002';
       const webhookUrl =
         this.configService.get<string>('WEBHOOK_URL') ||
         `${backendUrl}/api/v1/whatsapp-connections/webhook`;
@@ -1048,4 +1081,3 @@ export class WhatsAppConnectionsService {
     };
   }
 }
-

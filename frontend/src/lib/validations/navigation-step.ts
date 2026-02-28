@@ -25,4 +25,3 @@ export const updateNavigationStepSchema = z.object({
 export type UpdateNavigationStepFormData = z.infer<
   typeof updateNavigationStepSchema
 >;
-

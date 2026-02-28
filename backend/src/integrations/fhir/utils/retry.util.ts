@@ -47,16 +47,13 @@ export async function retryWithBackoff<T>(
         await sleep(delay);
 
         // Calcular próximo delay (exponential backoff)
-        delay = Math.min(
-          delay * config.backoffMultiplier,
-          config.maxDelay
-        );
+        delay = Math.min(delay * config.backoffMultiplier, config.maxDelay);
       }
     }
   }
 
   // Se chegou aqui, todas as tentativas falharam
-  throw lastError!;
+  throw lastError;
 }
 
 /**
@@ -70,7 +67,9 @@ function sleep(ms: number): Promise<void> {
  * Verificar se erro é retryable (pode tentar novamente)
  */
 export function isRetryableError(error: any): boolean {
-  if (!error) return false;
+  if (!error) {
+    return false;
+  }
 
   // Erros de rede/timeout são retryable
   if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
@@ -93,4 +92,3 @@ export function isRetryableError(error: any): boolean {
 
   return false;
 }
-

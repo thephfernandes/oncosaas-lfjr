@@ -24,6 +24,7 @@ Implementação da funcionalidade onde ao clicar no card de alerta, além de mos
 - ✅ Verifica se `alert.patientId` existe antes de selecionar
 
 **Código:**
+
 ```typescript
 onAlertSelect={(alert) => {
   // Selecionar o alerta para mostrar detalhes
@@ -46,6 +47,7 @@ onAlertSelect={(alert) => {
 - ✅ Permite ações específicas sem interferir na seleção
 
 **Código:**
+
 ```typescript
 onClick={(e) => {
   e.stopPropagation(); // Evitar que o clique no botão também selecione o alerta
@@ -78,11 +80,13 @@ onClick={(e) => {
 ## 🎨 Comportamento da UI
 
 ### Antes:
+
 - Clicar no alerta apenas mostrava detalhes na sidebar
 - Usuário precisava procurar o paciente manualmente
 - Fluxo desconectado entre alerta e conversa
 
 ### Depois:
+
 - ✅ Clicar no alerta abre **automaticamente** a conversa
 - ✅ Detalhes do alerta continuam visíveis na sidebar
 - ✅ Fluxo integrado e intuitivo
@@ -91,10 +95,12 @@ onClick={(e) => {
 ### Casos Especiais:
 
 **Alerta sem paciente:**
+
 - Se `alert.patientId` não existir, apenas seleciona o alerta
 - Não tenta abrir conversa inexistente
 
 **Botões de ação:**
+
 - Clicar em "Reconhecer" ou "Resolver" não seleciona o alerta
 - Apenas executa a ação específica
 - Evita seleção acidental
@@ -106,6 +112,7 @@ onClick={(e) => {
 ### Frontend
 
 **Modificado:**
+
 - `frontend/src/app/chat/page.tsx`
   - Handler `onAlertSelect` agora também seleciona paciente
   - Muda automaticamente para aba "Pacientes"
@@ -183,4 +190,3 @@ onClick={(e) => {
 ---
 
 **Última atualização:** 2024-01-XX
-

@@ -7,4 +7,3 @@ export class UpdateInternalNoteDto extends PartialType(CreateInternalNoteDto) {
   @IsOptional()
   content?: string;
 }
-

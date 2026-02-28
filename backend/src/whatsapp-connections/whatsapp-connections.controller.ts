@@ -46,10 +46,7 @@ export class WhatsAppConnectionsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, TenantGuard)
-  async create(
-    @Body() createDto: CreateWhatsAppConnectionDto,
-    @Request() req
-  ) {
+  async create(@Body() createDto: CreateWhatsAppConnectionDto, @Request() req) {
     return this.whatsappConnectionsService.createManualConnection(
       createDto,
       req.user.tenantId
@@ -59,9 +56,7 @@ export class WhatsAppConnectionsController {
   @Post('oauth/initiate')
   @UseGuards(JwtAuthGuard, TenantGuard)
   async initiateOAuth(@Request() req) {
-    return this.whatsappConnectionsService.initiateOAuthFlow(
-      req.user.tenantId
-    );
+    return this.whatsappConnectionsService.initiateOAuthFlow(req.user.tenantId);
   }
 
   @Get('oauth/callback')
@@ -74,8 +69,7 @@ export class WhatsAppConnectionsController {
     @Res() res: Response
   ) {
     if (error) {
-      const frontendUrl =
-        process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       return res.redirect(
         `${frontendUrl}/integrations?error=${encodeURIComponent(
           errorDescription || error
@@ -84,8 +78,7 @@ export class WhatsAppConnectionsController {
     }
 
     if (!code || !state) {
-      const frontendUrl =
-        process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       return res.redirect(
         `${frontendUrl}/integrations?error=${encodeURIComponent(
           'Missing code or state parameter'
@@ -100,16 +93,13 @@ export class WhatsAppConnectionsController {
       );
       return res.redirect(result.redirectUrl);
     } catch (error: any) {
-      const frontendUrl =
-        process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       // NestJS exceptions have a 'message' property
       const errorMessage =
         error.message || error.response?.data?.message || 'Unknown error';
       this.logger.error('OAuth callback error:', error);
       return res.redirect(
-        `${frontendUrl}/integrations?error=${encodeURIComponent(
-          errorMessage
-        )}`
+        `${frontendUrl}/integrations?error=${encodeURIComponent(errorMessage)}`
       );
     }
   }
@@ -147,10 +137,7 @@ export class WhatsAppConnectionsController {
   @Post(':id/set-default')
   @UseGuards(JwtAuthGuard, TenantGuard)
   async setDefault(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
-    return this.whatsappConnectionsService.setDefault(
-      id,
-      req.user.tenantId
-    );
+    return this.whatsappConnectionsService.setDefault(id, req.user.tenantId);
   }
 
   @Post('embedded-signup/process')
@@ -165,4 +152,3 @@ export class WhatsAppConnectionsController {
     );
   }
 }
-

@@ -1,7 +1,7 @@
 /**
  * Utilitário para detectar automaticamente o protocolo (HTTP/HTTPS)
  * e construir URLs da API e WebSocket dinamicamente.
- * 
+ *
  * Funciona tanto em desenvolvimento (HTTP) quanto em produção/HTTPS.
  */
 
@@ -32,9 +32,12 @@ function detectProtocol(): 'https' | 'http' {
  */
 export function getApiUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  
+
   // Se a variável de ambiente já tem protocolo completo, usar ela
-  if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) {
+  if (
+    envUrl &&
+    (envUrl.startsWith('http://') || envUrl.startsWith('https://'))
+  ) {
     return envUrl;
   }
 
@@ -52,7 +55,7 @@ export function getApiUrl(): string {
  */
 export function getWebSocketUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_WS_URL;
-  
+
   // Se a variável de ambiente já tem protocolo completo, usar ela
   if (envUrl && (envUrl.startsWith('ws://') || envUrl.startsWith('wss://'))) {
     return envUrl;

@@ -16,7 +16,9 @@ export function FamilyHistoryForm({
   value = [],
   onChange,
 }: FamilyHistoryFormProps) {
-  const [familyHistory, setFamilyHistory] = useState<FamilyHistory[]>(value || []);
+  const [familyHistory, setFamilyHistory] = useState<FamilyHistory[]>(
+    value || []
+  );
 
   // Sincronizar com value quando mudar externamente
   useEffect(() => {
@@ -70,7 +72,8 @@ export function FamilyHistoryForm({
 
       {familyHistory.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nenhum histórico familiar adicionado. Clique em "Adicionar" para incluir.
+          Nenhum histórico familiar adicionado. Clique em "Adicionar" para
+          incluir.
         </p>
       ) : (
         <div className="space-y-3">
@@ -132,4 +135,3 @@ export function FamilyHistoryForm({
     </div>
   );
 }
-

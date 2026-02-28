@@ -19,8 +19,13 @@ interface ComorbiditiesFormProps {
   onChange: (comorbidities: Comorbidity[]) => void;
 }
 
-export function ComorbiditiesForm({ value = [], onChange }: ComorbiditiesFormProps) {
-  const [comorbidities, setComorbidities] = useState<Comorbidity[]>(value || []);
+export function ComorbiditiesForm({
+  value = [],
+  onChange,
+}: ComorbiditiesFormProps) {
+  const [comorbidities, setComorbidities] = useState<Comorbidity[]>(
+    value || []
+  );
 
   // Sincronizar com value quando mudar externamente
   useEffect(() => {
@@ -40,7 +45,11 @@ export function ComorbiditiesForm({ value = [], onChange }: ComorbiditiesFormPro
     onChange(updated);
   };
 
-  const updateComorbidity = (index: number, field: keyof Comorbidity, value: any) => {
+  const updateComorbidity = (
+    index: number,
+    field: keyof Comorbidity,
+    value: any
+  ) => {
     const updated = [...comorbidities];
     updated[index] = { ...updated[index], [field]: value };
     setComorbidities(updated);
@@ -120,7 +129,10 @@ export function ComorbiditiesForm({ value = [], onChange }: ComorbiditiesFormPro
                     }
                     className="h-4 w-4"
                   />
-                  <Label htmlFor={`controlled-${index}`} className="text-xs cursor-pointer">
+                  <Label
+                    htmlFor={`controlled-${index}`}
+                    className="text-xs cursor-pointer"
+                  >
                     Controlada
                   </Label>
                 </div>
@@ -141,4 +153,3 @@ export function ComorbiditiesForm({ value = [], onChange }: ComorbiditiesFormPro
     </div>
   );
 }
-

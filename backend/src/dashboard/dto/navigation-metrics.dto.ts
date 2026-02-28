@@ -49,4 +49,3 @@ export class NavigationMetricsDto {
     FOLLOW_UP: number | null;
   };
 }
-

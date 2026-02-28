@@ -1,31 +1,31 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { ROIInputs } from "./ROIInputs"
-import { ROIResults } from "./ROIResults"
-import { ROIComparison } from "./ROIComparison"
+import { useState } from 'react';
+import { ROIInputs } from './ROIInputs';
+import { ROIResults } from './ROIResults';
+import { ROIComparison } from './ROIComparison';
 
 export interface ROIInputData {
-  numPacientes: number
-  tipoInstituicao: "clinica-pequena" | "hospital-medio" | "hospital-grande"
-  taxaReadmissaoAtual?: number
-  custoMedioConsulta?: number
-  custoReadmissao?: number
-  numConsultasMes?: number
+  numPacientes: number;
+  tipoInstituicao: 'clinica-pequena' | 'hospital-medio' | 'hospital-grande';
+  taxaReadmissaoAtual?: number;
+  custoMedioConsulta?: number;
+  custoReadmissao?: number;
+  numConsultasMes?: number;
 }
 
 export interface ROIOutputData {
-  investimentoMensal: number
-  investimentoAnual: number
-  setupInicial: number
-  economiaReadmissoes: number
-  economiaConsultas: number
-  economiaEficiencia: number
-  economiaDetecaoPrecoce: number
-  economiaTotal: number
-  roi: number
-  paybackPeriod: number
-  economiaPorPaciente: number
+  investimentoMensal: number;
+  investimentoAnual: number;
+  setupInicial: number;
+  economiaReadmissoes: number;
+  economiaConsultas: number;
+  economiaEficiencia: number;
+  economiaDetecaoPrecoce: number;
+  economiaTotal: number;
+  roi: number;
+  paybackPeriod: number;
+  economiaPorPaciente: number;
 }
 
 const DEFAULT_VALUES = {
@@ -33,90 +33,90 @@ const DEFAULT_VALUES = {
   custoMedioConsulta: 300,
   custoReadmissao: 25000,
   numConsultasMes: 2,
-}
+};
 
 export function ROICalculator() {
   const [inputs, setInputs] = useState<ROIInputData>({
     numPacientes: 100,
-    tipoInstituicao: "hospital-medio",
-  })
+    tipoInstituicao: 'hospital-medio',
+  });
 
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Cálculos
   const calcularInvestimento = (): number => {
-    const { numPacientes } = inputs
+    const { numPacientes } = inputs;
     if (numPacientes <= 100) {
-      return 5000 // Tier 1
+      return 5000; // Tier 1
     } else if (numPacientes <= 500) {
-      return 15000 // Tier 2
+      return 15000; // Tier 2
     } else {
-      return 30000 + (numPacientes - 500) * 30 // Tier 3
+      return 30000 + (numPacientes - 500) * 30; // Tier 3
     }
-  }
+  };
 
   const calcularEconomiaReadmissoes = (): number => {
     const {
       numPacientes,
       taxaReadmissaoAtual = DEFAULT_VALUES.taxaReadmissaoAtual,
       custoReadmissao = DEFAULT_VALUES.custoReadmissao,
-    } = inputs
+    } = inputs;
 
-    const reducao = 0.25 // 25% de redução
+    const reducao = 0.25; // 25% de redução
     const readmissoesEvitadas =
-      (numPacientes * taxaReadmissaoAtual * reducao) / 100
-    return readmissoesEvitadas * custoReadmissao * 12 // anual
-  }
+      (numPacientes * taxaReadmissaoAtual * reducao) / 100;
+    return readmissoesEvitadas * custoReadmissao * 12; // anual
+  };
 
   const calcularEconomiaConsultas = (): number => {
     const {
       numPacientes,
       numConsultasMes = DEFAULT_VALUES.numConsultasMes,
       custoMedioConsulta = DEFAULT_VALUES.custoMedioConsulta,
-    } = inputs
+    } = inputs;
 
-    const reducao = 0.40 // 40% de redução
-    const consultasEvitadas = numPacientes * numConsultasMes * reducao
-    return consultasEvitadas * custoMedioConsulta * 12 // anual
-  }
+    const reducao = 0.4; // 40% de redução
+    const consultasEvitadas = numPacientes * numConsultasMes * reducao;
+    return consultasEvitadas * custoMedioConsulta * 12; // anual
+  };
 
   const calcularEconomiaEficiencia = (): number => {
-    const { numPacientes } = inputs
-    const economiaPorPaciente = 75
-    return numPacientes * economiaPorPaciente
-  }
+    const { numPacientes } = inputs;
+    const economiaPorPaciente = 75;
+    return numPacientes * economiaPorPaciente;
+  };
 
   const calcularEconomiaDetecaoPrecoce = (): number => {
-    const { numPacientes } = inputs
-    const economiaPorPaciente = 150
-    return numPacientes * economiaPorPaciente
-  }
+    const { numPacientes } = inputs;
+    const economiaPorPaciente = 150;
+    return numPacientes * economiaPorPaciente;
+  };
 
   const calcularResultados = (): ROIOutputData => {
-    const investimentoMensal = calcularInvestimento()
-    const investimentoAnual = investimentoMensal * 12
-    const setupInicial = 20000
+    const investimentoMensal = calcularInvestimento();
+    const investimentoAnual = investimentoMensal * 12;
+    const setupInicial = 20000;
 
-    const economiaReadmissoes = calcularEconomiaReadmissoes()
-    const economiaConsultas = calcularEconomiaConsultas()
-    const economiaEficiencia = calcularEconomiaEficiencia()
-    const economiaDetecaoPrecoce = calcularEconomiaDetecaoPrecoce()
+    const economiaReadmissoes = calcularEconomiaReadmissoes();
+    const economiaConsultas = calcularEconomiaConsultas();
+    const economiaEficiencia = calcularEconomiaEficiencia();
+    const economiaDetecaoPrecoce = calcularEconomiaDetecaoPrecoce();
 
     const economiaTotal =
       economiaReadmissoes +
       economiaConsultas +
       economiaEficiencia +
-      economiaDetecaoPrecoce
+      economiaDetecaoPrecoce;
 
-    const economiaMensal = economiaTotal / 12
-    const economiaAposSetup = economiaMensal - investimentoMensal
+    const economiaMensal = economiaTotal / 12;
+    const economiaAposSetup = economiaMensal - investimentoMensal;
 
-    const roi = investimentoAnual > 0 ? economiaTotal / investimentoAnual : 0
+    const roi = investimentoAnual > 0 ? economiaTotal / investimentoAnual : 0;
     const paybackPeriod =
-      economiaAposSetup > 0 ? setupInicial / economiaAposSetup : Infinity
+      economiaAposSetup > 0 ? setupInicial / economiaAposSetup : Infinity;
 
     const economiaPorPaciente =
-      inputs.numPacientes > 0 ? economiaTotal / inputs.numPacientes : 0
+      inputs.numPacientes > 0 ? economiaTotal / inputs.numPacientes : 0;
 
     return {
       investimentoMensal,
@@ -130,10 +130,10 @@ export function ROICalculator() {
       roi,
       paybackPeriod: isFinite(paybackPeriod) ? paybackPeriod : 0,
       economiaPorPaciente,
-    }
-  }
+    };
+  };
 
-  const results = calcularResultados()
+  const results = calcularResultados();
 
   return (
     <div className="max-w-6xl mx-auto p-8 space-y-8">
@@ -182,7 +182,5 @@ export function ROICalculator() {
         </p>
       </div>
     </div>
-  )
+  );
 }
-
-

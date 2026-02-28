@@ -11,16 +11,19 @@ O Facebook Embedded Signup **requer HTTPS** para funcionar. Em desenvolvimento l
 ### 1. Instalar ngrok
 
 **Windows (via Chocolatey):**
+
 ```bash
 choco install ngrok
 ```
 
 **Ou baixar manualmente:**
+
 - Acesse: https://ngrok.com/download
 - Baixe e extraia o executável
 - Adicione ao PATH ou use o caminho completo
 
 **Linux/Mac:**
+
 ```bash
 # Via Homebrew (Mac)
 brew install ngrok
@@ -65,6 +68,7 @@ O ngrok fornecerá uma URL HTTPS como: `https://abc123.ngrok-free.app`
 ### 6. Atualizar variáveis de ambiente
 
 **Frontend (`frontend/.env.local`):**
+
 ```env
 NEXT_PUBLIC_API_URL=https://abc123.ngrok-free.app:3002
 # Ou se o backend também estiver no ngrok:
@@ -72,6 +76,7 @@ NEXT_PUBLIC_API_URL=https://abc123.ngrok-free.app:3002
 ```
 
 **Backend (`backend/.env`):**
+
 ```env
 FRONTEND_URL=https://abc123.ngrok-free.app
 META_OAUTH_REDIRECT_URI=https://abc123.ngrok-free.app/api/v1/whatsapp-connections/oauth/callback
@@ -116,7 +121,7 @@ cloudflared tunnel --url http://localhost:3000
 ## Verificação
 
 Após configurar:
+
 1. Acesse a URL HTTPS do ngrok
 2. Clique em "Conectar com Meta (Embedded Signup)"
 3. O popup deve abrir sem erro de conexão insegura
-

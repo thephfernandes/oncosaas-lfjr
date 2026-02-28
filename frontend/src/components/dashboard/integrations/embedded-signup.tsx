@@ -27,7 +27,7 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
     if (typeof window === 'undefined') return;
 
     const appId = process.env.NEXT_PUBLIC_META_APP_ID || '';
-    
+
     if (!appId) {
       console.error('NEXT_PUBLIC_META_APP_ID não configurado');
       onError?.('Configuração do Meta App ID não encontrada');
@@ -59,8 +59,10 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
     };
 
     // Verificar se o script já foi carregado
-    const existingScript = document.querySelector('script[id="facebook-jssdk"]');
-    
+    const existingScript = document.querySelector(
+      'script[id="facebook-jssdk"]'
+    );
+
     if (!existingScript) {
       // Carregar script do SDK conforme documentação oficial
       const script = document.createElement('script');
@@ -103,13 +105,17 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
     // Listener de mensagens para capturar eventos WA_EMBEDDED_SIGNUP
     const messageListener = (event: MessageEvent) => {
       if (!event.origin.endsWith('facebook.com')) return;
-      
+
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'WA_EMBEDDED_SIGNUP') {
           console.log('WA_EMBEDDED_SIGNUP event:', data);
-          
-          if (data.event === 'FINISH' || data.event === 'FINISH_ONLY_WABA' || data.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING') {
+
+          if (
+            data.event === 'FINISH' ||
+            data.event === 'FINISH_ONLY_WABA' ||
+            data.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING'
+          ) {
             // Fluxo completado com sucesso
             // Os dados já foram processados pelo callback do FB.login
             // Este listener captura informações adicionais como waba_id, phone_number_id
@@ -140,14 +146,16 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
 
   const handleEmbeddedSignup = () => {
     if (!sdkLoaded || !window.FB) {
-      onError?.('SDK do Facebook ainda não carregado. Aguarde alguns segundos.');
+      onError?.(
+        'SDK do Facebook ainda não carregado. Aguarde alguns segundos.'
+      );
       return;
     }
 
     setIsLoading(true);
 
     const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID || '';
-    
+
     if (!configId) {
       setIsLoading(false);
       onError?.('Meta Config ID não configurado');
@@ -163,17 +171,21 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
           try {
             const code = response.authResponse.code;
             console.log('Código recebido do Embedded Signup:', code);
-            
+
             // Enviar código para o backend para trocar por business token
-            const result = await whatsappConnectionsApi.processEmbeddedSignupCode(code);
-            
+            const result =
+              await whatsappConnectionsApi.processEmbeddedSignupCode(code);
+
             if (result.success) {
               onSuccess?.();
             } else {
               onError?.(result.message || 'Erro ao processar conexão');
             }
           } catch (error: any) {
-            console.error('Erro ao processar código do Embedded Signup:', error);
+            console.error(
+              'Erro ao processar código do Embedded Signup:',
+              error
+            );
             onError?.(error.message || 'Erro ao processar conexão');
           } finally {
             setIsLoading(false);
@@ -234,4 +246,3 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
     </Button>
   );
 }
-

@@ -29,7 +29,9 @@ export class OncologyNavigationScheduler {
         },
       });
 
-      this.logger.log(`Verificando etapas atrasadas para ${tenants.length} tenant(s)`);
+      this.logger.log(
+        `Verificando etapas atrasadas para ${tenants.length} tenant(s)`
+      );
 
       let totalChecked = 0;
       let totalMarkedOverdue = 0;
@@ -37,7 +39,9 @@ export class OncologyNavigationScheduler {
 
       for (const tenant of tenants) {
         try {
-          const result = await this.navigationService.checkOverdueSteps(tenant.id);
+          const result = await this.navigationService.checkOverdueSteps(
+            tenant.id
+          );
           totalChecked += result.checked;
           totalMarkedOverdue += result.markedOverdue;
           totalAlertsCreated += result.alertsCreated;
@@ -59,7 +63,10 @@ export class OncologyNavigationScheduler {
         `Verificação concluída: ${totalChecked} etapa(s) verificada(s), ${totalMarkedOverdue} marcada(s) como atrasada(s), ${totalAlertsCreated} alerta(s) criado(s)`
       );
     } catch (error) {
-      this.logger.error('Erro ao executar verificação de etapas atrasadas:', error);
+      this.logger.error(
+        'Erro ao executar verificação de etapas atrasadas:',
+        error
+      );
     }
   }
 
@@ -75,4 +82,3 @@ export class OncologyNavigationScheduler {
     await this.handleOverdueStepsCheck();
   }
 }
-

@@ -4,7 +4,9 @@ import {
   PatientsCriticalStepsFilters,
 } from '@/lib/api/patients-critical-steps';
 
-export const usePatientsCriticalSteps = (filters?: PatientsCriticalStepsFilters) => {
+export const usePatientsCriticalSteps = (
+  filters?: PatientsCriticalStepsFilters
+) => {
   return useQuery({
     queryKey: ['patients-critical-steps', filters],
     queryFn: () => patientsCriticalStepsApi.getAll(filters),
@@ -12,4 +14,3 @@ export const usePatientsCriticalSteps = (filters?: PatientsCriticalStepsFilters)
     refetchOnWindowFocus: true,
   });
 };
-

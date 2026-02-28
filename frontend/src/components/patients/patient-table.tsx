@@ -67,20 +67,39 @@ export function PatientTable({ patients, onPatientClick }: PatientTableProps) {
         <table className="w-full">
           <thead className="bg-muted">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Nome</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Idade</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Tipo de Câncer</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Estágio</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Prioridade</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Última Atualização</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Ações</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold">
+                Nome
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold">
+                Idade
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold">
+                Tipo de Câncer
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold">
+                Estágio
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold">
+                Prioridade
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold">
+                Status
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold">
+                Última Atualização
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold">
+                Ações
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {patients.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={8}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
                   Nenhum paciente encontrado
                 </td>
               </tr>
@@ -99,7 +118,8 @@ export function PatientTable({ patients, onPatientClick }: PatientTableProps) {
                   <td className="px-4 py-3">
                     {patient.cancerType ? (
                       <Badge variant="outline">
-                        {CANCER_TYPE_LABELS[patient.cancerType] || patient.cancerType}
+                        {CANCER_TYPE_LABELS[patient.cancerType] ||
+                          patient.cancerType}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground">-</span>
@@ -115,20 +135,27 @@ export function PatientTable({ patients, onPatientClick }: PatientTableProps) {
                   <td className="px-4 py-3">
                     <Badge
                       variant="outline"
-                      className={PRIORITY_COLORS[patient.priorityCategory] || ''}
+                      className={
+                        PRIORITY_COLORS[patient.priorityCategory] || ''
+                      }
                     >
                       {patient.priorityCategory}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant="outline">
-                      {JOURNEY_STAGE_LABELS[patient.currentStage] || patient.currentStage}
+                      {JOURNEY_STAGE_LABELS[patient.currentStage] ||
+                        patient.currentStage}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {format(new Date(patient.updatedAt), "dd/MM/yyyy 'às' HH:mm", {
-                      locale: ptBR,
-                    })}
+                    {format(
+                      new Date(patient.updatedAt),
+                      "dd/MM/yyyy 'às' HH:mm",
+                      {
+                        locale: ptBR,
+                      }
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -162,4 +189,3 @@ export function PatientTable({ patients, onPatientClick }: PatientTableProps) {
     </div>
   );
 }
-

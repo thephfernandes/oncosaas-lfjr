@@ -41,7 +41,9 @@ async function testOverdueAlerts() {
 
   if (overdueSteps.length === 0) {
     console.log('✅ Nenhuma etapa atrasada encontrada!');
-    console.log('\n💡 Dica: Crie etapas com dueDate no passado para testar os alertas.');
+    console.log(
+      '\n💡 Dica: Crie etapas com dueDate no passado para testar os alertas.'
+    );
     await prisma.$disconnect();
     return;
   }
@@ -49,12 +51,14 @@ async function testOverdueAlerts() {
   // Mostrar detalhes das etapas atrasadas
   for (const step of overdueSteps) {
     const daysOverdue = Math.floor(
-      (today.getTime() - new Date(step.dueDate!).setHours(0, 0, 0, 0)) /
+      (today.getTime() - new Date(step.dueDate).setHours(0, 0, 0, 0)) /
         (1000 * 60 * 60 * 24)
     );
 
     console.log(`📋 Etapa: ${step.stepName}`);
-    console.log(`   Paciente: ${step.patient.name} (${step.patient.cancerType})`);
+    console.log(
+      `   Paciente: ${step.patient.name} (${step.patient.cancerType})`
+    );
     console.log(`   Prazo: ${step.dueDate?.toLocaleDateString('pt-BR')}`);
     console.log(`   Atraso: ${daysOverdue} dias`);
     console.log(`   Status: ${step.status}`);
@@ -88,7 +92,9 @@ async function testOverdueAlerts() {
     if (hasAlert) {
       console.log(`   ✅ Alerta já existe`);
     } else {
-      console.log(`   ⚠️  Alerta NÃO existe - será criado ao executar checkOverdueSteps`);
+      console.log(
+        `   ⚠️  Alerta NÃO existe - será criado ao executar checkOverdueSteps`
+      );
     }
     console.log('');
   }
@@ -114,14 +120,19 @@ async function testOverdueAlerts() {
     take: 10,
   });
 
-  console.log(`\n📢 Alertas de NAVIGATION_DELAY existentes: ${allAlerts.length}\n`);
+  console.log(
+    `\n📢 Alertas de NAVIGATION_DELAY existentes: ${allAlerts.length}\n`
+  );
 
   if (allAlerts.length > 0) {
     for (const alert of allAlerts) {
       console.log(`   • ${alert.message}`);
       console.log(`     Paciente: ${alert.patient.name}`);
       if (alert.context && typeof alert.context === 'object') {
-        const context = alert.context as { stepId?: string; daysOverdue?: number };
+        const context = alert.context as {
+          stepId?: string;
+          daysOverdue?: number;
+        };
         console.log(`     StepId: ${context.stepId}`);
         console.log(`     Dias de atraso: ${context.daysOverdue}`);
       }
@@ -132,9 +143,7 @@ async function testOverdueAlerts() {
   await prisma.$disconnect();
 }
 
-testOverdueAlerts()
-  .catch((error) => {
-    console.error('❌ Erro:', error);
-    process.exit(1);
-  });
-
+testOverdueAlerts().catch((error) => {
+  console.error('❌ Erro:', error);
+  process.exit(1);
+});

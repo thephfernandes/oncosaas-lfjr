@@ -12,7 +12,12 @@ import {
   IsUUID,
   IsNotEmpty,
 } from 'class-validator';
-import { TreatmentType, TreatmentIntent, TreatmentStatus, TreatmentResponse } from '@prisma/client';
+import {
+  TreatmentType,
+  TreatmentIntent,
+  TreatmentStatus,
+  TreatmentResponse,
+} from '@prisma/client';
 
 export class CreateTreatmentDto {
   @IsUUID()
@@ -150,4 +155,3 @@ export class CreateTreatmentDto {
   @IsOptional()
   metadata?: any;
 }
-

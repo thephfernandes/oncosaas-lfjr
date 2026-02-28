@@ -44,7 +44,10 @@ export const internalNotesApi = {
   },
 
   async create(data: CreateInternalNoteDto): Promise<InternalNote> {
-    const response = await apiClient.post<InternalNote>('/internal-notes', data);
+    const response = await apiClient.post<InternalNote>(
+      '/internal-notes',
+      data
+    );
     return response;
   },
 
@@ -60,4 +63,3 @@ export const internalNotesApi = {
     await apiClient.delete(`/internal-notes/${id}`);
   },
 };
-

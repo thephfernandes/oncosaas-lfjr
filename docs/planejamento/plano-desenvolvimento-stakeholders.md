@@ -1,4 +1,5 @@
 # Plano de Desenvolvimento
+
 ## Plataforma de Otimização Oncológica - Baseado em Apresentação para Stakeholders
 
 ### Visão Geral
@@ -10,16 +11,19 @@ Este plano detalha o desenvolvimento técnico das features apresentadas aos stak
 ## Fase 1: Fundação e Infraestrutura (Semanas 1-8)
 
 ### Objetivo
+
 Estabelecer a base técnica da plataforma: infraestrutura, autenticação, estrutura de dados e integrações básicas.
 
 ### Features
 
 #### 1.1 Setup de Infraestrutura
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** Nenhuma
 
 **Tarefas:**
+
 - [ ] Configurar repositório Git (monorepo)
 - [ ] Setup Docker Compose (PostgreSQL, Redis, serviços)
 - [ ] Configurar CI/CD (GitHub Actions)
@@ -27,6 +31,7 @@ Estabelecer a base técnica da plataforma: infraestrutura, autenticação, estru
 - [ ] Configurar monitoramento básico (logs, errors)
 
 **Entregáveis:**
+
 - Ambiente de desenvolvimento funcional
 - Pipeline de CI/CD configurado
 - Documentação de setup
@@ -34,11 +39,13 @@ Estabelecer a base técnica da plataforma: infraestrutura, autenticação, estru
 ---
 
 #### 1.2 Estrutura de Dados Multi-Tenant
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** 1.1
 
 **Tarefas:**
+
 - [ ] Modelar schema PostgreSQL (multi-tenant)
 - [ ] Implementar schemas por tenant
 - [ ] Criar modelos Prisma:
@@ -53,6 +60,7 @@ Estabelecer a base técnica da plataforma: infraestrutura, autenticação, estru
 - [ ] Configurar isolamento de dados por tenant
 
 **Entregáveis:**
+
 - Schema de banco de dados completo
 - Migrações funcionais
 - Documentação do modelo de dados
@@ -60,11 +68,13 @@ Estabelecer a base técnica da plataforma: infraestrutura, autenticação, estru
 ---
 
 #### 1.3 Autenticação e Autorização
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** 1.2
 
 **Tarefas:**
+
 - [ ] Implementar autenticação JWT
 - [ ] Implementar OAuth 2.0 (opcional)
 - [ ] Implementar RBAC (roles: admin, oncologista, enfermeiro, gestor)
@@ -74,6 +84,7 @@ Estabelecer a base técnica da plataforma: infraestrutura, autenticação, estru
 - [ ] Criar endpoints de login/logout
 
 **Entregáveis:**
+
 - Sistema de autenticação completo
 - Controle de acesso por roles
 - Documentação de API de autenticação
@@ -81,11 +92,13 @@ Estabelecer a base técnica da plataforma: infraestrutura, autenticação, estru
 ---
 
 #### 1.4 Integração Básica com EHR (FHIR)
+
 **Prioridade:** Alta  
 **Esforço:** 2 semanas  
 **Dependências:** 1.2
 
 **Tarefas:**
+
 - [ ] Implementar cliente FHIR (biblioteca)
 - [ ] Criar endpoints para pull de pacientes (FHIR Patient)
 - [ ] Criar endpoints para push de observações (FHIR Observation)
@@ -94,6 +107,7 @@ Estabelecer a base técnica da plataforma: infraestrutura, autenticação, estru
 - [ ] Implementar tratamento de erros e retry
 
 **Entregáveis:**
+
 - Integração FHIR básica funcional
 - Sincronização bidirecional de dados
 - Documentação de integração
@@ -103,16 +117,19 @@ Estabelecer a base técnica da plataforma: infraestrutura, autenticação, estru
 ## Fase 2: Navegação de Pacientes (Semanas 9-14)
 
 ### Objetivo
+
 Implementar o dashboard de navegação que mostra onde cada paciente está na jornada oncológica.
 
 ### Features
 
 #### 2.1 Modelo de Jornada do Paciente
+
 **Prioridade:** Crítica  
 **Esforço:** 1 semana  
 **Dependências:** 1.2
 
 **Tarefas:**
+
 - [ ] Definir etapas da jornada:
   - [ ] Rastreio
   - [ ] Diagnóstico
@@ -123,6 +140,7 @@ Implementar o dashboard de navegação que mostra onde cada paciente está na jo
 - [ ] Criar regras de negócio para navegação
 
 **Entregáveis:**
+
 - Modelo de jornada implementado
 - API para gerenciar jornada
 - Documentação do fluxo
@@ -130,11 +148,13 @@ Implementar o dashboard de navegação que mostra onde cada paciente está na jo
 ---
 
 #### 2.2 Backend - API de Navegação
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** 2.1
 
 **Tarefas:**
+
 - [ ] Criar endpoints CRUD de pacientes
 - [ ] Implementar endpoints de jornada:
   - [ ] GET /patients/:id/journey (status atual)
@@ -145,6 +165,7 @@ Implementar o dashboard de navegação que mostra onde cada paciente está na jo
 - [ ] Criar endpoints de métricas (tempo médio por etapa)
 
 **Entregáveis:**
+
 - API REST completa de navegação
 - Documentação Swagger/OpenAPI
 - Testes unitários
@@ -152,11 +173,13 @@ Implementar o dashboard de navegação que mostra onde cada paciente está na jo
 ---
 
 #### 2.3 Frontend - Dashboard de Navegação
+
 **Prioridade:** Crítica  
 **Esforço:** 3 semanas  
 **Dependências:** 2.2
 
 **Tarefas:**
+
 - [ ] Criar layout do dashboard
 - [ ] Implementar lista de pacientes:
   - [ ] Tabela ordenável
@@ -174,6 +197,7 @@ Implementar o dashboard de navegação que mostra onde cada paciente está na jo
 - [ ] Implementar gráficos (Charts.js/Recharts)
 
 **Entregáveis:**
+
 - Dashboard de navegação funcional
 - Interface responsiva
 - Testes E2E básicos
@@ -183,16 +207,19 @@ Implementar o dashboard de navegação que mostra onde cada paciente está na jo
 ## Fase 3: Priorização Inteligente com IA (Semanas 15-22)
 
 ### Objetivo
+
 Implementar sistema de priorização automática de casos usando IA.
 
 ### Features
 
 #### 3.1 Modelo de ML - Priorização
+
 **Prioridade:** Crítica  
 **Esforço:** 3 semanas  
 **Dependências:** 1.2
 
 **Tarefas:**
+
 - [ ] Definir features do modelo:
   - [ ] Sintomas reportados (intensidade)
   - [ ] Estadiamento do câncer
@@ -208,6 +235,7 @@ Implementar sistema de priorização automática de casos usando IA.
 - [ ] Criar API de inferência (FastAPI)
 
 **Entregáveis:**
+
 - Modelo de ML treinado
 - API de priorização
 - Métricas de validação
@@ -216,11 +244,13 @@ Implementar sistema de priorização automática de casos usando IA.
 ---
 
 #### 3.2 Backend - Serviço de Priorização
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** 3.1, 2.2
 
 **Tarefas:**
+
 - [ ] Criar serviço de priorização (NestJS)
 - [ ] Integrar com API de ML
 - [ ] Implementar cálculo de score (0-100)
@@ -232,6 +262,7 @@ Implementar sistema de priorização automática de casos usando IA.
   - [ ] GET /patients/:id/priority (score e razão)
 
 **Entregáveis:**
+
 - Serviço de priorização funcional
 - API REST integrada
 - Jobs de atualização automática
@@ -239,11 +270,13 @@ Implementar sistema de priorização automática de casos usando IA.
 ---
 
 #### 3.3 Frontend - Visualização de Priorização
+
 **Prioridade:** Alta  
 **Esforço:** 2 semanas  
 **Dependências:** 3.2
 
 **Tarefas:**
+
 - [ ] Adicionar coluna de prioridade na lista de pacientes
 - [ ] Implementar ordenação por prioridade
 - [ ] Implementar indicadores visuais (cores: vermelho/amarelo/verde)
@@ -252,6 +285,7 @@ Implementar sistema de priorização automática de casos usando IA.
 - [ ] Adicionar badge de score (0-100)
 
 **Entregáveis:**
+
 - Interface de priorização integrada
 - Explicabilidade visível
 - Testes de UI
@@ -261,16 +295,19 @@ Implementar sistema de priorização automática de casos usando IA.
 ## Fase 4: Agente de IA no WhatsApp (Semanas 23-32)
 
 ### Objetivo
+
 Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 
 ### Features
 
 #### 4.1 Integração WhatsApp Business API
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** 1.1
 
 **Tarefas:**
+
 - [ ] Configurar conta WhatsApp Business API (via parceiro)
 - [ ] Implementar webhook para receber mensagens
 - [ ] Implementar envio de mensagens (texto, áudio)
@@ -280,6 +317,7 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 - [ ] Submeter templates para aprovação Meta
 
 **Entregáveis:**
+
 - Integração WhatsApp funcional
 - Webhook configurado
 - Sistema de filas operacional
@@ -287,11 +325,13 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 ---
 
 #### 4.2 Agente Conversacional - Core
+
 **Prioridade:** Crítica  
 **Esforço:** 3 semanas  
 **Dependências:** 4.1, 1.2
 
 **Tarefas:**
+
 - [ ] Implementar gerenciamento de contexto de conversa
 - [ ] Integrar LLM (GPT-4 ou Claude via API)
 - [ ] Implementar RAG (base de conhecimento):
@@ -305,6 +345,7 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 - [ ] Criar sistema de templates de mensagens
 
 **Entregáveis:**
+
 - Agente conversacional básico funcional
 - RAG implementado
 - Guardrails ativos
@@ -312,11 +353,13 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 ---
 
 #### 4.3 Processamento de Áudio (STT)
+
 **Prioridade:** Alta  
 **Esforço:** 1 semana  
 **Dependências:** 4.1
 
 **Tarefas:**
+
 - [ ] Integrar Google Cloud Speech-to-Text ou AWS Transcribe
 - [ ] Implementar processamento de áudios do WhatsApp
 - [ ] Converter áudio → texto
@@ -324,6 +367,7 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 - [ ] Implementar tratamento de erros
 
 **Entregáveis:**
+
 - Processamento de áudio funcional
 - Integração com agente
 - Documentação
@@ -331,11 +375,13 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 ---
 
 #### 4.4 Questionários Adaptativos
+
 **Prioridade:** Alta  
 **Esforço:** 2 semanas  
 **Dependências:** 4.2
 
 **Tarefas:**
+
 - [ ] Implementar questionário EORTC QLQ-C30 (conversacional)
 - [ ] Implementar PRO-CTCAE (sintomas relacionados ao tratamento)
 - [ ] Implementar ESAS (Escala de Sintomas de Edmonton)
@@ -344,6 +390,7 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 - [ ] Criar questionários customizados por tipo de câncer
 
 **Entregáveis:**
+
 - Questionários adaptativos funcionais
 - Mapeamento para escalas validadas
 - Testes de coleta de dados
@@ -351,11 +398,13 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 ---
 
 #### 4.5 Detecção de Sintomas Críticos
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** 4.2
 
 **Tarefas:**
+
 - [ ] Implementar detecção de sintomas críticos:
   - [ ] Febre >38°C
   - [ ] Dispneia severa
@@ -369,6 +418,7 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 - [ ] Testar detecção com casos reais
 
 **Entregáveis:**
+
 - Sistema de detecção funcional
 - Integração com alertas
 - Testes de validação
@@ -376,11 +426,13 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 ---
 
 #### 4.6 Extração e Armazenamento de Dados
+
 **Prioridade:** Alta  
 **Esforço:** 2 semanas  
 **Dependências:** 4.2, 4.4
 
 **Tarefas:**
+
 - [ ] Implementar extração de dados estruturados:
   - [ ] Sintomas e intensidades
   - [ ] Escalas (EORTC, PRO-CTCAE, ESAS)
@@ -391,6 +443,7 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 - [ ] Criar histórico de conversas
 
 **Entregáveis:**
+
 - Extração de dados funcional
 - Sincronização com EHR
 - Histórico completo
@@ -400,16 +453,19 @@ Implementar agente conversacional de IA que coleta dados clínicos via WhatsApp.
 ## Fase 5: Dashboard para Enfermagem (Semanas 33-40)
 
 ### Objetivo
+
 Implementar dashboard completo para equipe de enfermagem monitorar pacientes e intervir quando necessário.
 
 ### Features
 
 #### 5.1 Backend - API de Conversas e Alertas
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** 4.6
 
 **Tarefas:**
+
 - [ ] Criar endpoints de conversas:
   - [ ] GET /conversations/:patientId (histórico completo)
   - [ ] GET /conversations (lista de conversas)
@@ -422,6 +478,7 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 - [ ] Criar sistema de notificações (push, email, SMS)
 
 **Entregáveis:**
+
 - API de conversas e alertas
 - WebSocket para tempo real
 - Sistema de notificações
@@ -429,11 +486,13 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 ---
 
 #### 5.2 Frontend - Lista de Pacientes com Priorização
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** 3.3, 5.1
 
 **Tarefas:**
+
 - [ ] Criar componente de lista de pacientes
 - [ ] Implementar ordenação por prioridade (padrão)
 - [ ] Adicionar indicadores visuais (cores por prioridade)
@@ -447,6 +506,7 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 - [ ] Implementar busca
 
 **Entregáveis:**
+
 - Lista de pacientes funcional
 - Filtros e busca
 - Interface responsiva
@@ -454,11 +514,13 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 ---
 
 #### 5.3 Frontend - Visualização de Conversas
+
 **Prioridade:** Crítica  
 **Esforço:** 3 semanas  
 **Dependências:** 5.1
 
 **Tarefas:**
+
 - [ ] Criar componente de visualização de conversas
 - [ ] Implementar timeline de mensagens:
   - [ ] Mensagens do paciente
@@ -473,6 +535,7 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 - [ ] Criar resumo de sintomas reportados
 
 **Entregáveis:**
+
 - Visualizador de conversas completo
 - Timeline funcional
 - Extração de dados visível
@@ -480,11 +543,13 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 ---
 
 #### 5.4 Frontend - Sistema de Alertas em Tempo Real
+
 **Prioridade:** Crítica  
 **Esforço:** 2 semanas  
 **Dependências:** 5.1
 
 **Tarefas:**
+
 - [ ] Implementar conexão WebSocket
 - [ ] Criar componente de notificações (toast)
 - [ ] Implementar lista de alertas:
@@ -497,6 +562,7 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 - [ ] Implementar filtros de alertas
 
 **Entregáveis:**
+
 - Sistema de alertas em tempo real
 - Notificações funcionais
 - Interface de gerenciamento
@@ -504,11 +570,13 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 ---
 
 #### 5.5 Frontend - Intervenção Manual
+
 **Prioridade:** Crítica  
 **Esforço:** 3 semanas  
 **Dependências:** 5.1, 5.3
 
 **Tarefas:**
+
 - [ ] Criar botão "Assumir Conversa"
 - [ ] Implementar chat integrado no dashboard:
   - [ ] Envio de mensagens
@@ -522,6 +590,7 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 - [ ] Adicionar rastreamento (quem assumiu, quando)
 
 **Entregáveis:**
+
 - Sistema de intervenção manual completo
 - Chat integrado funcional
 - Handoff automático
@@ -529,11 +598,13 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 ---
 
 #### 5.6 Frontend - Métricas e Analytics
+
 **Prioridade:** Média  
 **Esforço:** 2 semanas  
 **Dependências:** 5.1
 
 **Tarefas:**
+
 - [ ] Criar página de métricas
 - [ ] Implementar métricas de engajamento:
   - [ ] Taxa de resposta ao agente
@@ -549,6 +620,7 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 - [ ] Adicionar exportação (PDF, Excel)
 
 **Entregáveis:**
+
 - Dashboard de métricas completo
 - Gráficos e visualizações
 - Exportação de relatórios
@@ -558,16 +630,19 @@ Implementar dashboard completo para equipe de enfermagem monitorar pacientes e i
 ## Fase 6: Otimização de Protocolos de Quimioterapia (Semanas 41-46)
 
 ### Objetivo
+
 Implementar features de otimização de protocolos e agendamentos de quimioterapia.
 
 ### Features
 
 #### 6.1 Backend - Gerenciamento de Protocolos
+
 **Prioridade:** Média  
 **Esforço:** 2 semanas  
 **Dependências:** 1.2
 
 **Tarefas:**
+
 - [ ] Criar modelo de dados para protocolos
 - [ ] Implementar CRUD de protocolos
 - [ ] Integrar com guidelines (NCCN, ASCO, ESMO)
@@ -576,6 +651,7 @@ Implementar features de otimização de protocolos e agendamentos de quimioterap
 - [ ] Criar endpoints de protocolos
 
 **Entregáveis:**
+
 - API de protocolos
 - Sistema de sugestões
 - Alertas de atrasos
@@ -583,11 +659,13 @@ Implementar features de otimização de protocolos e agendamentos de quimioterap
 ---
 
 #### 6.2 Backend - Monitoramento de Toxicidade
+
 **Prioridade:** Média  
 **Esforço:** 2 semanas  
 **Dependências:** 4.6, 6.1
 
 **Tarefas:**
+
 - [ ] Implementar coleta de dados de toxicidade (via agente)
 - [ ] Criar sistema de alertas de toxicidade
 - [ ] Implementar sugestões de ajuste de dose
@@ -595,6 +673,7 @@ Implementar features de otimização de protocolos e agendamentos de quimioterap
 - [ ] Integrar com protocolos
 
 **Entregáveis:**
+
 - Sistema de monitoramento de toxicidade
 - Alertas e sugestões
 - Histórico completo
@@ -602,11 +681,13 @@ Implementar features de otimização de protocolos e agendamentos de quimioterap
 ---
 
 #### 6.3 Backend - Otimização de Agendamentos
+
 **Prioridade:** Média  
 **Esforço:** 2 semanas  
 **Dependências:** 6.1
 
 **Tarefas:**
+
 - [ ] Implementar algoritmo de otimização de agendamentos
 - [ ] Considerar disponibilidade de equipamentos
 - [ ] Considerar protocolos e ciclos
@@ -614,6 +695,7 @@ Implementar features de otimização de protocolos e agendamentos de quimioterap
 - [ ] Criar endpoints de agendamento
 
 **Entregáveis:**
+
 - Sistema de otimização de agendamentos
 - Alertas de ociosidade
 - API de agendamento
@@ -621,11 +703,13 @@ Implementar features de otimização de protocolos e agendamentos de quimioterap
 ---
 
 #### 6.4 Frontend - Interface de Protocolos
+
 **Prioridade:** Média  
 **Esforço:** 2 semanas  
 **Dependências:** 6.1, 6.2
 
 **Tarefas:**
+
 - [ ] Criar página de protocolos
 - [ ] Implementar visualização de protocolos ativos
 - [ ] Mostrar sugestões de protocolos
@@ -634,6 +718,7 @@ Implementar features de otimização de protocolos e agendamentos de quimioterap
 - [ ] Adicionar gráficos de utilização de equipamentos
 
 **Entregáveis:**
+
 - Interface de protocolos completa
 - Visualizações de toxicidade
 - Alertas visuais
@@ -643,16 +728,19 @@ Implementar features de otimização de protocolos e agendamentos de quimioterap
 ## Fase 7: Integrações e Melhorias (Semanas 47-52)
 
 ### Objetivo
+
 Finalizar integrações, melhorias de performance e preparação para produção.
 
 ### Features
 
 #### 7.1 Integração HL7 v2 (Opcional)
+
 **Prioridade:** Baixa  
 **Esforço:** 2 semanas  
 **Dependências:** 1.4
 
 **Tarefas:**
+
 - [ ] Implementar cliente HL7 MLLP
 - [ ] Criar parsers para mensagens HL7:
   - [ ] ADT (Admit/Discharge/Transfer)
@@ -662,6 +750,7 @@ Finalizar integrações, melhorias de performance e preparação para produção
 - [ ] Criar endpoints de recebimento HL7
 
 **Entregáveis:**
+
 - Integração HL7 funcional
 - Mapeamento para FHIR
 - Documentação
@@ -669,11 +758,13 @@ Finalizar integrações, melhorias de performance e preparação para produção
 ---
 
 #### 7.2 Melhorias de Performance
+
 **Prioridade:** Alta  
 **Esforço:** 2 semanas  
 **Dependências:** Todas as fases anteriores
 
 **Tarefas:**
+
 - [ ] Otimizar queries do banco de dados
 - [ ] Implementar cache (Redis) para:
   - [ ] Scores de priorização
@@ -684,6 +775,7 @@ Finalizar integrações, melhorias de performance e preparação para produção
 - [ ] Otimizar WebSocket (reduzir mensagens)
 
 **Entregáveis:**
+
 - Performance otimizada
 - Cache implementado
 - Métricas de performance
@@ -691,11 +783,13 @@ Finalizar integrações, melhorias de performance e preparação para produção
 ---
 
 #### 7.3 Testes e Qualidade
+
 **Prioridade:** Alta  
 **Esforço:** 3 semanas  
 **Dependências:** Todas as fases anteriores
 
 **Tarefas:**
+
 - [ ] Testes unitários (backend e frontend)
 - [ ] Testes de integração
 - [ ] Testes E2E (Playwright/Cypress)
@@ -704,6 +798,7 @@ Finalizar integrações, melhorias de performance e preparação para produção
 - [ ] Code review e refatoração
 
 **Entregáveis:**
+
 - Cobertura de testes >80%
 - Testes E2E completos
 - Relatório de segurança
@@ -711,11 +806,13 @@ Finalizar integrações, melhorias de performance e preparação para produção
 ---
 
 #### 7.4 Documentação e Deploy
+
 **Prioridade:** Alta  
 **Esforço:** 1 semana  
 **Dependências:** Todas as fases anteriores
 
 **Tarefas:**
+
 - [ ] Documentação de API (Swagger/OpenAPI)
 - [ ] Documentação de usuário (enfermagem, oncologistas)
 - [ ] Guias de instalação e configuração
@@ -725,6 +822,7 @@ Finalizar integrações, melhorias de performance e preparação para produção
 - [ ] Deploy para produção
 
 **Entregáveis:**
+
 - Documentação completa
 - Ambiente de produção configurado
 - Sistema em produção
@@ -733,15 +831,15 @@ Finalizar integrações, melhorias de performance e preparação para produção
 
 ## Resumo de Fases e Timeline
 
-| Fase | Duração | Features Principais | Prioridade |
-|------|---------|---------------------|------------|
-| **Fase 1: Fundação** | 8 semanas | Infraestrutura, Auth, Dados, FHIR | Crítica |
-| **Fase 2: Navegação** | 6 semanas | Dashboard de navegação | Crítica |
-| **Fase 3: Priorização IA** | 8 semanas | Modelo ML, API, Frontend | Crítica |
-| **Fase 4: Agente WhatsApp** | 10 semanas | Integração, Agente, STT, Questionários | Crítica |
-| **Fase 5: Dashboard Enfermagem** | 8 semanas | Lista, Conversas, Alertas, Intervenção | Crítica |
-| **Fase 6: Protocolos** | 6 semanas | Protocolos, Toxicidade, Agendamentos | Média |
-| **Fase 7: Finalização** | 6 semanas | Integrações, Performance, Testes | Alta |
+| Fase                             | Duração    | Features Principais                    | Prioridade |
+| -------------------------------- | ---------- | -------------------------------------- | ---------- |
+| **Fase 1: Fundação**             | 8 semanas  | Infraestrutura, Auth, Dados, FHIR      | Crítica    |
+| **Fase 2: Navegação**            | 6 semanas  | Dashboard de navegação                 | Crítica    |
+| **Fase 3: Priorização IA**       | 8 semanas  | Modelo ML, API, Frontend               | Crítica    |
+| **Fase 4: Agente WhatsApp**      | 10 semanas | Integração, Agente, STT, Questionários | Crítica    |
+| **Fase 5: Dashboard Enfermagem** | 8 semanas  | Lista, Conversas, Alertas, Intervenção | Crítica    |
+| **Fase 6: Protocolos**           | 6 semanas  | Protocolos, Toxicidade, Agendamentos   | Média      |
+| **Fase 7: Finalização**          | 6 semanas  | Integrações, Performance, Testes       | Alta       |
 
 **Total: 52 semanas (12 meses)**
 
@@ -772,18 +870,22 @@ Finalizar integrações, melhorias de performance e preparação para produção
 ### Riscos Técnicos
 
 **Risco 1: Integração WhatsApp Business API complexa**
+
 - **Mitigação**: Parceria com provedor confiável (Evolution API), testes extensivos
 - **Contingência**: Backup com SMS ou Telegram
 
 **Risco 2: Modelo de ML não performa bem**
+
 - **Mitigação**: Validação com dados reais, ajuste de features, ensemble de modelos
 - **Contingência**: Sistema de regras como fallback
 
 **Risco 3: Performance com muitos pacientes**
+
 - **Mitigação**: Cache agressivo, otimização de queries, paginação
 - **Contingência**: Escalabilidade horizontal (load balancer)
 
 **Risco 4: Integração FHIR com EHRs legados**
+
 - **Mitigação**: Parcerias com integradores, suporte técnico especializado
 - **Contingência**: Integração manual via CSV/Excel
 
@@ -818,4 +920,3 @@ Finalizar integrações, melhorias de performance e preparação para produção
 ---
 
 **FIM DO PLANO**
-

@@ -5,6 +5,7 @@
 ### Core Entities
 
 #### Tenant (Hospital/Clínica)
+
 ```typescript
 interface Tenant {
   id: string; // UUID
@@ -20,6 +21,7 @@ interface Tenant {
 ```
 
 #### Patient (Paciente)
+
 ```typescript
 interface Patient {
   id: string; // UUID
@@ -30,32 +32,33 @@ interface Patient {
   birthDate: Date;
   phone: string; // WhatsApp
   email?: string;
-  
+
   // Dados oncológicos
   cancerType: string;
   stage: string; // TNM ou estágio
   diagnosisDate: Date;
   performanceStatus?: number; // ECOG, Karnofsky
-  
+
   // Jornada
   currentStage: 'rastreio' | 'diagnostico' | 'tratamento' | 'seguimento';
   currentSpecialty?: string; // oncologia, cirurgia, radioterapia
-  
+
   // Priorização
   priorityScore: number; // 0-100 (calculado pelo modelo)
   priorityCategory: 'critico' | 'alto' | 'medio' | 'baixo';
   priorityReason?: string; // explicação do score
-  
+
   // Integração EHR
   ehrPatientId?: string; // ID no sistema externo
   lastSyncAt?: Date;
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
 ```
 
 #### Conversation (Conversa WhatsApp)
+
 ```typescript
 interface Conversation {
   id: string; // UUID
@@ -66,7 +69,7 @@ interface Conversation {
   direction: 'inbound' | 'outbound';
   content: string; // texto ou transcrição do áudio
   audioUrl?: string; // URL do áudio (S3)
-  
+
   // Processamento IA
   processedBy: 'agent' | 'nursing'; // quem processou
   structuredData?: {
@@ -77,23 +80,28 @@ interface Conversation {
       esas?: number;
     };
   };
-  
+
   // Detecção de urgência
   criticalSymptomsDetected?: string[];
   alertTriggered: boolean;
-  
+
   timestamp: Date;
   createdAt: Date;
 }
 ```
 
 #### Alert (Alerta)
+
 ```typescript
 interface Alert {
   id: string; // UUID
   tenantId: string;
   patientId: string;
-  type: 'critical_symptom' | 'no_response' | 'delayed_appointment' | 'score_change';
+  type:
+    | 'critical_symptom'
+    | 'no_response'
+    | 'delayed_appointment'
+    | 'score_change';
   severity: 'critical' | 'high' | 'medium' | 'low';
   message: string;
   context?: {
@@ -102,72 +110,74 @@ interface Alert {
     previousScore?: number;
     currentScore?: number;
   };
-  
+
   // Status
   status: 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
   acknowledgedBy?: string; // userId
   acknowledgedAt?: Date;
   resolvedAt?: Date;
-  
+
   createdAt: Date;
 }
 ```
 
 #### PatientJourney (Jornada do Paciente)
+
 ```typescript
 interface PatientJourney {
   id: string; // UUID
   tenantId: string;
   patientId: string;
-  
+
   // Rastreio
   screeningDate?: Date;
   screeningResult?: string;
-  
+
   // Diagnóstico
   diagnosisDate?: Date;
   diagnosisConfirmed: boolean;
   pathologyReport?: string;
   stagingDate?: Date;
-  
+
   // Tratamento
   treatmentStartDate?: Date;
   treatmentType?: 'quimioterapia' | 'radioterapia' | 'cirurgia' | 'combinado';
   treatmentProtocol?: string;
   currentCycle?: number;
   totalCycles?: number;
-  
+
   // Seguimento
   lastFollowUpDate?: Date;
   nextFollowUpDate?: Date;
-  
+
   // Navegação
   currentStep: string; // etapa atual
   nextStep?: string; // próxima etapa
   blockers?: string[]; // bloqueios/atrasos
-  
+
   updatedAt: Date;
 }
 ```
 
 #### Observation (Dados Estruturados - FHIR)
+
 ```typescript
 interface Observation {
   id: string; // UUID
   tenantId: string;
   patientId: string;
   conversationId?: string; // origem da observação
-  
+
   // FHIR Resource
   code: string; // LOINC code
   display: string; // descrição legível
   value: number | string; // valor
   unit?: string;
-  
+
   // Metadados
   effectiveDateTime: Date; // quando foi coletado
   status: 'final';
-  
+
   // Para FHIR
   fhirResourceId?: string; // ID no FHIR server
   syncedToEHR: boolean;
@@ -204,26 +214,26 @@ CREATE TABLE tenant_hospital_1.patients (
   birth_date DATE,
   phone VARCHAR(20) NOT NULL,
   email VARCHAR(255),
-  
+
   -- Dados oncológicos
   cancer_type VARCHAR(100),
   stage VARCHAR(50),
   diagnosis_date DATE,
   performance_status INTEGER,
-  
+
   -- Jornada
   current_stage VARCHAR(50),
   current_specialty VARCHAR(100),
-  
+
   -- Priorização
   priority_score INTEGER DEFAULT 0,
   priority_category VARCHAR(20),
   priority_reason TEXT,
-  
+
   -- EHR
   ehr_patient_id VARCHAR(255),
   last_sync_at TIMESTAMP,
-  
+
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -244,12 +254,12 @@ CREATE TABLE tenant_hospital_1.conversations (
   direction VARCHAR(20) NOT NULL,
   content TEXT NOT NULL,
   audio_url TEXT,
-  
+
   processed_by VARCHAR(20),
   structured_data JSONB,
   critical_symptoms_detected TEXT[],
   alert_triggered BOOLEAN DEFAULT FALSE,
-  
+
   timestamp TIMESTAMP NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -267,12 +277,12 @@ CREATE TABLE tenant_hospital_1.alerts (
   severity VARCHAR(20) NOT NULL,
   message TEXT NOT NULL,
   context JSONB,
-  
+
   status VARCHAR(20) DEFAULT 'pending',
   acknowledged_by UUID,
   acknowledged_at TIMESTAMP,
   resolved_at TIMESTAMP,
-  
+
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -285,27 +295,27 @@ CREATE TABLE tenant_hospital_1.patient_journeys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES shared.tenants(id),
   patient_id UUID NOT NULL UNIQUE REFERENCES tenant_hospital_1.patients(id),
-  
+
   screening_date DATE,
   screening_result TEXT,
   diagnosis_date DATE,
   diagnosis_confirmed BOOLEAN DEFAULT FALSE,
   pathology_report TEXT,
   staging_date DATE,
-  
+
   treatment_start_date DATE,
   treatment_type VARCHAR(50),
   treatment_protocol TEXT,
   current_cycle INTEGER,
   total_cycles INTEGER,
-  
+
   last_follow_up_date DATE,
   next_follow_up_date DATE,
-  
+
   current_step VARCHAR(100),
   next_step VARCHAR(100),
   blockers TEXT[],
-  
+
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -315,20 +325,20 @@ CREATE TABLE tenant_hospital_1.observations (
   tenant_id UUID NOT NULL REFERENCES shared.tenants(id),
   patient_id UUID NOT NULL REFERENCES tenant_hospital_1.patients(id),
   conversation_id UUID REFERENCES tenant_hospital_1.conversations(id),
-  
+
   code VARCHAR(50) NOT NULL, -- LOINC
   display VARCHAR(255) NOT NULL,
   value NUMERIC,
   value_string TEXT,
   unit VARCHAR(50),
-  
+
   effective_date_time TIMESTAMP NOT NULL,
   status VARCHAR(20) DEFAULT 'final',
-  
+
   fhir_resource_id VARCHAR(255),
   synced_to_ehr BOOLEAN DEFAULT FALSE,
   synced_at TIMESTAMP,
-  
+
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -342,6 +352,7 @@ CREATE INDEX idx_observations_sync ON tenant_hospital_1.observations(synced_to_e
 ### Mapeamento de Dados
 
 **Patient → FHIR Patient Resource:**
+
 ```json
 {
   "resourceType": "Patient",
@@ -352,26 +363,27 @@ CREATE INDEX idx_observations_sync ON tenant_hospital_1.observations(synced_to_e
       "value": "ehr-patient-id"
     }
   ],
-  "name": [{"text": "Nome do Paciente"}],
-  "telecom": [
-    {"system": "phone", "value": "+5511999999999"}
-  ],
+  "name": [{ "text": "Nome do Paciente" }],
+  "telecom": [{ "system": "phone", "value": "+5511999999999" }],
   "birthDate": "1980-01-01"
 }
 ```
 
 **Conversation → FHIR Observation Resource:**
+
 ```json
 {
   "resourceType": "Observation",
   "id": "obs-123",
   "status": "final",
   "code": {
-    "coding": [{
-      "system": "http://loinc.org",
-      "code": "72514-3", // Pain severity
-      "display": "Pain severity"
-    }]
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "72514-3", // Pain severity
+        "display": "Pain severity"
+      }
+    ]
   },
   "subject": {
     "reference": "Patient/patient-123"
@@ -451,5 +463,3 @@ CREATE INDEX idx_audit_logs_resource ON tenant_hospital_1.audit_logs(resource_ty
 - Conversas armazenadas em S3 (criptografadas)
 - Versionamento habilitado
 - Lifecycle policy: mover para Glacier após 90 dias
-
-

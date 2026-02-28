@@ -44,7 +44,8 @@ export class PatientsService {
     options?: { limit?: number; offset?: number }
   ): Promise<Patient[]> {
     // Limite padrão de 200 pacientes para evitar problemas de performance
-    const limit = options?.limit && options.limit > 0 ? Math.min(options.limit, 500) : 200;
+    const limit =
+      options?.limit && options.limit > 0 ? Math.min(options.limit, 500) : 200;
     const offset = options?.offset && options.offset > 0 ? options.offset : 0;
 
     const patients = await this.prisma.patient.findMany({
@@ -60,7 +61,7 @@ export class PatientsService {
       },
       orderBy: [
         { priorityScore: 'desc' }, // Maior score primeiro
-        { createdAt: 'desc' },     // Mais recente primeiro
+        { createdAt: 'desc' }, // Mais recente primeiro
       ],
       take: limit,
       skip: offset,
@@ -134,7 +135,7 @@ export class PatientsService {
   /**
    * Buscar paciente por número de telefone
    * Usa hash do telefone para busca eficiente mesmo com campo criptografado
-   * 
+   *
    * @param phone Número de telefone (qualquer formato)
    * @param tenantId ID do tenant
    * @returns Paciente encontrado ou null
@@ -143,7 +144,7 @@ export class PatientsService {
     try {
       // Normalizar telefone
       const normalizedPhone = normalizePhoneNumber(phone);
-      
+
       // Gerar hash para busca
       const phoneHash = hashPhoneNumber(normalizedPhone);
 
@@ -157,10 +158,7 @@ export class PatientsService {
           journey: true,
           cancerDiagnoses: {
             where: { isActive: true },
-            orderBy: [
-              { isPrimary: 'desc' },
-              { diagnosisDate: 'desc' },
-            ],
+            orderBy: [{ isPrimary: 'desc' }, { diagnosisDate: 'desc' }],
           },
           messages: {
             orderBy: { createdAt: 'desc' },
@@ -305,24 +303,34 @@ export class PatientsService {
     }
 
     const updateData: Prisma.PatientUpdateInput = {};
-    
+
     // Copiar campos permitidos do DTO
-    if (updatePatientDto.name !== undefined) updateData.name = updatePatientDto.name;
-    if (updatePatientDto.cpf !== undefined) updateData.cpf = updatePatientDto.cpf;
+    if (updatePatientDto.name !== undefined) {
+      updateData.name = updatePatientDto.name;
+    }
+    if (updatePatientDto.cpf !== undefined) {
+      updateData.cpf = updatePatientDto.cpf;
+    }
     if (updatePatientDto.birthDate !== undefined) {
       updateData.birthDate = new Date(updatePatientDto.birthDate);
     }
-    if (updatePatientDto.gender !== undefined) updateData.gender = updatePatientDto.gender as Gender;
+    if (updatePatientDto.gender !== undefined) {
+      updateData.gender = updatePatientDto.gender;
+    }
     if (updatePatientDto.phone !== undefined) {
       const normalizedPhone = normalizePhoneNumber(updatePatientDto.phone);
       updateData.phone = normalizedPhone;
       updateData.phoneHash = hashPhoneNumber(normalizedPhone);
     }
-    if (updatePatientDto.email !== undefined) updateData.email = updatePatientDto.email;
-    if (updatePatientDto.cancerType !== undefined) {
-      updateData.cancerType = updatePatientDto.cancerType as CancerType;
+    if (updatePatientDto.email !== undefined) {
+      updateData.email = updatePatientDto.email;
     }
-    if (updatePatientDto.stage !== undefined) updateData.stage = updatePatientDto.stage;
+    if (updatePatientDto.cancerType !== undefined) {
+      updateData.cancerType = updatePatientDto.cancerType;
+    }
+    if (updatePatientDto.stage !== undefined) {
+      updateData.stage = updatePatientDto.stage;
+    }
     if (updatePatientDto.diagnosisDate !== undefined) {
       updateData.diagnosisDate = new Date(updatePatientDto.diagnosisDate);
     }
@@ -347,7 +355,9 @@ export class PatientsService {
     if (updatePatientDto.familyHistory !== undefined) {
       updateData.familyHistory = updatePatientDto.familyHistory as any;
     }
-    if (updatePatientDto.ehrId !== undefined) updateData.ehrPatientId = updatePatientDto.ehrId;
+    if (updatePatientDto.ehrId !== undefined) {
+      updateData.ehrPatientId = updatePatientDto.ehrId;
+    }
 
     const updatedPatient = await this.prisma.patient.update({
       where: { id },
@@ -410,7 +420,7 @@ export class PatientsService {
   /**
    * Atualizar score de priorização do paciente
    * Atualiza o campo priorityScore no paciente e cria registro histórico
-   * 
+   *
    * @param id ID do paciente
    * @param updatePriorityDto Dados do score de priorização
    * @param tenantId ID do tenant
@@ -516,7 +526,7 @@ export class PatientsService {
           )
           .on('data', (row) => {
             try {
-              results.push(row as any);
+              results.push(row);
             } catch (error) {
               this.logger.error('Erro ao processar linha do CSV:', error);
               // Continuar processamento mesmo com erro em uma linha
@@ -529,170 +539,188 @@ export class PatientsService {
                 const row = results[i];
                 const rowErrors: string[] = [];
 
-              // Validações básicas
-              if (!row.name || row.name.trim().length < 2) {
-                rowErrors.push('Nome é obrigatório e deve ter pelo menos 2 caracteres');
-              }
-              if (!row.cpf || row.cpf.trim().length === 0) {
-                rowErrors.push('CPF é obrigatório');
-              }
-              if (!row.dataNascimento) {
-                rowErrors.push('Data de nascimento é obrigatória');
-              }
-              if (!row.sexo || !['male', 'female', 'other'].includes(row.sexo)) {
-                rowErrors.push('Sexo deve ser male, female ou other');
-              }
-              if (!row.telefone || row.telefone.trim().length < 10) {
-                rowErrors.push('Telefone é obrigatório e deve ter pelo menos 10 dígitos');
-              }
-              if (!row.tipoCancer) {
-                rowErrors.push('Tipo de câncer é obrigatório');
-              }
-              // Data de diagnóstico só é obrigatória se não estiver em rastreio
-              // Por padrão, assumimos SCREENING se não especificado
-              const currentStage = (row as any).currentStage || 'SCREENING';
-              if (!row.dataDiagnostico && currentStage !== 'SCREENING') {
-                rowErrors.push(
-                  'Data de diagnóstico é obrigatória quando o paciente não está em rastreio'
-                );
-              }
+                // Validações básicas
+                if (!row.name || row.name.trim().length < 2) {
+                  rowErrors.push(
+                    'Nome é obrigatório e deve ter pelo menos 2 caracteres'
+                  );
+                }
+                if (!row.cpf || row.cpf.trim().length === 0) {
+                  rowErrors.push('CPF é obrigatório');
+                }
+                if (!row.dataNascimento) {
+                  rowErrors.push('Data de nascimento é obrigatória');
+                }
+                if (
+                  !row.sexo ||
+                  !['male', 'female', 'other'].includes(row.sexo)
+                ) {
+                  rowErrors.push('Sexo deve ser male, female ou other');
+                }
+                if (!row.telefone || row.telefone.trim().length < 10) {
+                  rowErrors.push(
+                    'Telefone é obrigatório e deve ter pelo menos 10 dígitos'
+                  );
+                }
+                if (!row.tipoCancer) {
+                  rowErrors.push('Tipo de câncer é obrigatório');
+                }
+                // Data de diagnóstico só é obrigatória se não estiver em rastreio
+                // Por padrão, assumimos SCREENING se não especificado
+                const currentStage = (row as any).currentStage || 'SCREENING';
+                if (!row.dataDiagnostico && currentStage !== 'SCREENING') {
+                  rowErrors.push(
+                    'Data de diagnóstico é obrigatória quando o paciente não está em rastreio'
+                  );
+                }
 
-              // Validar formato de data
-              if (row.dataNascimento && isNaN(Date.parse(row.dataNascimento))) {
-                rowErrors.push('Data de nascimento inválida');
-              }
-              if (
-                row.dataDiagnostico &&
-                isNaN(Date.parse(row.dataDiagnostico))
-              ) {
-                rowErrors.push('Data de diagnóstico inválida');
-              }
+                // Validar formato de data
+                if (
+                  row.dataNascimento &&
+                  isNaN(Date.parse(row.dataNascimento))
+                ) {
+                  rowErrors.push('Data de nascimento inválida');
+                }
+                if (
+                  row.dataDiagnostico &&
+                  isNaN(Date.parse(row.dataDiagnostico))
+                ) {
+                  rowErrors.push('Data de diagnóstico inválida');
+                }
 
-              if (rowErrors.length > 0) {
-                errors.push({ row: i + 2, errors: rowErrors }); // +2 porque linha 1 é header
-                continue;
-              }
-
-              try {
-                // Normalizar telefone (já validado como obrigatório acima)
-                let normalizedPhone = row.telefone.trim();
-                let phoneHash = null;
-                try {
-                  normalizedPhone = normalizePhoneNumber(normalizedPhone);
-                  phoneHash = hashPhoneNumber(normalizedPhone);
-                } catch (error) {
-                  rowErrors.push('Telefone inválido');
-                  errors.push({ row: i + 2, errors: rowErrors });
+                if (rowErrors.length > 0) {
+                  errors.push({ row: i + 2, errors: rowErrors }); // +2 porque linha 1 é header
                   continue;
                 }
 
-                // Criar paciente
-                const createDto: CreatePatientDto = {
-                  name: row.name.trim(),
-                  cpf: row.cpf.trim(),
-                  birthDate: row.dataNascimento,
-                  gender: row.sexo as Gender,
-                  phone: normalizedPhone,
-                  email: row.email?.trim() || undefined,
-                  cancerType: row.tipoCancer as CancerType,
-                  stage: row.estagio?.trim() || undefined,
-                  currentTreatment: undefined,
-                  ehrId: undefined,
-                  ehrSystem: undefined,
-                };
-
-                // Determinar estágio da jornada
-                const currentStage =
-                  (row as any).currentStage || (row.dataDiagnostico ? 'DIAGNOSIS' : 'SCREENING');
-
-                // Criar paciente
-                let patient;
                 try {
-                  patient = await this.prisma.patient.create({
-                    data: {
-                      name: createDto.name,
-                      cpf: createDto.cpf,
-                      birthDate: new Date(row.dataNascimento),
-                      gender: createDto.gender,
-                      phone: createDto.phone,
-                      email: createDto.email,
-                      cancerType: createDto.cancerType,
-                      stage: createDto.stage,
-                      diagnosisDate: row.dataDiagnostico
-                        ? new Date(row.dataDiagnostico)
-                        : null,
-                      currentStage: currentStage as JourneyStage,
-                      tenantId,
-                      phoneHash,
-                    },
-                  });
-                } catch (error) {
-                  // Erro específico de constraint (ex: CPF duplicado)
-                  if (error instanceof Error) {
-                    if (error.message.includes('Unique constraint') || error.message.includes('duplicate')) {
-                      rowErrors.push(`CPF ou telefone já cadastrado: ${error.message}`);
+                  // Normalizar telefone (já validado como obrigatório acima)
+                  let normalizedPhone = row.telefone.trim();
+                  let phoneHash = null;
+                  try {
+                    normalizedPhone = normalizePhoneNumber(normalizedPhone);
+                    phoneHash = hashPhoneNumber(normalizedPhone);
+                  } catch (error) {
+                    rowErrors.push('Telefone inválido');
+                    errors.push({ row: i + 2, errors: rowErrors });
+                    continue;
+                  }
+
+                  // Criar paciente
+                  const createDto: CreatePatientDto = {
+                    name: row.name.trim(),
+                    cpf: row.cpf.trim(),
+                    birthDate: row.dataNascimento,
+                    gender: row.sexo,
+                    phone: normalizedPhone,
+                    email: row.email?.trim() || undefined,
+                    cancerType: row.tipoCancer,
+                    stage: row.estagio?.trim() || undefined,
+                    currentTreatment: undefined,
+                    ehrId: undefined,
+                    ehrSystem: undefined,
+                  };
+
+                  // Determinar estágio da jornada
+                  const currentStage =
+                    (row as any).currentStage ||
+                    (row.dataDiagnostico ? 'DIAGNOSIS' : 'SCREENING');
+
+                  // Criar paciente
+                  let patient;
+                  try {
+                    patient = await this.prisma.patient.create({
+                      data: {
+                        name: createDto.name,
+                        cpf: createDto.cpf,
+                        birthDate: new Date(row.dataNascimento),
+                        gender: createDto.gender,
+                        phone: createDto.phone,
+                        email: createDto.email,
+                        cancerType: createDto.cancerType,
+                        stage: createDto.stage,
+                        diagnosisDate: row.dataDiagnostico
+                          ? new Date(row.dataDiagnostico)
+                          : null,
+                        currentStage: currentStage as JourneyStage,
+                        tenantId,
+                        phoneHash,
+                      },
+                    });
+                  } catch (error) {
+                    // Erro específico de constraint (ex: CPF duplicado)
+                    if (error instanceof Error) {
+                      if (
+                        error.message.includes('Unique constraint') ||
+                        error.message.includes('duplicate')
+                      ) {
+                        rowErrors.push(
+                          `CPF ou telefone já cadastrado: ${error.message}`
+                        );
+                      } else {
+                        rowErrors.push(
+                          `Erro ao criar paciente: ${error.message}`
+                        );
+                      }
                     } else {
-                      rowErrors.push(`Erro ao criar paciente: ${error.message}`);
+                      rowErrors.push('Erro desconhecido ao criar paciente');
                     }
+                    errors.push({ row: i + 2, errors: rowErrors });
+                    continue;
+                  }
+
+                  // Criar diagnóstico de câncer se tipoCancer fornecido
+                  if (row.tipoCancer) {
+                    try {
+                      await this.prisma.cancerDiagnosis.create({
+                        data: {
+                          tenantId,
+                          patientId: patient.id,
+                          cancerType: row.tipoCancer,
+                          diagnosisDate: row.dataDiagnostico
+                            ? new Date(row.dataDiagnostico)
+                            : new Date(),
+                          diagnosisConfirmed: true,
+                          isPrimary: true,
+                          isActive: true,
+                        },
+                      });
+                    } catch (error) {
+                      this.logger.error(
+                        `Erro ao criar diagnóstico para paciente ${patient.id}:`,
+                        error instanceof Error ? error.stack : String(error)
+                      );
+                      // Não falhar o import por erro no diagnóstico, apenas logar
+                    }
+                  }
+
+                  // Inicializar etapas de navegação
+                  if (row.tipoCancer && this.navigationService) {
+                    try {
+                      await this.navigationService.initializeNavigationSteps(
+                        patient.id,
+                        tenantId,
+                        row.tipoCancer,
+                        currentStage as JourneyStage
+                      );
+                    } catch (error) {
+                      this.logger.error(
+                        `Erro ao inicializar navegação para paciente ${patient.id}:`,
+                        error instanceof Error ? error.stack : String(error)
+                      );
+                    }
+                  }
+
+                  created.push(patient);
+                } catch (error) {
+                  if (error instanceof Error) {
+                    rowErrors.push(error.message);
                   } else {
                     rowErrors.push('Erro desconhecido ao criar paciente');
                   }
                   errors.push({ row: i + 2, errors: rowErrors });
-                  continue;
                 }
-
-                // Criar diagnóstico de câncer se tipoCancer fornecido
-                if (row.tipoCancer) {
-                  try {
-                    await this.prisma.cancerDiagnosis.create({
-                      data: {
-                        tenantId,
-                        patientId: patient.id,
-                        cancerType: row.tipoCancer,
-                        diagnosisDate: row.dataDiagnostico
-                          ? new Date(row.dataDiagnostico)
-                          : new Date(),
-                        diagnosisConfirmed: true,
-                        isPrimary: true,
-                        isActive: true,
-                      },
-                    });
-                  } catch (error) {
-                    this.logger.error(
-                      `Erro ao criar diagnóstico para paciente ${patient.id}:`,
-                      error instanceof Error ? error.stack : String(error)
-                    );
-                    // Não falhar o import por erro no diagnóstico, apenas logar
-                  }
-                }
-
-                // Inicializar etapas de navegação
-                if (row.tipoCancer && this.navigationService) {
-                  try {
-                    await this.navigationService.initializeNavigationSteps(
-                      patient.id,
-                      tenantId,
-                      row.tipoCancer,
-                      currentStage as JourneyStage
-                    );
-                  } catch (error) {
-                    this.logger.error(
-                      `Erro ao inicializar navegação para paciente ${patient.id}:`,
-                      error instanceof Error ? error.stack : String(error)
-                    );
-                  }
-                }
-
-                created.push(patient);
-              } catch (error) {
-                if (error instanceof Error) {
-                  rowErrors.push(error.message);
-                } else {
-                  rowErrors.push('Erro desconhecido ao criar paciente');
-                }
-                errors.push({ row: i + 2, errors: rowErrors });
               }
-            }
 
               resolve({
                 success: created.length,
@@ -709,11 +737,10 @@ export class PatientsService {
             }
           })
           .on('error', (error) => {
-            streamError = error instanceof Error ? error : new Error(String(error));
+            streamError =
+              error instanceof Error ? error : new Error(String(error));
             this.logger.error('Erro no stream do CSV:', streamError);
-            reject(
-              new Error(`Erro ao ler CSV: ${streamError.message}`)
-            );
+            reject(new Error(`Erro ao ler CSV: ${streamError.message}`));
           });
       } catch (error) {
         this.logger.error('Erro ao criar stream do CSV:', error);
@@ -745,10 +772,7 @@ export class PatientsService {
         journey: true,
         cancerDiagnoses: {
           where: { isActive: true },
-          orderBy: [
-            { isPrimary: 'desc' },
-            { diagnosisDate: 'desc' },
-          ],
+          orderBy: [{ isPrimary: 'desc' }, { diagnosisDate: 'desc' }],
         },
         alerts: {
           where: {
@@ -776,10 +800,8 @@ export class PatientsService {
     let navigationSteps: any[] = [];
     if (this.navigationService) {
       try {
-        navigationSteps = await this.navigationService.getPatientNavigationSteps(
-          id,
-          tenantId
-        );
+        navigationSteps =
+          await this.navigationService.getPatientNavigationSteps(id, tenantId);
       } catch (error) {
         // Se houver erro ao buscar etapas, usar array vazio
         this.logger.error(
@@ -1004,10 +1026,7 @@ export class PatientsService {
         tenantId,
         ...(includeInactive ? {} : { isActive: true }),
       },
-      orderBy: [
-        { isPrimary: 'desc' },
-        { diagnosisDate: 'desc' },
-      ],
+      orderBy: [{ isPrimary: 'desc' }, { diagnosisDate: 'desc' }],
     });
   }
 }

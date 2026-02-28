@@ -33,10 +33,7 @@ export class QuestionnaireResponsesController {
     @Body() createDto: CreateQuestionnaireResponseDto,
     @CurrentUser() user: any
   ) {
-    return this.questionnaireResponsesService.create(
-      createDto,
-      user.tenantId
-    );
+    return this.questionnaireResponsesService.create(createDto, user.tenantId);
   }
 
   @Get()
@@ -75,4 +72,3 @@ export class QuestionnaireResponsesController {
     return this.questionnaireResponsesService.findOne(id, user.tenantId);
   }
 }
-

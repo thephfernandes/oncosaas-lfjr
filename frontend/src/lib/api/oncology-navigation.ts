@@ -172,18 +172,14 @@ export const oncologyNavigationApi = {
   uploadFile: async (stepId: string, file: File): Promise<NavigationStep> => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     // Usar axios diretamente para FormData (não definir Content-Type manualmente)
     const API_URL = getApiUrl();
     const token =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('auth_token')
-        : null;
+      typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     const tenantId =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('tenant_id')
-        : null;
-    
+      typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : null;
+
     const response = await axios.post<NavigationStep>(
       `${API_URL}/api/v1/oncology-navigation/steps/${stepId}/upload`,
       formData,
@@ -195,7 +191,7 @@ export const oncologyNavigationApi = {
         },
       }
     );
-    
+
     return response.data;
   },
 };

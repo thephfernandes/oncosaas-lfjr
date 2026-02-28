@@ -33,7 +33,15 @@ export interface FHIRPatient {
 export interface FHIRObservation {
   resourceType: 'Observation';
   id?: string;
-  status: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status:
+    | 'registered'
+    | 'preliminary'
+    | 'final'
+    | 'amended'
+    | 'corrected'
+    | 'cancelled'
+    | 'entered-in-error'
+    | 'unknown';
   code: {
     coding: Array<{
       system: string; // Ex: 'http://loinc.org'
@@ -68,7 +76,14 @@ export interface FHIRObservation {
 
 export interface FHIRBundle {
   resourceType: 'Bundle';
-  type: 'searchset' | 'history' | 'transaction' | 'batch' | 'collection' | 'document' | 'message';
+  type:
+    | 'searchset'
+    | 'history'
+    | 'transaction'
+    | 'batch'
+    | 'collection'
+    | 'document'
+    | 'message';
   total?: number;
   entry?: Array<{
     resource: FHIRPatient | FHIRObservation | any;
@@ -83,4 +98,3 @@ export interface FHIRSearchParams {
   _count?: number;
   _offset?: number;
 }
-

@@ -23,16 +23,17 @@ npm run prisma:seed
 
 Todos os usuários têm a senha padrão: `senha123`
 
-| Email | Nome | Role | Descrição |
-|-------|------|------|-----------|
-| `admin@hospitalteste.com` | Administrador | ADMIN | Acesso total ao sistema |
-| `oncologista@hospitalteste.com` | Dr. João Silva | ONCOLOGIST | Oncologista clínico |
-| `enfermeira@hospitalteste.com` | Maria Santos | NURSE | Enfermeira responsável |
+| Email                           | Nome            | Role        | Descrição                |
+| ------------------------------- | --------------- | ----------- | ------------------------ |
+| `admin@hospitalteste.com`       | Administrador   | ADMIN       | Acesso total ao sistema  |
+| `oncologista@hospitalteste.com` | Dr. João Silva  | ONCOLOGIST  | Oncologista clínico      |
+| `enfermeira@hospitalteste.com`  | Maria Santos    | NURSE       | Enfermeira responsável   |
 | `coordenador@hospitalteste.com` | Carlos Oliveira | COORDINATOR | Coordenador de navegação |
 
 ### 3. Pacientes de Exemplo
 
 #### Paciente 1: Ana Paula Costa
+
 - **Tipo de Câncer**: Mama (breast)
 - **Estágio**: IIIA
 - **Status**: Em Tratamento (IN_TREATMENT)
@@ -40,6 +41,7 @@ Todos os usuários têm a senha padrão: `senha123`
 - **Jornada**: Criada com histórico completo (rastreio → diagnóstico → tratamento)
 
 #### Paciente 2: Roberto Almeida
+
 - **Tipo de Câncer**: Pulmão (lung)
 - **Estágio**: IV
 - **Status**: Em Tratamento (IN_TREATMENT)
@@ -47,6 +49,7 @@ Todos os usuários têm a senha padrão: `senha123`
 - **Alerta**: Alerta crítico criado (febre + dispneia)
 
 #### Paciente 3: Fernanda Lima
+
 - **Tipo de Câncer**: Colorretal (colorectal)
 - **Estágio**: II
 - **Status**: Em Seguimento (FOLLOW_UP)
@@ -121,4 +124,3 @@ npm run prisma:seed
 - [ ] Adicionar questionários respondidos
 - [ ] Criar histórico de scores de priorização
 - [ ] Adicionar observações clínicas (FHIR)
-

@@ -18,4 +18,3 @@ export class UpdatePriorityDto {
   @IsOptional()
   modelVersion?: string; // Versão do modelo ML usado
 }
-

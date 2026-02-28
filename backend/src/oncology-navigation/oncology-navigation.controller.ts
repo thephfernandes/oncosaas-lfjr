@@ -40,9 +40,7 @@ interface MulterFile {
 @Controller('oncology-navigation')
 @UseGuards(JwtAuthGuard, TenantGuard)
 export class OncologyNavigationController {
-  constructor(
-    private readonly navigationService: OncologyNavigationService
-  ) {}
+  constructor(private readonly navigationService: OncologyNavigationService) {}
 
   @Get('patients/:patientId/steps')
   async getPatientSteps(
@@ -104,23 +102,25 @@ export class OncologyNavigationController {
     if (updateDto.isCompleted && !updateDto.completedBy) {
       updateDto.completedBy = req.user.id;
     }
-    
-    return this.navigationService.updateStep(
-      id,
-      updateDto,
-      req.user.tenantId
-    );
+
+    return this.navigationService.updateStep(id, updateDto, req.user.tenantId);
   }
 
   @Post('steps/:id/upload')
-  @Roles(UserRole.ADMIN, UserRole.COORDINATOR, UserRole.ONCOLOGIST, UserRole.NURSE)
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.COORDINATOR,
+    UserRole.ONCOLOGIST,
+    UserRole.NURSE
+  )
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
         destination: './uploads/navigation-steps',
         filename: (req, file, cb) => {
           const stepId = req.params.id;
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           cb(null, `step-${stepId}-${uniqueSuffix}${ext}`);
         },
@@ -163,8 +163,11 @@ export class OncologyNavigationController {
     }
 
     // Obter a etapa atual
-    const step = await this.navigationService.getStepById(id, req.user.tenantId);
-    
+    const step = await this.navigationService.getStepById(
+      id,
+      req.user.tenantId
+    );
+
     // Preparar metadata com informações do arquivo
     const fileMetadata = {
       filename: file.filename,
@@ -209,7 +212,9 @@ export class OncologyNavigationController {
   @Post('check-overdue')
   @Roles(UserRole.ADMIN, UserRole.COORDINATOR, UserRole.ONCOLOGIST)
   async checkOverdue(@Request() req: any) {
-    const result = await this.navigationService.checkOverdueSteps(req.user.tenantId);
+    const result = await this.navigationService.checkOverdueSteps(
+      req.user.tenantId
+    );
     return {
       message: 'Overdue steps checked and alerts created',
       ...result,
@@ -247,4 +252,3 @@ export class OncologyNavigationController {
     };
   }
 }
-

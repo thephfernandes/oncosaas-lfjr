@@ -58,4 +58,3 @@ export class ImportPatientsDto {
   @IsNotEmpty()
   patients: ImportPatientRowDto[];
 }
-

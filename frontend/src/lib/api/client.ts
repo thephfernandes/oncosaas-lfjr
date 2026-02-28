@@ -27,7 +27,7 @@ class ApiClient {
     // Usar função utilitária que detecta automaticamente HTTP/HTTPS
     const apiUrl = getApiUrl();
     const baseURL = `${apiUrl}/api/v1`;
-    
+
     this.client = axios.create({
       baseURL,
       headers: {
@@ -76,19 +76,20 @@ class ApiClient {
             ? data.message.join(', ')
             : data?.message || error.message;
 
-          throw new ApiClientError(message, status, data?.error || 'Unknown Error');
+          throw new ApiClientError(
+            message,
+            status,
+            data?.error || 'Unknown Error'
+          );
         }
 
         // Network Error geralmente significa que o servidor não está rodando
-        const message = error.code === 'ECONNREFUSED' || error.message === 'Network Error'
-          ? 'Servidor não está rodando. Verifique se o backend está iniciado na porta 3002.'
-          : error.message || 'Network Error';
-        
-        throw new ApiClientError(
-          message,
-          0,
-          'Network Error'
-        );
+        const message =
+          error.code === 'ECONNREFUSED' || error.message === 'Network Error'
+            ? 'Servidor não está rodando. Verifique se o backend está iniciado na porta 3002.'
+            : error.message || 'Network Error';
+
+        throw new ApiClientError(message, 0, 'Network Error');
       }
     );
   }
@@ -161,4 +162,3 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
-

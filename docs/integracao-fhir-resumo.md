@@ -3,6 +3,7 @@
 ## ✅ O Que Foi Implementado
 
 ### 1. **Módulo Completo de Integração FHIR**
+
 - ✅ Cliente FHIR REST API (`FHIRClientService`)
 - ✅ Autenticação OAuth 2.0, Basic Auth e API Key (`FHIRAuthService`)
 - ✅ Transformação de dados Internal ↔ FHIR (`FHIRTransformerService`)
@@ -11,11 +12,13 @@
 - ✅ Cron jobs para sincronização periódica (`FHIRSchedulerService`)
 
 ### 2. **Integração Automática**
+
 - ✅ Push automático ao criar observação (se `syncFrequency = 'realtime'`)
 - ✅ Cron job a cada hora: sincroniza observações não sincronizadas
 - ✅ Cron job a cada 6 horas: pull de observações do EHR
 
 ### 3. **Endpoints de API**
+
 - ✅ `POST /api/v1/fhir/observations/:id/sync` - Sincronizar observação
 - ✅ `POST /api/v1/fhir/patients/:id/sync` - Sincronizar paciente
 - ✅ `POST /api/v1/fhir/observations/sync-all` - Sincronizar todas
@@ -89,6 +92,7 @@ backend/src/integrations/fhir/
 ## 🔐 Autenticação
 
 ### OAuth 2.0 (Recomendado)
+
 ```typescript
 {
   type: 'oauth2',
@@ -97,11 +101,13 @@ backend/src/integrations/fhir/
   tokenUrl: 'https://ehr.com/oauth/token'
 }
 ```
+
 - Token com refresh automático
 - Cache em memória
 - Retry automático se token expirar
 
 ### Basic Auth
+
 ```typescript
 {
   type: 'basic',
@@ -111,6 +117,7 @@ backend/src/integrations/fhir/
 ```
 
 ### API Key
+
 ```typescript
 {
   type: 'apikey',
@@ -122,11 +129,13 @@ backend/src/integrations/fhir/
 ## 📊 Recursos FHIR Suportados
 
 ### Patient
+
 - `GET /Patient/{id}` - Buscar paciente
 - `PUT /Patient/{id}` - Atualizar paciente
 - `POST /Patient` - Criar paciente
 
 ### Observation
+
 - `POST /Observation` - Criar observação
 - `PUT /Observation/{id}` - Atualizar observação
 - `GET /Observation?patient={patientId}` - Buscar observações
@@ -209,4 +218,3 @@ POST /api/v1/fhir/observations/sync-all
 - [Especificação Técnica](./arquitetura/integracao-hl7-fhir.md)
 - [Explicação Detalhada](./integracao-fhir-explicacao.md)
 - [README do Módulo](../backend/src/integrations/fhir/README.md)
-

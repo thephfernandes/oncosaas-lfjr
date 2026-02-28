@@ -72,4 +72,3 @@ export class UsersController {
     return this.usersService.remove(id, req.user.tenantId);
   }
 }
-

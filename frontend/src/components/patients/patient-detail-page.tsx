@@ -29,7 +29,8 @@ export function PatientDetailPage({ patientId }: PatientDetailPageProps) {
     return (
       <div className="p-6">
         <div className="text-destructive">
-          Erro ao carregar paciente: {error?.message || 'Paciente não encontrado'}
+          Erro ao carregar paciente:{' '}
+          {error?.message || 'Paciente não encontrado'}
         </div>
         <Button
           variant="outline"
@@ -80,4 +81,3 @@ export function PatientDetailPage({ patientId }: PatientDetailPageProps) {
     </div>
   );
 }
-

@@ -41,20 +41,24 @@ Enfermagem visualiza no dashboard
 **Endpoint**: `POST /webhooks/whatsapp`
 
 **Payload**:
+
 ```typescript
 interface WhatsAppWebhookPayload {
-  messages: [{
-    from: string; // número do paciente
-    id: string; // message ID
-    type: 'text' | 'audio' | 'image';
-    text?: { body: string };
-    audio?: { id: string };
-    timestamp: string;
-  }];
+  messages: [
+    {
+      from: string; // número do paciente
+      id: string; // message ID
+      type: 'text' | 'audio' | 'image';
+      text?: { body: string };
+      audio?: { id: string };
+      timestamp: string;
+    },
+  ];
 }
 ```
 
 **Processamento**:
+
 1. Validar assinatura (segurança)
 2. Extrair dados da mensagem
 3. Enfileirar para processamento assíncrono
@@ -65,11 +69,13 @@ interface WhatsAppWebhookPayload {
 **Tecnologia**: RabbitMQ ou Redis Queue
 
 **Filas**:
+
 - `whatsapp.inbound`: Mensagens recebidas
 - `whatsapp.outbound`: Mensagens a enviar
 - `whatsapp.audio`: Áudios para transcrição
 
 **Processamento Assíncrono**:
+
 - Worker processa mensagens da fila
 - Rate limiting: respeitar limites do WhatsApp
 - Retry: até 3 tentativas se falhar
@@ -79,6 +85,7 @@ interface WhatsAppWebhookPayload {
 **Serviço**: Google Cloud Speech-to-Text ou AWS Transcribe
 
 **Fluxo**:
+
 1. Download do áudio do WhatsApp (via API)
 2. Upload para bucket S3 (backup)
 3. Enviar para STT API
@@ -86,6 +93,7 @@ interface WhatsAppWebhookPayload {
 5. Processar como texto
 
 **Configuração STT**:
+
 - Idioma: Português (pt-BR)
 - Modelo: Medical/Healthcare (se disponível)
 - Formato: OGG, MP3, WAV
@@ -95,6 +103,7 @@ interface WhatsAppWebhookPayload {
 **Modelo Base**: GPT-4 ou Claude (via API)
 
 **Contexto do Agente**:
+
 ```typescript
 interface AgentContext {
   patientId: string;
@@ -108,6 +117,7 @@ interface AgentContext {
 ```
 
 **Sistema de Prompt**:
+
 ```
 Você é um assistente virtual de saúde que conversa com pacientes oncológicos via WhatsApp.
 
@@ -141,18 +151,21 @@ CONVERSA ATUAL:
 ### 5. RAG (Retrieval Augmented Generation)
 
 **Base de Conhecimento**:
+
 - Guidelines NCCN, ASCO, ESMO
 - Questionários validados (EORTC QLQ-C30, PRO-CTCAE, ESAS)
 - Informações sobre tipos de câncer
 - Protocolos de tratamento
 
 **Implementação**:
+
 1. **Embeddings**: Usar sentence-transformers (português)
 2. **Vector DB**: Pinecone ou Weaviate
 3. **Retrieval**: Buscar contexto relevante antes de gerar resposta
 4. **Injeção**: Injetar contexto no prompt do LLM
 
 **Fluxo RAG**:
+
 ```
 Pergunta do paciente
     ↓
@@ -170,6 +183,7 @@ LLM gera resposta com contexto
 **Lógica de Detecção**:
 
 **Regras Baseadas em Palavras-chave**:
+
 ```python
 CRITICAL_KEYWORDS = {
     'febre': ['febre', 'febril', 'temperatura alta', 'calafrio'],
@@ -188,10 +202,12 @@ def detect_critical_symptom(message: str) -> Optional[str]:
 ```
 
 **LLM-based Detection**:
+
 - Usar LLM para detectar sintomas críticos de forma mais contextual
 - Prompt específico para detecção
 
 **Validação de Severidade**:
+
 - Se detectar sintoma crítico, perguntar intensidade/escala
 - Se escala > threshold → alerta
 
@@ -200,18 +216,22 @@ def detect_critical_symptom(message: str) -> Optional[str]:
 **Mapeamento Conversacional → Escalas**:
 
 **EORTC QLQ-C30**:
+
 - Perguntas sobre qualidade de vida
 - Escala: 1-4 (não, um pouco, bastante, muito)
 
 **PRO-CTCAE**:
+
 - Sintomas relacionados ao tratamento
 - Escala: 0-4 (nenhum, leve, moderado, severo, muito severo)
 
 **ESAS**:
+
 - Escala de sintomas de Edmonton
 - Escala: 0-10
 
 **Exemplo de Extração**:
+
 ```python
 # Mensagem: "Estou com muita dor, tipo 8 de 10"
 # Extrai: pain_severity = 8
@@ -221,36 +241,43 @@ def detect_critical_symptom(message: str) -> Optional[str]:
 ```
 
 **LLM para Extração**:
+
 - Usar LLM com função estruturada (function calling)
 - Prompt para extrair dados estruturados
 
 ### 8. Guardrails e Segurança
 
 **Validação de Respostas**:
+
 1. Verificar se resposta é apropriada (não contém informações médicas incorretas)
 2. Verificar se não faz diagnóstico/prescrição
 3. Verificar se detectou urgência corretamente
 
 **Prevenção de Alucinações**:
+
 - RAG para fornecer contexto baseado em conhecimento médico
 - Limit de tokens para respostas
 - Validar informações críticas com base de conhecimento
 
 **Rate Limiting**:
+
 - Limitar número de mensagens por paciente (ex: 10/min)
 - Limitar número de conversas simultâneas
 
 **Moderação de Conteúdo**:
+
 - Filtrar conteúdo inadequado
 - Detectar spam/abuse
 
 ### 9. Handoff Manual (Enfermagem Assume)
 
 **Trigger**:
+
 - Enfermagem clica "Assumir Conversa" no dashboard
 - Enfermagem responde manualmente
 
 **Fluxo**:
+
 ```
 Enfermagem recebe alerta
     ↓
@@ -270,6 +297,7 @@ Volta para agente automático (se necessário)
 ```
 
 **Implementação**:
+
 - Flag `processed_by` na conversa
 - Fila separada para mensagens manuais
 - Dashboard com interface de chat integrada
@@ -281,6 +309,7 @@ Volta para agente automático (se necessário)
 **Provider**: Evolution API ou Meta diretamente
 
 **Requisitos**:
+
 1. Conta WhatsApp Business verificada
 2. Aprovação de templates de mensagens
 3. Webhook configurado
@@ -289,18 +318,21 @@ Volta para agente automático (se necessário)
 ### Templates de Mensagens (Aprovados)
 
 **Template 1: Início de Conversa**
+
 ```
-Olá {{1}}, como você está se sentindo hoje? 
+Olá {{1}}, como você está se sentindo hoje?
 Podemos conversar sobre seus sintomas e qualidade de vida.
 ```
 
 **Template 2: Lembrete**
+
 ```
 Olá {{1}}, precisamos saber como você está esta semana.
 Responda quando puder. 😊
 ```
 
 **Template 3: Questionário**
+
 ```
 Olá {{1}}, vamos fazer uma avaliação rápida de seus sintomas.
 Responda algumas perguntas quando puder.
@@ -309,6 +341,7 @@ Responda algumas perguntas quando puder.
 ### Envio de Mensagens
 
 **API Call**:
+
 ```typescript
 async function sendWhatsAppMessage(
   to: string,
@@ -318,8 +351,8 @@ async function sendWhatsAppMessage(
   const response = await fetch(`${WHATSAPP_API_URL}/messages`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${API_TOKEN}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${API_TOKEN}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       messaging_product: 'whatsapp',
@@ -328,10 +361,10 @@ async function sendWhatsAppMessage(
       [type]: {
         text: { body: message },
         // ou audio, image
-      }
-    })
+      },
+    }),
   });
-  
+
   return response.json();
 }
 ```
@@ -339,11 +372,13 @@ async function sendWhatsAppMessage(
 ### Rate Limiting
 
 **Limites do WhatsApp**:
+
 - 1000 conversas iniciadas por dia (com template)
 - Conversas iniciadas pelo paciente: ilimitadas
 - Mensagens por segundo: variável
 
 **Implementação**:
+
 - Filas com rate limiting
 - Throttling de mensagens
 - Monitoramento de limites
@@ -387,5 +422,3 @@ async function sendWhatsAppMessage(
 4. Desenvolver agente conversacional básico
 5. Implementar detecção de sintomas críticos
 6. Testes com pacientes piloto
-
-

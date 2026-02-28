@@ -132,11 +132,7 @@ export function PatientListConnected({
         }
         action={
           hasAnyFilter && onClearFilters ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClearFilters}
-            >
+            <Button variant="outline" size="sm" onClick={onClearFilters}>
               Limpar filtros
             </Button>
           ) : null

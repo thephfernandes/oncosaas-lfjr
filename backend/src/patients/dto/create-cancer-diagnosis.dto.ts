@@ -227,4 +227,3 @@ export class CreateCancerDiagnosisDto {
   @IsOptional()
   isActive?: boolean;
 }
-

@@ -23,6 +23,7 @@ Implementação da ordenação automática de pacientes por prioridade no chat, 
 - ✅ Critério terciário: Data de criação (mais recente primeiro)
 
 **Lógica de Ordenação:**
+
 ```typescript
 const priorityOrder = {
   CRITICAL: 0,
@@ -55,11 +56,13 @@ const priorityOrder = {
 ## 🎯 Impacto
 
 ### Antes:
+
 - Pacientes ordenados por data de criação (mais recente primeiro)
 - Casos críticos podiam aparecer no meio ou final da lista
 - Risco de casos urgentes passarem despercebidos
 
 ### Depois:
+
 - ✅ Casos **CRITICAL** sempre no topo
 - ✅ Casos **HIGH** aparecem em seguida
 - ✅ Casos **MEDIUM** e **LOW** aparecem por último
@@ -73,22 +76,26 @@ const priorityOrder = {
 ### Backend
 
 **Modificado:**
+
 - `backend/src/patients/patients.service.ts`
   - Método `findAll()` agora ordena por prioridade antes de retornar
 
 ### Frontend
 
 **Criado:**
+
 - `frontend/src/lib/utils/patient-sorting.ts`
   - Função utilitária `sortPatientsByPriority()`
 
 **Modificado:**
+
 - `frontend/src/components/dashboard/patient-list-connected.tsx`
   - Importa e aplica `sortPatientsByPriority()` antes de transformar dados
 
 ### Documentação
 
 **Modificado:**
+
 - `docs/desenvolvimento/estado-atual-proximos-passos.md`
   - Marca ordenação como implementada
 
@@ -159,4 +166,3 @@ const priorityOrder = {
 ---
 
 **Última atualização:** 2024-01-XX
-

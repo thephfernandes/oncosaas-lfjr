@@ -246,13 +246,7 @@ export class PatientsController {
 ```typescript
 // modules/patients/dto/create-patient.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsString,
-  IsDate,
-  IsEnum,
-  IsNotEmpty,
-  IsUUID,
-} from 'class-validator';
+import { IsString, IsDate, IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreatePatientDto {
@@ -351,11 +345,11 @@ async def calculate_priority(
 ):
     """
     Calcula o score de prioridade de um paciente.
-    
+
     Args:
         request: Dados do paciente para cálculo
         tenant_id: ID do tenant (injetado via dependency)
-    
+
     Returns:
         Score de prioridade (0-100), categoria e explicação
     """
@@ -369,7 +363,7 @@ async def calculate_priority(
             diagnosis=request.diagnosis,
             tenant_id=tenant_id
         )
-        
+
         return PriorityResponse(
             score=result.score,
             category=result.category,
@@ -396,13 +390,13 @@ async def get_tenant_id(
 ) -> str:
     """
     Extrai tenant_id do header da requisição.
-    
+
     Args:
         x_tenant_id: Header X-Tenant-ID
-    
+
     Returns:
         Tenant ID
-    
+
     Raises:
         HTTPException: Se tenant_id não fornecido
     """
@@ -678,10 +672,7 @@ model Observation {
 ```json
 // .eslintrc.json
 {
-  "extends": [
-    "next/core-web-vitals",
-    "plugin:@typescript-eslint/recommended"
-  ],
+  "extends": ["next/core-web-vitals", "plugin:@typescript-eslint/recommended"],
   "rules": {
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/explicit-function-return-type": "warn",
@@ -711,11 +702,7 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   coverageDirectory: 'coverage',
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.spec.ts',
-    '!src/main.ts',
-  ],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.spec.ts', '!src/main.ts'],
   coverageThreshold: {
     global: {
       branches: 70,
@@ -767,4 +754,3 @@ module.exports = {
 
 **Última atualização**: 2024-01-XX  
 **Versão**: 1.0.0
-

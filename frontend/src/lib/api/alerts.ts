@@ -4,7 +4,17 @@ export interface Alert {
   id: string;
   tenantId: string;
   patientId: string;
-  type: 'CRITICAL_SYMPTOM' | 'NO_RESPONSE' | 'DELAYED_APPOINTMENT' | 'SCORE_CHANGE' | 'SYMPTOM_WORSENING' | 'NAVIGATION_DELAY' | 'MISSING_EXAM' | 'STAGING_INCOMPLETE' | 'TREATMENT_DELAY' | 'FOLLOW_UP_OVERDUE';
+  type:
+    | 'CRITICAL_SYMPTOM'
+    | 'NO_RESPONSE'
+    | 'DELAYED_APPOINTMENT'
+    | 'SCORE_CHANGE'
+    | 'SYMPTOM_WORSENING'
+    | 'NAVIGATION_DELAY'
+    | 'MISSING_EXAM'
+    | 'STAGING_INCOMPLETE'
+    | 'TREATMENT_DELAY'
+    | 'FOLLOW_UP_OVERDUE';
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   message: string;
   context: Record<string, unknown> | null;
@@ -66,4 +76,3 @@ export const alertsApi = {
     return apiClient.patch<Alert>(`/alerts/${id}/dismiss`, {});
   },
 };
-

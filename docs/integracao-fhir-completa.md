@@ -7,6 +7,7 @@ A integração FHIR está **100% implementada** e pronta para uso!
 ## ✅ O Que Foi Implementado
 
 ### 1. **Módulo Completo de Integração FHIR**
+
 - ✅ Cliente FHIR REST API (`FHIRClientService`)
 - ✅ Autenticação OAuth 2.0, Basic Auth e API Key (`FHIRAuthService`)
 - ✅ Transformação de dados Internal ↔ FHIR (`FHIRTransformerService`)
@@ -16,6 +17,7 @@ A integração FHIR está **100% implementada** e pronta para uso!
 - ✅ Retry com exponential backoff (`retry.util.ts`)
 
 ### 2. **Banco de Dados**
+
 - ✅ Tabela `FHIRIntegrationConfig` criada no Prisma
 - ✅ Relacionamento com `Tenant` (1:1)
 - ✅ Campos para configuração completa de integração
@@ -23,22 +25,26 @@ A integração FHIR está **100% implementada** e pronta para uso!
 ### 3. **API Endpoints**
 
 #### Sincronização
+
 - ✅ `POST /api/v1/fhir/observations/:id/sync` - Sincronizar observação
 - ✅ `POST /api/v1/fhir/patients/:id/sync` - Sincronizar paciente
 - ✅ `POST /api/v1/fhir/observations/sync-all` - Sincronizar todas
 - ✅ `POST /api/v1/fhir/patients/:id/pull` - Pull de observações
 
 #### Configuração (Admin apenas)
+
 - ✅ `GET /api/v1/fhir/config` - Obter configuração
 - ✅ `POST /api/v1/fhir/config` - Criar/atualizar configuração
 - ✅ `PUT /api/v1/fhir/config` - Atualizar configuração
 
 ### 4. **Integração Automática**
+
 - ✅ Push automático ao criar observação (se `syncFrequency = 'realtime'`)
 - ✅ Cron job a cada hora: sincroniza observações não sincronizadas
 - ✅ Cron job a cada 6 horas: pull de observações do EHR
 
 ### 5. **Recursos Avançados**
+
 - ✅ Retry com exponential backoff configurável
 - ✅ Cache de tokens OAuth2
 - ✅ Cache de configuração por tenant
@@ -214,13 +220,14 @@ POST /api/v1/fhir/patients/{id}/pull
 ```json
 {
   "maxRetries": 3,
-  "initialDelay": 1000,      // ms
-  "maxDelay": 30000,         // ms
+  "initialDelay": 1000, // ms
+  "maxDelay": 30000, // ms
   "backoffMultiplier": 2.0
 }
 ```
 
 **Exemplo de retry:**
+
 - Tentativa 1: falha → aguarda 1s
 - Tentativa 2: falha → aguarda 2s
 - Tentativa 3: falha → aguarda 4s
@@ -257,4 +264,3 @@ POST /api/v1/fhir/patients/{id}/pull
 - [x] Documentação completa
 
 **Status: ✅ COMPLETO E PRONTO PARA USO!**
-

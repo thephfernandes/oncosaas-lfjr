@@ -27,7 +27,10 @@ export class FHIRController {
    */
   @Post('observations/:id/sync')
   @HttpCode(HttpStatus.OK)
-  async syncObservation(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
+  async syncObservation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req
+  ) {
     const config = await this.fhirConfigService.getConfig(req.user.tenantId);
     if (!config || !config.enabled) {
       throw new Error('Integração FHIR não habilitada para este tenant');
@@ -70,7 +73,10 @@ export class FHIRController {
    */
   @Post('patients/:id/pull')
   @HttpCode(HttpStatus.OK)
-  async pullPatientObservations(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
+  async pullPatientObservations(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req
+  ) {
     const config = await this.fhirConfigService.getConfig(req.user.tenantId);
     if (!config || !config.enabled) {
       throw new Error('Integração FHIR não habilitada para este tenant');
@@ -86,4 +92,3 @@ export class FHIRController {
     };
   }
 }
-

@@ -35,13 +35,15 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
-    private prisma: PrismaService,
+    private prisma: PrismaService
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
       // Autenticação via token JWT no handshake
-      const token = client.handshake.auth?.token || client.handshake.headers?.authorization?.split(' ')[1];
+      const token =
+        client.handshake.auth?.token ||
+        client.handshake.headers?.authorization?.split(' ')[1];
 
       if (!token) {
         this.logger.warn(`Client ${client.id} disconnected: No token provided`);
@@ -51,14 +53,17 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Verificar e decodificar token
       const jwtSecret = this.configService.get<string>('JWT_SECRET');
-      const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
-      
+      const isProduction =
+        this.configService.get<string>('NODE_ENV') === 'production';
+
       if (isProduction && !jwtSecret) {
-        this.logger.error('JWT_SECRET must be configured in production environment');
+        this.logger.error(
+          'JWT_SECRET must be configured in production environment'
+        );
         client.disconnect();
         return;
       }
-      
+
       const payload = this.jwtService.verify(token, {
         secret: jwtSecret || 'your-secret-key',
       });
@@ -75,10 +80,13 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.join(`user:${client.userId}`);
 
       this.logger.log(
-        `Client ${client.id} connected (User: ${client.userId}, Tenant: ${client.tenantId})`,
+        `Client ${client.id} connected (User: ${client.userId}, Tenant: ${client.tenantId})`
       );
     } catch (error) {
-      this.logger.error(`Authentication failed for client ${client.id}:`, error);
+      this.logger.error(
+        `Authentication failed for client ${client.id}:`,
+        error
+      );
       client.disconnect();
     }
   }
@@ -121,7 +129,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('subscribe_patient_alerts')
   handleSubscribePatientAlerts(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { patientId: string },
+    @MessageBody() data: { patientId: string }
   ) {
     if (!client.tenantId) {
       return { error: 'Unauthorized' };
@@ -130,7 +138,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Entrar na room do paciente (para alertas específicos)
     client.join(`patient:${data.patientId}:tenant:${client.tenantId}`);
     this.logger.log(
-      `Client ${client.id} subscribed to alerts for patient ${data.patientId}`,
+      `Client ${client.id} subscribed to alerts for patient ${data.patientId}`
     );
 
     return { success: true };
@@ -142,7 +150,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('unsubscribe_patient_alerts')
   handleUnsubscribePatientAlerts(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { patientId: string },
+    @MessageBody() data: { patientId: string }
   ) {
     if (!client.tenantId) {
       return { error: 'Unauthorized' };
@@ -150,10 +158,9 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     client.leave(`patient:${data.patientId}:tenant:${client.tenantId}`);
     this.logger.log(
-      `Client ${client.id} unsubscribed from alerts for patient ${data.patientId}`,
+      `Client ${client.id} unsubscribed from alerts for patient ${data.patientId}`
     );
 
     return { success: true };
   }
 }
-

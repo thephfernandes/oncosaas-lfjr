@@ -14,11 +14,13 @@
 ### 1. Instalar Certificado no Windows
 
 **PowerShell (como Administrador):**
+
 ```powershell
 Import-Certificate -FilePath ".\certs\localhost.crt" -CertStoreLocation Cert:\CurrentUser\Root
 ```
 
 Ou via interface gráfica:
+
 1. Duplo clique em `certs/localhost.crt`
 2. Instalar → Usuário Atual → Autoridades de Certificação Raiz Confiáveis
 
@@ -27,16 +29,19 @@ Ou via interface gráfica:
 Acesse: https://developers.facebook.com/apps/980766987152980/settings/basic/
 
 **App Domains:**
+
 ```
 localhost
 ```
 
 **Website:**
+
 ```
 https://localhost:3000
 ```
 
 **Valid OAuth Redirect URIs:**
+
 ```
 https://localhost:3000/dashboard/integrations
 https://localhost:3002/api/v1/whatsapp-connections/oauth/callback
@@ -86,4 +91,3 @@ cat backend/.env | grep HTTPS
 ## ❓ Problemas?
 
 Consulte: [`docs/desenvolvimento/https-setup.md`](docs/desenvolvimento/https-setup.md)
-

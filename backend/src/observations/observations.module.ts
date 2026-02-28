@@ -11,4 +11,3 @@ import { FHIRModule } from '../integrations/fhir/fhir.module';
   exports: [ObservationsService],
 })
 export class ObservationsModule {}
-

@@ -61,20 +61,21 @@ export class FHIRTransformerService {
    * Transformar FHIR Patient Resource para Patient interno
    */
   fromFHIRPatient(fhirPatient: FHIRPatient): Partial<Patient> {
-    const name = fhirPatient.name?.[0]?.text || 
-                 (fhirPatient.name?.[0]?.given?.join(' ') + ' ' + fhirPatient.name?.[0]?.family).trim();
+    const name =
+      fhirPatient.name?.[0]?.text ||
+      (
+        fhirPatient.name?.[0]?.given?.join(' ') +
+        ' ' +
+        fhirPatient.name?.[0]?.family
+      ).trim();
 
     const cpf = fhirPatient.identifier?.find(
       (id) => id.system === 'http://www.brazil.gov.br/cpf'
     )?.value;
 
-    const phone = fhirPatient.telecom?.find(
-      (t) => t.system === 'phone'
-    )?.value;
+    const phone = fhirPatient.telecom?.find((t) => t.system === 'phone')?.value;
 
-    const email = fhirPatient.telecom?.find(
-      (t) => t.system === 'email'
-    )?.value;
+    const email = fhirPatient.telecom?.find((t) => t.system === 'email')?.value;
 
     return {
       name: name || undefined,
@@ -120,7 +121,10 @@ export class FHIRTransformerService {
     };
 
     // Adicionar valor conforme tipo
-    if (observation.valueQuantity !== null && observation.valueQuantity !== undefined) {
+    if (
+      observation.valueQuantity !== null &&
+      observation.valueQuantity !== undefined
+    ) {
       fhirObservation.valueQuantity = {
         value: Number(observation.valueQuantity),
         unit: observation.unit || undefined,
@@ -159,7 +163,8 @@ export class FHIRTransformerService {
       patientId,
       code: loincCode?.code || '',
       display: loincCode?.display || fhirObservation.code.text || '',
-      valueQuantity: valueQuantity !== null ? new Prisma.Decimal(valueQuantity) : undefined,
+      valueQuantity:
+        valueQuantity !== null ? new Prisma.Decimal(valueQuantity) : undefined,
       valueString: valueString || undefined,
       unit: fhirObservation.valueQuantity?.unit || undefined,
       effectiveDateTime: new Date(fhirObservation.effectiveDateTime),
@@ -186,4 +191,3 @@ export class FHIRTransformerService {
     return parts.length > 1 ? parts.slice(0, -1) : parts;
   }
 }
-

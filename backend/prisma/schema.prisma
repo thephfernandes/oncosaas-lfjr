@@ -104,6 +104,7 @@ model Patient {
   navigationSteps        NavigationStep[] // Etapas de navegação oncológica
   internalNotes          InternalNote[]
   interventions          Intervention[]
+  conversations          Conversation[] // Conversas do agente IA
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -425,16 +426,272 @@ enum TreatmentResponse {
   NOT_EVALUATED // Não avaliado
 }
 
-// Mensagens WhatsApp (Conversas)
+// ============================================
+// MODELOS DE AGENTE IA
+// ============================================
+
+// Conversação — Agrupa mensagens em sessões
+model Conversation {
+  id        String @id @default(uuid())
+  tenantId  String
+  patientId String
+
+  // Canal de comunicação
+  channel   ChannelType @default(WHATSAPP)
+
+  // Estado da conversa
+  status    ConversationStatus @default(ACTIVE)
+
+  // Quem está respondendo
+  handledBy       HandledBy @default(AGENT)
+  assumedByUserId String?   // userId que assumiu (se NURSING)
+  assumedAt       DateTime?
+
+  // Contexto do agente
+  agentState Json? // Estado persistente do agente (extracted facts, current topic, etc.)
+
+  // Questionário em andamento (se houver)
+  activeQuestionnaireId String?
+  questionnaireProgress Json? // { currentQuestion: int, answers: {} }
+
+  // Metadados
+  lastMessageAt DateTime?
+  messageCount  Int @default(0)
+
+  // Relacionamentos
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient          Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  messages         Message[]
+  decisions        AgentDecisionLog[]
+  scheduledActions ScheduledAction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([status])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+enum ChannelType {
+  WHATSAPP
+  SMS
+  VOICE
+  WEB_CHAT
+}
+
+enum ConversationStatus {
+  ACTIVE       // Em andamento
+  WAITING      // Aguardando resposta do paciente
+  ESCALATED    // Escalada para enfermagem
+  CLOSED       // Encerrada
+}
+
+enum HandledBy {
+  AGENT    // IA respondendo
+  NURSING  // Enfermagem assumiu
+  HYBRID   // IA + enfermagem
+}
+
+// Configuração do agente por tenant
+model AgentConfig {
+  id       String @id @default(uuid())
+  tenantId String @unique
+
+  // Provedor LLM
+  llmProvider         String @default("anthropic") // "anthropic" | "openai"
+  llmModel            String @default("claude-sonnet-4-6")
+  llmFallbackProvider String? // Fallback se o principal falhar
+  llmFallbackModel    String?
+
+  // Chaves de API (criptografadas)
+  anthropicApiKey String? // Criptografado via encryption.util
+  openaiApiKey    String? // Criptografado via encryption.util
+
+  // Voz (Vapi)
+  vapiApiKey        String?
+  vapiAssistantId   String?
+  elevenLabsApiKey  String?
+  elevenLabsVoiceId String?
+
+  // SMS (Twilio)
+  twilioAccountSid  String?
+  twilioAuthToken   String?
+  twilioPhoneNumber String?
+
+  // Comportamento do agente
+  agentLanguage    String @default("pt-BR")
+  maxAutoReplies   Int    @default(10) // Máx respostas automáticas por conversa antes de escalar
+  escalationRules  Json?  // Regras customizadas de escalação
+  greeting         String? // Mensagem de saudação customizada
+
+  // Check-in scheduling
+  defaultCheckInFrequency Json? // { "TREATMENT": "daily", "FOLLOW_UP": "weekly" }
+  riskBasedAdjustment     Boolean @default(true)
+
+  // Relacionamentos
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("agent_configs")
+}
+
+// Audit trail de decisões do agente
+model AgentDecisionLog {
+  id             String @id @default(uuid())
+  tenantId       String
+  conversationId String
+  patientId      String
+
+  // Decisão
+  decisionType  AgentDecisionType
+  reasoning     String   // Explicação da decisão
+  confidence    Float?   // 0-1 confiança na decisão
+  inputData     Json     // Dados que informaram a decisão
+  outputAction  Json     // Ação tomada
+
+  // Aprovação humana (para decisões que precisam)
+  requiresApproval Boolean  @default(false)
+  approvedBy       String?  // userId
+  approvedAt       DateTime?
+  rejected         Boolean  @default(false)
+  rejectionReason  String?
+
+  // Relacionamentos
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([conversationId])
+  @@index([decisionType])
+  @@index([requiresApproval])
+  @@map("agent_decision_logs")
+}
+
+enum AgentDecisionType {
+  SYMPTOM_DETECTED       // Detectou sintoma
+  CRITICAL_ESCALATION    // Escalou caso crítico
+  QUESTIONNAIRE_STARTED  // Iniciou questionário
+  QUESTIONNAIRE_SCORED   // Pontuou questionário
+  CHECK_IN_SCHEDULED     // Agendou check-in
+  PRIORITY_UPDATED       // Atualizou prioridade
+  HANDOFF_TO_NURSING     // Transferiu para enfermagem
+  ALERT_CREATED          // Criou alerta
+  RESPONSE_GENERATED     // Gerou resposta (rotina)
+}
+
+// Check-ins e lembretes agendados
+model ScheduledAction {
+  id             String  @id @default(uuid())
+  tenantId       String
+  patientId      String
+  conversationId String?
+
+  // Tipo de ação
+  actionType     ScheduledActionType
+  channel        ChannelType @default(WHATSAPP)
+
+  // Agendamento
+  scheduledAt    DateTime
+  executedAt     DateTime?
+  status         ScheduledActionStatus @default(PENDING)
+
+  // Conteúdo
+  payload        Json // { message, questionnaireId, protocol, etc. }
+
+  // Recorrência
+  isRecurring    Boolean @default(false)
+  recurrenceRule String? // cron expression ou "daily", "weekly", etc.
+  nextOccurrence DateTime?
+
+  // Metadados
+  retryCount     Int @default(0)
+  maxRetries     Int @default(3)
+  lastError      String?
+
+  // Relacionamentos
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("scheduled_actions")
+}
+
+enum ScheduledActionType {
+  CHECK_IN             // Check-in de rotina
+  QUESTIONNAIRE        // Aplicar questionário
+  MEDICATION_REMINDER  // Lembrete de medicamento
+  APPOINTMENT_REMINDER // Lembrete de consulta/exame
+  FOLLOW_UP            // Acompanhamento pós-consulta
+  VOICE_CALL           // Ligação automatizada via Vapi
+}
+
+enum ScheduledActionStatus {
+  PENDING    // Aguardando execução
+  EXECUTING  // Em execução
+  COMPLETED  // Executada com sucesso
+  FAILED     // Falhou
+  CANCELLED  // Cancelada
+  SKIPPED    // Pulada (paciente já respondeu)
+}
+
+// Protocolos clínicos por tipo de câncer
+model ClinicalProtocol {
+  id       String @id @default(uuid())
+  tenantId String
+
+  // Identificação
+  cancerType   String // "colorectal", "bladder", "renal", "prostate"
+  name         String // "Protocolo Colorretal Padrão"
+  version      String @default("1.0")
+  isActive     Boolean @default(true)
+
+  // Definição do protocolo (JSON)
+  definition   Json // Etapas por journeyStage, timing, dependências, questionários
+
+  // Check-in rules por etapa do tratamento
+  checkInRules Json // { "TREATMENT": { "frequency": "daily", "questionnaire": "ESAS" }, ... }
+
+  // Sintomas críticos específicos do tipo de câncer
+  criticalSymptoms Json // [{ keyword, severity, action }]
+
+  // Relacionamentos
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, cancerType, version])
+  @@index([tenantId])
+  @@index([cancerType])
+  @@map("clinical_protocols")
+}
+
+// Mensagens (Conversas)
 model Message {
   id             String  @id @default(uuid())
   tenantId       String
   patientId      String
   conversationId String? // Agrupa mensagens da mesma conversa
 
+  // Canal de comunicação
+  channel ChannelType @default(WHATSAPP)
+
   // Dados da mensagem
-  whatsappMessageId String           @unique // ID único do WhatsApp
-  whatsappTimestamp DateTime // Timestamp original do WhatsApp
+  whatsappMessageId String           @unique // ID único do canal
+  whatsappTimestamp DateTime // Timestamp original
   type              MessageType
   direction         MessageDirection
   content           String // Texto ou transcrição do áudio - Criptografado (LGPD)
@@ -455,9 +712,10 @@ model Message {
   assumedAt DateTime?
 
   // Relacionamentos
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  interventions Intervention[]
+  tenant           Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient          Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  conversationRef  Conversation?  @relation(fields: [conversationId], references: [id])
+  interventions    Intervention[]
 
   createdAt DateTime @default(now())
 
@@ -662,8 +920,12 @@ model QuestionnaireResponse {
   completedAt DateTime @default(now())
 
   // Contexto
-  messageId String? // Se aplicado via WhatsApp
-  appliedBy ProcessedBy @default(AGENT)
+  messageId      String? // Se aplicado via WhatsApp
+  conversationId String? // Conversa onde foi aplicado
+  appliedBy      ProcessedBy @default(AGENT)
+
+  // Scores calculados automaticamente
+  scores Json? // Scores calculados (ESAS total, PRO-CTCAE severity grades)
 
   // Relacionamentos
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -878,7 +1140,13 @@ model Tenant {
   whatsappConnections    WhatsAppConnection[]
   internalNotes          InternalNote[]
   interventions          Intervention[]
-  fhirIntegrationConfig FHIRIntegrationConfig?
+  fhirIntegrationConfig  FHIRIntegrationConfig?
+  // Agente IA
+  agentConfig            AgentConfig?
+  conversations          Conversation[]
+  agentDecisionLogs      AgentDecisionLog[]
+  scheduledActions       ScheduledAction[]
+  clinicalProtocols      ClinicalProtocol[]
 
   @@map("tenants")
 }

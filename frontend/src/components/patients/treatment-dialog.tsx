@@ -10,7 +10,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { TreatmentForm } from './treatment-form';
-import { treatmentsApi, Treatment } from '@/lib/api/treatments';
+import {
+  treatmentsApi,
+  Treatment,
+  CreateTreatmentData,
+} from '@/lib/api/treatments';
 import { CreateTreatmentFormData } from '@/lib/validations/treatment';
 import { toast } from 'sonner';
 
@@ -34,7 +38,7 @@ export function TreatmentDialog({
 
   const createMutation = useMutation({
     mutationFn: (data: CreateTreatmentFormData) =>
-      treatmentsApi.createTreatment(data),
+      treatmentsApi.createTreatment(data as unknown as CreateTreatmentData),
     onSuccess: (): void => {
       queryClient.invalidateQueries({ queryKey: ['patient', patientId] });
       queryClient.invalidateQueries({
@@ -75,9 +79,7 @@ export function TreatmentDialog({
     },
   });
 
-  const handleSubmit = async (
-    data: CreateTreatmentFormData
-  ): Promise<void> => {
+  const handleSubmit = async (data: CreateTreatmentFormData): Promise<void> => {
     setIsSubmitting(true);
     try {
       if (treatment) {
@@ -122,4 +124,3 @@ export function TreatmentDialog({
     </Dialog>
   );
 }
-

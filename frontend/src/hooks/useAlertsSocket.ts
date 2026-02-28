@@ -13,7 +13,7 @@ export const useAlertsSocket = () => {
 
     const handleCriticalAlert = (alert: Alert) => {
       setAlerts((prev) => [alert, ...prev]);
-      
+
       // Notificação do navegador (opcional)
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Alerta Crítico', {
@@ -32,4 +32,3 @@ export const useAlertsSocket = () => {
 
   return { alerts, isConnected };
 };
-

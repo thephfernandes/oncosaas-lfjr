@@ -48,13 +48,13 @@
 
 ## 🎯 O que Cada Ferramenta Faz
 
-| Ferramenta | Arquivo | Função |
-|------------|---------|--------|
-| **ESLint** | `.eslintrc.json` | Detecta erros e más práticas |
-| **Prettier** | `.prettierrc` | Formata código automaticamente |
-| **Jest** | `jest.config.js` | Executa testes automatizados |
-| **Husky** | `.husky/pre-commit` | Valida antes de commitar |
-| **lint-staged** | `package.json` | Lint apenas arquivos modificados |
+| Ferramenta      | Arquivo             | Função                           |
+| --------------- | ------------------- | -------------------------------- |
+| **ESLint**      | `.eslintrc.json`    | Detecta erros e más práticas     |
+| **Prettier**    | `.prettierrc`       | Formata código automaticamente   |
+| **Jest**        | `jest.config.js`    | Executa testes automatizados     |
+| **Husky**       | `.husky/pre-commit` | Valida antes de commitar         |
+| **lint-staged** | `package.json`      | Lint apenas arquivos modificados |
 
 ---
 
@@ -136,4 +136,3 @@ git commit -m "test: configuração inicial"
 
 **Status**: ✅ Configuração completa  
 **Última atualização**: 2024-01-XX
-

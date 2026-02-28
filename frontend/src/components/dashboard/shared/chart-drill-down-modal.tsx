@@ -78,19 +78,13 @@ export function ChartDrillDownModal({
     if (filterType && filterValue) {
       switch (filterType) {
         case 'priority':
-          filtered = filtered.filter(
-            (p) => p.priorityCategory === filterValue
-          );
+          filtered = filtered.filter((p) => p.priorityCategory === filterValue);
           break;
         case 'cancerType':
-          filtered = filtered.filter(
-            (p) => p.cancerType === filterValue
-          );
+          filtered = filtered.filter((p) => p.cancerType === filterValue);
           break;
         case 'journeyStage':
-          filtered = filtered.filter(
-            (p) => p.currentStage === filterValue
-          );
+          filtered = filtered.filter((p) => p.currentStage === filterValue);
           break;
       }
     }
@@ -98,9 +92,7 @@ export function ChartDrillDownModal({
     // Aplicar busca por nome
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(term)
-      );
+      filtered = filtered.filter((p) => p.name.toLowerCase().includes(term));
     }
 
     setFilteredPatients(filtered);
@@ -108,7 +100,14 @@ export function ChartDrillDownModal({
 
   const handleExport = () => {
     // Criar CSV simples
-    const headers = ['Nome', 'CPF', 'Tipo de Câncer', 'Estágio', 'Prioridade', 'Telefone'];
+    const headers = [
+      'Nome',
+      'CPF',
+      'Tipo de Câncer',
+      'Estágio',
+      'Prioridade',
+      'Telefone',
+    ];
     const rows = filteredPatients.map((p) => [
       p.name,
       p.cpf || '-',
@@ -127,7 +126,10 @@ export function ChartDrillDownModal({
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `pacientes_${filterValue || 'todos'}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute(
+      'download',
+      `pacientes_${filterValue || 'todos'}_${new Date().toISOString().split('T')[0]}.csv`
+    );
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -272,4 +274,3 @@ export function ChartDrillDownModal({
     </Dialog>
   );
 }
-

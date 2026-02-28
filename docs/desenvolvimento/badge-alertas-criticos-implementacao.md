@@ -46,7 +46,7 @@ Implementação de um badge visual no header da página de chat que exibe o núm
 
 - **Arquivo**: `frontend/src/app/chat/page.tsx`
 - **Estado**: `alertsSeverityFilter` para controlar o filtro de severidade
-- **Comportamento**: 
+- **Comportamento**:
   - Ao clicar no badge crítico: define `alertsSeverityFilter` como `'CRITICAL'` e muda para aba "Alertas"
   - Ao mudar para aba "Pacientes": limpa o filtro (`setAlertsSeverityFilter(null)`)
   - Na aba "Alertas": mostra badge "Críticos" no botão da aba quando o filtro está ativo
@@ -163,4 +163,3 @@ Implementação de um badge visual no header da página de chat que exibe o núm
 - [Documentação de Alertas](./estado-atual-proximos-passos.md#alertas)
 - [Componente AlertsPanel](../arquitetura/frontend-conversa.md#alerts-panel)
 - [API de Alertas](../arquitetura/api-endpoints.md#alerts)
-

@@ -22,7 +22,10 @@ export class FHIRAuthService {
     const cachedToken = this.tokenCache.get(cacheKey);
 
     // Verificar se token está válido (com margem de 5 minutos)
-    if (cachedToken && cachedToken.expiresAt > new Date(Date.now() + 5 * 60 * 1000)) {
+    if (
+      cachedToken &&
+      cachedToken.expiresAt > new Date(Date.now() + 5 * 60 * 1000)
+    ) {
       return cachedToken.accessToken;
     }
 
@@ -48,7 +51,9 @@ export class FHIRAuthService {
       case 'apikey':
         return this.authenticateApiKey(authConfig);
       default:
-        throw new Error(`Tipo de autenticação não suportado: ${authConfig.type}`);
+        throw new Error(
+          `Tipo de autenticação não suportado: ${authConfig.type}`
+        );
     }
   }
 
@@ -59,7 +64,11 @@ export class FHIRAuthService {
     authConfig: FHIRAuthConfig,
     baseUrl: string
   ): Promise<FHIRToken> {
-    if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.tokenUrl) {
+    if (
+      !authConfig.clientId ||
+      !authConfig.clientSecret ||
+      !authConfig.tokenUrl
+    ) {
       throw new Error('Configuração OAuth 2.0 incompleta');
     }
 
@@ -97,7 +106,9 @@ export class FHIRAuthService {
   /**
    * Autenticação Basic Auth
    */
-  private async authenticateBasic(authConfig: FHIRAuthConfig): Promise<FHIRToken> {
+  private async authenticateBasic(
+    authConfig: FHIRAuthConfig
+  ): Promise<FHIRToken> {
     if (!authConfig.username || !authConfig.password) {
       throw new Error('Configuração Basic Auth incompleta');
     }
@@ -105,7 +116,9 @@ export class FHIRAuthService {
     // Basic Auth não precisa de token, retornar token dummy
     // O cliente HTTP vai usar Basic Auth diretamente
     return {
-      accessToken: Buffer.from(`${authConfig.username}:${authConfig.password}`).toString('base64'),
+      accessToken: Buffer.from(
+        `${authConfig.username}:${authConfig.password}`
+      ).toString('base64'),
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
       tokenType: 'Basic',
     };
@@ -114,7 +127,9 @@ export class FHIRAuthService {
   /**
    * Autenticação API Key
    */
-  private async authenticateApiKey(authConfig: FHIRAuthConfig): Promise<FHIRToken> {
+  private async authenticateApiKey(
+    authConfig: FHIRAuthConfig
+  ): Promise<FHIRToken> {
     if (!authConfig.apiKey) {
       throw new Error('API Key não configurada');
     }
@@ -138,4 +153,3 @@ export class FHIRAuthService {
     }
   }
 }
-

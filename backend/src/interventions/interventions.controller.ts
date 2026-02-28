@@ -50,10 +50,7 @@ export class InterventionsController {
     UserRole.ADMIN
   )
   async findMyInterventions(@Request() req) {
-    return this.interventionsService.findByUser(
-      req.user.tenantId,
-      req.user.id
-    );
+    return this.interventionsService.findByUser(req.user.tenantId, req.user.id);
   }
 
   @Get('patient/:patientId')
@@ -64,7 +61,10 @@ export class InterventionsController {
     UserRole.ONCOLOGIST,
     UserRole.ADMIN
   )
-  async findByPatient(@Param('patientId', ParseUUIDPipe) patientId: string, @Request() req) {
+  async findByPatient(
+    @Param('patientId', ParseUUIDPipe) patientId: string,
+    @Request() req
+  ) {
     return this.interventionsService.findAll(
       req.user.tenantId,
       undefined,
@@ -84,4 +84,3 @@ export class InterventionsController {
     return this.interventionsService.findOne(id, req.user.tenantId);
   }
 }
-

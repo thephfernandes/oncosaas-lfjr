@@ -27,7 +27,8 @@ export const useCreateInternalNote = () => {
     onError: (error: unknown) => {
       const errorMessage =
         error instanceof Error && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
           : 'Erro ao criar nota interna';
       toast.error(errorMessage || 'Erro ao criar nota interna');
     },
@@ -50,7 +51,8 @@ export const useUpdateInternalNote = () => {
     onError: (error: unknown) => {
       const errorMessage =
         error instanceof Error && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
           : 'Erro ao atualizar nota interna';
       toast.error(errorMessage || 'Erro ao atualizar nota interna');
     },
@@ -69,10 +71,10 @@ export const useDeleteInternalNote = () => {
     onError: (error: unknown) => {
       const errorMessage =
         error instanceof Error && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
           : 'Erro ao deletar nota interna';
       toast.error(errorMessage || 'Erro ao deletar nota interna');
     },
   });
 };
-

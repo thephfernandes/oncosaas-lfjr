@@ -15,7 +15,7 @@ interface RateLimitRecord {
 /**
  * Guard simples de Rate Limiting
  * Limita requisições por IP para prevenir abusos
- * 
+ *
  * Configuração:
  * - 100 requisições por minuto para endpoints gerais
  * - 10 requisições por minuto para login/register (mais restritivo)
@@ -41,7 +41,7 @@ export class ThrottleGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const ip = this.getClientIp(request);
     const path = request.path;
-    
+
     // Determinar limite baseado no endpoint
     let limit = this.defaultLimit;
     if (this.isLoginEndpoint(path)) {
@@ -51,7 +51,7 @@ export class ThrottleGuard implements CanActivate {
     } else if (this.isHealthEndpoint(path)) {
       limit = this.healthLimit;
     }
-    
+
     const key = `${ip}:${path}`;
 
     const now = Date.now();
@@ -86,7 +86,9 @@ export class ThrottleGuard implements CanActivate {
     // Considerar headers de proxy reverso
     const forwarded = request.headers['x-forwarded-for'];
     if (forwarded) {
-      const ips = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
+      const ips = Array.isArray(forwarded)
+        ? forwarded[0]
+        : forwarded.split(',')[0];
       return ips.trim();
     }
     return request.ip || request.socket.remoteAddress || 'unknown';
@@ -97,11 +99,19 @@ export class ThrottleGuard implements CanActivate {
   }
 
   private isWebhookEndpoint(path: string): boolean {
-    return path.includes('/webhook') || path.includes('/whatsapp-connections') && path.includes('/webhook');
+    return (
+      path.includes('/webhook') ||
+      (path.includes('/whatsapp-connections') && path.includes('/webhook'))
+    );
   }
 
   private isHealthEndpoint(path: string): boolean {
-    return path === '/health' || path === '/ready' || path === '/api/v1/health' || path === '/api/v1/ready';
+    return (
+      path === '/health' ||
+      path === '/ready' ||
+      path === '/api/v1/health' ||
+      path === '/api/v1/ready'
+    );
   }
 
   private cleanup(): void {
@@ -113,5 +123,3 @@ export class ThrottleGuard implements CanActivate {
     }
   }
 }
-
-

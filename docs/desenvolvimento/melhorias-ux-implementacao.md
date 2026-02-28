@@ -29,7 +29,7 @@ Implementação de melhorias visuais e de usabilidade na lista de pacientes: bad
 
 - **Localização**: Acima da lista de pacientes (`PatientListConnected`)
 - **Visualização**: Banner azul claro com texto informativo
-- **Conteúdo**: 
+- **Conteúdo**:
   - Número de pacientes encontrados
   - Número de filtros aplicados (quando > 0)
 - **Comportamento**: Aparece apenas quando há filtros ativos (`activeFiltersCount > 0`)
@@ -69,6 +69,7 @@ Implementação de melhorias visuais e de usabilidade na lista de pacientes: bad
 ```
 
 **Características:**
+
 - Ícone `AlertTriangle` de 3x3 pixels
 - Badge arredondado (`rounded-full`)
 - Tamanho de texto pequeno (`text-xs`)
@@ -86,6 +87,7 @@ className={`p-4 rounded-lg border ${getPriorityColor(patient.priorityCategory)} 
 ```
 
 **Características:**
+
 - Ring de 2px (`ring-2`) na cor indigo (`ring-indigo-500`)
 - Offset de 2px (`ring-offset-2`) para separação visual
 - Sombra aumentada (`shadow-lg`) para maior destaque
@@ -108,6 +110,7 @@ className={`p-4 rounded-lg border ${getPriorityColor(patient.priorityCategory)} 
 ```
 
 **Características:**
+
 - Banner com fundo azul claro (`bg-indigo-50`)
 - Borda azul (`border-indigo-200`)
 - Texto azul escuro (`text-indigo-700`)
@@ -125,6 +128,7 @@ const activeFiltersCount =
 ```
 
 **Lógica:**
+
 - Conta cada filtro que tem valor definido
 - Soma os valores para obter o total
 - Usado para mostrar o contador e determinar se o banner deve aparecer
@@ -195,4 +199,3 @@ const activeFiltersCount =
 - [Documentação de Melhorias de UX](./estado-atual-proximos-passos.md#melhorias-de-ux-adicionais)
 - [Componente PatientList](../arquitetura/frontend-conversa.md#patient-list)
 - [Filtros de Pacientes](./filtros-basicos-implementacao.md)
-

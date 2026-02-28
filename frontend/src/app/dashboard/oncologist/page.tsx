@@ -8,7 +8,10 @@ import { MetricsCharts } from '@/components/dashboard/oncologist/metrics-charts'
 import { CriticalAlertsPanel } from '@/components/dashboard/oncologist/critical-alerts-panel';
 import { TeamPerformance } from '@/components/dashboard/oncologist/team-performance';
 import { PatientListEnhanced } from '@/components/dashboard/oncologist/patient-list-enhanced';
-import { useDashboardMetrics, useDashboardStatistics } from '@/hooks/useDashboardMetrics';
+import {
+  useDashboardMetrics,
+  useDashboardStatistics,
+} from '@/hooks/useDashboardMetrics';
 import { usePatients } from '@/hooks/usePatients';
 import { useDashboardSocket } from '@/hooks/useDashboardSocket';
 import { Button } from '@/components/ui/button';
@@ -22,13 +25,20 @@ export default function OncologistDashboardPage() {
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
-  const [statisticsPeriod, setStatisticsPeriod] = useState<'7d' | '30d' | '90d'>('7d');
+  const [statisticsPeriod, setStatisticsPeriod] = useState<
+    '7d' | '30d' | '90d'
+  >('7d');
 
   // Dados do dashboard
-  const { data: metrics, isLoading: isLoadingMetrics, refetch: refetchMetrics } = useDashboardMetrics();
-  const { data: statistics, isLoading: isLoadingStatistics } = useDashboardStatistics(statisticsPeriod);
+  const {
+    data: metrics,
+    isLoading: isLoadingMetrics,
+    refetch: refetchMetrics,
+  } = useDashboardMetrics();
+  const { data: statistics, isLoading: isLoadingStatistics } =
+    useDashboardStatistics(statisticsPeriod);
   const { data: patients, isLoading: isLoadingPatients } = usePatients();
-  
+
   // WebSocket para atualizações em tempo real
   useDashboardSocket();
 
@@ -93,9 +103,7 @@ export default function OncologistDashboardPage() {
               <select
                 value={statisticsPeriod}
                 onChange={(e) =>
-                  setStatisticsPeriod(
-                    e.target.value as '7d' | '30d' | '90d'
-                  )
+                  setStatisticsPeriod(e.target.value as '7d' | '30d' | '90d')
                 }
                 className="text-sm border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
@@ -122,9 +130,7 @@ export default function OncologistDashboardPage() {
         )}
 
         {/* KPI Cards */}
-        {metrics && (
-          <KPICards metrics={metrics} isLoading={isLoadingMetrics} />
-        )}
+        {metrics && <KPICards metrics={metrics} isLoading={isLoadingMetrics} />}
 
         {/* Gráficos de Métricas */}
         {metrics && statistics ? (
@@ -197,4 +203,3 @@ export default function OncologistDashboardPage() {
     </div>
   );
 }
-

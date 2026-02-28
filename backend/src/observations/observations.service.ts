@@ -165,7 +165,10 @@ export class ObservationsService {
       ) {
         // Se syncFrequency é realtime, sincronizar imediatamente
         if (config.syncFrequency === 'realtime') {
-          await this.fhirSyncService.syncObservationToEHR(config, observationId);
+          await this.fhirSyncService.syncObservationToEHR(
+            config,
+            observationId
+          );
         }
         // Caso contrário, será sincronizado pelo cron job
       }
@@ -300,4 +303,3 @@ export class ObservationsService {
     });
   }
 }
-

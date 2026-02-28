@@ -23,11 +23,7 @@ export default function UsersPage() {
       }
 
       // Verificar se o usuário tem permissão para acessar esta página
-      const allowedRoles: UserRole[] = [
-        'ADMIN',
-        'NURSE_CHIEF',
-        'COORDINATOR',
-      ];
+      const allowedRoles: UserRole[] = ['ADMIN', 'NURSE_CHIEF', 'COORDINATOR'];
       if (user && !allowedRoles.includes(user.role)) {
         router.replace('/dashboard');
         return;
@@ -77,4 +73,3 @@ export default function UsersPage() {
     </div>
   );
 }
-

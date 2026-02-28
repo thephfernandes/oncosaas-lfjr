@@ -17,10 +17,12 @@ Sistema completo de painel de controle e alertas para navegação oncológica do
 ### 1. Schema Prisma
 
 **Novos Modelos:**
+
 - `NavigationStep`: Etapas de navegação oncológica por paciente
 - `NavigationStepStatus`: Enum de status das etapas
 
 **Novos Tipos de Alerta:**
+
 - `NAVIGATION_DELAY`: Atraso em etapa da navegação
 - `MISSING_EXAM`: Exame necessário não realizado
 - `STAGING_INCOMPLETE`: Estadiamento incompleto
@@ -34,6 +36,7 @@ Sistema completo de painel de controle e alertas para navegação oncológica do
 ### 2. Backend - Módulo de Navegação Oncológica
 
 **Estrutura:**
+
 ```
 backend/src/oncology-navigation/
 ├── oncology-navigation.module.ts
@@ -78,6 +81,7 @@ backend/src/oncology-navigation/
 **Componente:** `frontend/src/components/dashboard/oncology-navigation-panel.tsx`
 
 **Funcionalidades:**
+
 - Exibe etapas agrupadas por fase da jornada
 - Status visual (pendente, em andamento, concluída, atrasada)
 - Informações de datas (esperada, prazo, conclusão)
@@ -86,10 +90,12 @@ backend/src/oncology-navigation/
 - Destaque para fase atual do paciente
 
 **Integração:**
+
 - Integrado ao componente `PatientDetails`
 - Aparece automaticamente quando paciente tem tipo de câncer definido
 
 **Hooks:**
+
 - `usePatientNavigationSteps()` - Busca etapas do paciente
 - `useStepsByStage()` - Busca etapas por fase
 - `useInitializeNavigationSteps()` - Inicializa etapas
@@ -107,6 +113,7 @@ npx prisma migrate dev --name add_oncology_navigation
 ```
 
 Isso criará:
+
 - Tabela `navigation_steps`
 - Enum `NavigationStepStatus`
 - Novos valores no enum `AlertType`
@@ -142,10 +149,12 @@ async checkAllOverdueSteps() {
 ### 3. Inicialização Automática
 
 A inicialização já está integrada ao `PatientsService`:
+
 - Quando um paciente é criado com `cancerType`, as etapas são inicializadas automaticamente
 - Quando um paciente é atualizado com novo `cancerType`, as etapas são reinicializadas
 
 **Teste:**
+
 ```bash
 # Criar paciente com câncer colorretal
 POST /api/v1/patients
@@ -168,6 +177,7 @@ GET /api/v1/oncology-navigation/patients/{patientId}/steps
 ### Fluxo Completo
 
 1. **Paciente Criado com Câncer Colorretal em DIAGNOSIS**
+
    ```typescript
    POST /api/v1/patients
    {
@@ -175,6 +185,7 @@ GET /api/v1/oncology-navigation/patients/{patientId}/steps
      "currentStage": "DIAGNOSIS"
    }
    ```
+
    → Sistema cria automaticamente:
    - Colonoscopia com Biópsia (prazo: 14 dias)
    - Laudo Anatomopatológico (prazo: 21 dias)
@@ -188,6 +199,7 @@ GET /api/v1/oncology-navigation/patients/{patientId}/steps
    → Cria alerta: `NAVIGATION_DELAY` com severidade `HIGH`
 
 3. **Médico marca etapa como concluída**
+
    ```typescript
    PATCH /api/v1/oncology-navigation/steps/{stepId}
    {
@@ -196,6 +208,7 @@ GET /api/v1/oncology-navigation/patients/{patientId}/steps
      "actualDate": "2024-01-15T10:00:00Z"
    }
    ```
+
    → Etapa marcada como concluída
    → Alerta pode ser resolvido
 
@@ -247,7 +260,7 @@ O painel exibe:
    - Rastreio/Seguimento = MEDIUM/LOW
 
 2. **Dias de Atraso**
-   - >14 dias = CRITICAL
+   - > 14 dias = CRITICAL
    - ≤14 dias = HIGH
 
 3. **Obrigatoriedade**
@@ -363,4 +376,3 @@ GET http://localhost:3002/api/v1/alerts?patientId={patientId}
 
 **Última atualização:** 2024-01-XX  
 **Versão:** 1.0.0
-

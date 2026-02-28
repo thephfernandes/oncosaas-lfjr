@@ -1,7 +1,19 @@
 'use client';
 
 import { DashboardMetrics } from '@/lib/api/dashboard';
-import { AlertTriangle, Users, Bell, Clock, MessageSquare, CheckCircle2, CalendarX, Activity, Stethoscope, Dna, Target } from 'lucide-react';
+import {
+  AlertTriangle,
+  Users,
+  Bell,
+  Clock,
+  MessageSquare,
+  CheckCircle2,
+  CalendarX,
+  Activity,
+  Stethoscope,
+  Dna,
+  Target,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface KPICardsProps {
@@ -18,10 +30,7 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="bg-white rounded-lg border p-4 animate-pulse"
-          >
+          <div key={i} className="bg-white rounded-lg border p-4 animate-pulse">
             <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
             <div className="h-8 bg-gray-200 rounded w-1/2"></div>
           </div>
@@ -117,56 +126,84 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
     // Métricas Clínicas Críticas
     {
       title: 'Time-to-Treatment',
-      value: metrics.averageTimeToTreatmentDays !== null
-        ? `${metrics.averageTimeToTreatmentDays} dias`
-        : 'N/A',
-      subtitle: metrics.averageTimeToTreatmentDays !== null && metrics.averageTimeToTreatmentDays > 30
-        ? 'Meta: <30 dias'
-        : undefined,
+      value:
+        metrics.averageTimeToTreatmentDays !== null
+          ? `${metrics.averageTimeToTreatmentDays} dias`
+          : 'N/A',
+      subtitle:
+        metrics.averageTimeToTreatmentDays !== null &&
+        metrics.averageTimeToTreatmentDays > 30
+          ? 'Meta: <30 dias'
+          : undefined,
       icon: Activity,
-      color: metrics.averageTimeToTreatmentDays !== null && metrics.averageTimeToTreatmentDays > 30
-        ? 'text-red-600'
-        : metrics.averageTimeToTreatmentDays !== null && metrics.averageTimeToTreatmentDays > 20
-        ? 'text-orange-600'
-        : 'text-green-600',
-      bgColor: metrics.averageTimeToTreatmentDays !== null && metrics.averageTimeToTreatmentDays > 30
-        ? 'bg-red-50'
-        : metrics.averageTimeToTreatmentDays !== null && metrics.averageTimeToTreatmentDays > 20
-        ? 'bg-orange-50'
-        : 'bg-green-50',
-      borderColor: metrics.averageTimeToTreatmentDays !== null && metrics.averageTimeToTreatmentDays > 30
-        ? 'border-red-200'
-        : metrics.averageTimeToTreatmentDays !== null && metrics.averageTimeToTreatmentDays > 20
-        ? 'border-orange-200'
-        : 'border-green-200',
-      badge: metrics.averageTimeToTreatmentDays !== null && metrics.averageTimeToTreatmentDays > 30,
+      color:
+        metrics.averageTimeToTreatmentDays !== null &&
+        metrics.averageTimeToTreatmentDays > 30
+          ? 'text-red-600'
+          : metrics.averageTimeToTreatmentDays !== null &&
+              metrics.averageTimeToTreatmentDays > 20
+            ? 'text-orange-600'
+            : 'text-green-600',
+      bgColor:
+        metrics.averageTimeToTreatmentDays !== null &&
+        metrics.averageTimeToTreatmentDays > 30
+          ? 'bg-red-50'
+          : metrics.averageTimeToTreatmentDays !== null &&
+              metrics.averageTimeToTreatmentDays > 20
+            ? 'bg-orange-50'
+            : 'bg-green-50',
+      borderColor:
+        metrics.averageTimeToTreatmentDays !== null &&
+        metrics.averageTimeToTreatmentDays > 30
+          ? 'border-red-200'
+          : metrics.averageTimeToTreatmentDays !== null &&
+              metrics.averageTimeToTreatmentDays > 20
+            ? 'border-orange-200'
+            : 'border-green-200',
+      badge:
+        metrics.averageTimeToTreatmentDays !== null &&
+        metrics.averageTimeToTreatmentDays > 30,
       clickable: false,
     },
     {
       title: 'Time-to-Diagnosis',
-      value: metrics.averageTimeToDiagnosisDays !== null
-        ? `${metrics.averageTimeToDiagnosisDays} dias`
-        : 'N/A',
-      subtitle: metrics.averageTimeToDiagnosisDays !== null && metrics.averageTimeToDiagnosisDays > 60
-        ? 'Meta: <60 dias'
-        : undefined,
+      value:
+        metrics.averageTimeToDiagnosisDays !== null
+          ? `${metrics.averageTimeToDiagnosisDays} dias`
+          : 'N/A',
+      subtitle:
+        metrics.averageTimeToDiagnosisDays !== null &&
+        metrics.averageTimeToDiagnosisDays > 60
+          ? 'Meta: <60 dias'
+          : undefined,
       icon: Stethoscope,
-      color: metrics.averageTimeToDiagnosisDays !== null && metrics.averageTimeToDiagnosisDays > 60
-        ? 'text-red-600'
-        : metrics.averageTimeToDiagnosisDays !== null && metrics.averageTimeToDiagnosisDays > 45
-        ? 'text-orange-600'
-        : 'text-green-600',
-      bgColor: metrics.averageTimeToDiagnosisDays !== null && metrics.averageTimeToDiagnosisDays > 60
-        ? 'bg-red-50'
-        : metrics.averageTimeToDiagnosisDays !== null && metrics.averageTimeToDiagnosisDays > 45
-        ? 'bg-orange-50'
-        : 'bg-green-50',
-      borderColor: metrics.averageTimeToDiagnosisDays !== null && metrics.averageTimeToDiagnosisDays > 60
-        ? 'border-red-200'
-        : metrics.averageTimeToDiagnosisDays !== null && metrics.averageTimeToDiagnosisDays > 45
-        ? 'border-orange-200'
-        : 'border-green-200',
-      badge: metrics.averageTimeToDiagnosisDays !== null && metrics.averageTimeToDiagnosisDays > 60,
+      color:
+        metrics.averageTimeToDiagnosisDays !== null &&
+        metrics.averageTimeToDiagnosisDays > 60
+          ? 'text-red-600'
+          : metrics.averageTimeToDiagnosisDays !== null &&
+              metrics.averageTimeToDiagnosisDays > 45
+            ? 'text-orange-600'
+            : 'text-green-600',
+      bgColor:
+        metrics.averageTimeToDiagnosisDays !== null &&
+        metrics.averageTimeToDiagnosisDays > 60
+          ? 'bg-red-50'
+          : metrics.averageTimeToDiagnosisDays !== null &&
+              metrics.averageTimeToDiagnosisDays > 45
+            ? 'bg-orange-50'
+            : 'bg-green-50',
+      borderColor:
+        metrics.averageTimeToDiagnosisDays !== null &&
+        metrics.averageTimeToDiagnosisDays > 60
+          ? 'border-red-200'
+          : metrics.averageTimeToDiagnosisDays !== null &&
+              metrics.averageTimeToDiagnosisDays > 45
+            ? 'border-orange-200'
+            : 'border-green-200',
+      badge:
+        metrics.averageTimeToDiagnosisDays !== null &&
+        metrics.averageTimeToDiagnosisDays > 60,
       clickable: false,
     },
     {
@@ -174,21 +211,24 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
       value: `${metrics.stagingCompletePercentage}%`,
       subtitle: 'Antes do tratamento',
       icon: Target,
-      color: metrics.stagingCompletePercentage >= 90
-        ? 'text-green-600'
-        : metrics.stagingCompletePercentage >= 75
-        ? 'text-orange-600'
-        : 'text-red-600',
-      bgColor: metrics.stagingCompletePercentage >= 90
-        ? 'bg-green-50'
-        : metrics.stagingCompletePercentage >= 75
-        ? 'bg-orange-50'
-        : 'bg-red-50',
-      borderColor: metrics.stagingCompletePercentage >= 90
-        ? 'border-green-200'
-        : metrics.stagingCompletePercentage >= 75
-        ? 'border-orange-200'
-        : 'border-red-200',
+      color:
+        metrics.stagingCompletePercentage >= 90
+          ? 'text-green-600'
+          : metrics.stagingCompletePercentage >= 75
+            ? 'text-orange-600'
+            : 'text-red-600',
+      bgColor:
+        metrics.stagingCompletePercentage >= 90
+          ? 'bg-green-50'
+          : metrics.stagingCompletePercentage >= 75
+            ? 'bg-orange-50'
+            : 'bg-red-50',
+      borderColor:
+        metrics.stagingCompletePercentage >= 90
+          ? 'border-green-200'
+          : metrics.stagingCompletePercentage >= 75
+            ? 'border-orange-200'
+            : 'border-red-200',
       badge: metrics.stagingCompletePercentage < 75,
       clickable: false,
     },
@@ -210,21 +250,24 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
       value: `${metrics.treatmentAdherencePercentage}%`,
       subtitle: 'Tratamento conforme planejado',
       icon: CheckCircle2,
-      color: metrics.treatmentAdherencePercentage >= 80
-        ? 'text-green-600'
-        : metrics.treatmentAdherencePercentage >= 60
-        ? 'text-orange-600'
-        : 'text-red-600',
-      bgColor: metrics.treatmentAdherencePercentage >= 80
-        ? 'bg-green-50'
-        : metrics.treatmentAdherencePercentage >= 60
-        ? 'bg-orange-50'
-        : 'bg-red-50',
-      borderColor: metrics.treatmentAdherencePercentage >= 80
-        ? 'border-green-200'
-        : metrics.treatmentAdherencePercentage >= 60
-        ? 'border-orange-200'
-        : 'border-red-200',
+      color:
+        metrics.treatmentAdherencePercentage >= 80
+          ? 'text-green-600'
+          : metrics.treatmentAdherencePercentage >= 60
+            ? 'text-orange-600'
+            : 'text-red-600',
+      bgColor:
+        metrics.treatmentAdherencePercentage >= 80
+          ? 'bg-green-50'
+          : metrics.treatmentAdherencePercentage >= 60
+            ? 'bg-orange-50'
+            : 'bg-red-50',
+      borderColor:
+        metrics.treatmentAdherencePercentage >= 80
+          ? 'border-green-200'
+          : metrics.treatmentAdherencePercentage >= 60
+            ? 'border-orange-200'
+            : 'border-red-200',
       badge: metrics.treatmentAdherencePercentage < 60,
       clickable: false,
     },
@@ -245,7 +288,8 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
             className={cn(
               'bg-white rounded-lg border p-4 relative',
               card.borderColor,
-              card.clickable && 'cursor-pointer hover:shadow-md transition-shadow'
+              card.clickable &&
+                'cursor-pointer hover:shadow-md transition-shadow'
             )}
           >
             {card.badge && (
@@ -297,4 +341,3 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
     </div>
   );
 }
-

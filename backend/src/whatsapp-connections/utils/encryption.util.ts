@@ -11,7 +11,9 @@ const ENCRYPTED_POSITION = TAG_POSITION + TAG_LENGTH;
  * Criptografa dados sensíveis usando AES-256-GCM
  */
 export function encryptSensitiveData(text: string, key: string): string {
-  if (!text) return text;
+  if (!text) {
+    return text;
+  }
 
   const salt = crypto.randomBytes(SALT_LENGTH);
   const iv = crypto.randomBytes(IV_LENGTH);
@@ -25,12 +27,7 @@ export function encryptSensitiveData(text: string, key: string): string {
 
   const tag = cipher.getAuthTag();
 
-  return Buffer.concat([
-    salt,
-    iv,
-    tag,
-    encrypted,
-  ]).toString('base64');
+  return Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
 }
 
 /**
@@ -40,7 +37,9 @@ export function decryptSensitiveData(
   encryptedData: string,
   key: string
 ): string {
-  if (!encryptedData) return encryptedData;
+  if (!encryptedData) {
+    return encryptedData;
+  }
 
   try {
     const data = Buffer.from(encryptedData, 'base64');
@@ -64,4 +63,3 @@ export function decryptSensitiveData(
     throw new Error('Failed to decrypt data');
   }
 }
-

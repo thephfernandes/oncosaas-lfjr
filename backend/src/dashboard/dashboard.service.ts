@@ -296,7 +296,7 @@ export class DashboardService {
       .filter((p) => p.journey?.diagnosisDate && p.navigationSteps.length > 0)
       .map((p) => {
         const firstDiagnosisStep = p.navigationSteps[0];
-        const diagnosisDate = p.journey!.diagnosisDate!;
+        const diagnosisDate = p.journey.diagnosisDate;
         const diffMs =
           new Date(diagnosisDate).getTime() -
           new Date(firstDiagnosisStep.createdAt).getTime();
@@ -461,11 +461,16 @@ export class DashboardService {
       if (!alertsByDate.has(dateKey)) {
         alertsByDate.set(dateKey, { critical: 0, high: 0, medium: 0, low: 0 });
       }
-      const dayData = alertsByDate.get(dateKey)!;
-      if (alert.severity === 'CRITICAL') dayData.critical++;
-      else if (alert.severity === 'HIGH') dayData.high++;
-      else if (alert.severity === 'MEDIUM') dayData.medium++;
-      else if (alert.severity === 'LOW') dayData.low++;
+      const dayData = alertsByDate.get(dateKey);
+      if (alert.severity === 'CRITICAL') {
+        dayData.critical++;
+      } else if (alert.severity === 'HIGH') {
+        dayData.high++;
+      } else if (alert.severity === 'MEDIUM') {
+        dayData.medium++;
+      } else if (alert.severity === 'LOW') {
+        dayData.low++;
+      }
     });
 
     // Preencher dias sem dados com zeros
@@ -567,7 +572,7 @@ export class DashboardService {
         if (!responseTimeByDate.has(dateKey)) {
           responseTimeByDate.set(dateKey, []);
         }
-        responseTimeByDate.get(dateKey)!.push(minutes);
+        responseTimeByDate.get(dateKey).push(minutes);
       }
     });
 
@@ -777,7 +782,9 @@ export class DashboardService {
 
     // Etapas críticas atrasadas (obrigatórias + >14 dias)
     const criticalOverdueSteps = overdueSteps.filter((step) => {
-      if (!step.isRequired || !step.dueDate) return false;
+      if (!step.isRequired || !step.dueDate) {
+        return false;
+      }
       const daysOverdue = Math.floor(
         (now.getTime() - new Date(step.dueDate).getTime()) /
           (1000 * 60 * 60 * 24)
@@ -926,15 +933,17 @@ export class DashboardService {
       const validTimes: number[] = [];
 
       for (const patient of patientsInStage) {
-        if (patient.navigationSteps.length === 0) continue;
+        if (patient.navigationSteps.length === 0) {
+          continue;
+        }
 
         const firstStep = patient.navigationSteps[0];
         const lastCompletedStep = patient.navigationSteps
           .filter((s) => s.isCompleted && s.completedAt)
           .sort(
             (a, b) =>
-              new Date(b.completedAt!).getTime() -
-              new Date(a.completedAt!).getTime()
+              new Date(b.completedAt).getTime() -
+              new Date(a.completedAt).getTime()
           )[0];
 
         if (lastCompletedStep && lastCompletedStep.completedAt) {
@@ -1127,7 +1136,7 @@ export class DashboardService {
 
       // Se paciente já está no mapa, verificar se esta etapa é mais crítica
       if (patientMap.has(patientId)) {
-        const existing = patientMap.get(patientId)!;
+        const existing = patientMap.get(patientId);
         // Se esta etapa está mais atrasada, substituir
         if (
           daysOverdue !== null &&
@@ -1230,8 +1239,12 @@ export class DashboardService {
       const bDays = b.criticalStep.daysOverdue ?? Infinity;
 
       // Etapas atrasadas primeiro
-      if (aDays !== Infinity && bDays === Infinity) return -1;
-      if (aDays === Infinity && bDays !== Infinity) return 1;
+      if (aDays !== Infinity && bDays === Infinity) {
+        return -1;
+      }
+      if (aDays === Infinity && bDays !== Infinity) {
+        return 1;
+      }
 
       // Entre etapas atrasadas, mais dias primeiro
       if (aDays !== Infinity && bDays !== Infinity) {
@@ -1430,7 +1443,7 @@ export class DashboardService {
                   )
                   .map((p) => {
                     const firstDiagnosisStep = p.navigationSteps[0];
-                    const diagnosisDate = p.journey!.diagnosisDate!;
+                    const diagnosisDate = p.journey.diagnosisDate;
                     const diffMs =
                       new Date(diagnosisDate).getTime() -
                       new Date(firstDiagnosisStep.createdAt).getTime();
@@ -1482,8 +1495,8 @@ export class DashboardService {
                   )
                   .map((p) => {
                     const diffMs =
-                      new Date(p.journey!.treatmentStartDate!).getTime() -
-                      new Date(p.journey!.diagnosisDate!).getTime();
+                      new Date(p.journey.treatmentStartDate).getTime() -
+                      new Date(p.journey.diagnosisDate).getTime();
                     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
                   })
                   .filter((days) => days >= 0);
@@ -1551,8 +1564,8 @@ export class DashboardService {
                   .map((step) => {
                     const pathologyStep = step.patient.navigationSteps[0];
                     const diffMs =
-                      new Date(pathologyStep.completedAt!).getTime() -
-                      new Date(step.completedAt!).getTime();
+                      new Date(pathologyStep.completedAt).getTime() -
+                      new Date(step.completedAt).getTime();
                     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
                   })
                   .filter((days) => days >= 0);
@@ -1618,8 +1631,8 @@ export class DashboardService {
                   .map((p) => {
                     const surgeryStep = p.navigationSteps[0];
                     const diffMs =
-                      new Date(surgeryStep.completedAt!).getTime() -
-                      new Date(p.journey!.diagnosisDate!).getTime();
+                      new Date(surgeryStep.completedAt).getTime() -
+                      new Date(p.journey.diagnosisDate).getTime();
                     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
                   })
                   .filter((days) => days >= 0);
@@ -1683,8 +1696,8 @@ export class DashboardService {
                   .map((p) => {
                     const surgeryStep = p.navigationSteps[0];
                     const diffMs =
-                      new Date(p.journey!.treatmentStartDate!).getTime() -
-                      new Date(surgeryStep.completedAt!).getTime();
+                      new Date(p.journey.treatmentStartDate).getTime() -
+                      new Date(surgeryStep.completedAt).getTime();
                     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
                   })
                   .filter((days) => days >= 0);

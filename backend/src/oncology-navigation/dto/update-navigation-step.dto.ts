@@ -58,4 +58,3 @@ export class UpdateNavigationStepDto {
   @IsOptional()
   notes?: string;
 }
-
