@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { ChannelType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessagesGateway } from '../gateways/messages.gateway';
@@ -8,6 +14,7 @@ import {
   normalizePhoneNumber,
 } from '../common/utils/phone.util';
 import { OutgoingMessage, SendResult } from './interfaces/channel.interface';
+import { AgentService } from '../agent/agent.service';
 
 @Injectable()
 export class ChannelGatewayService {
@@ -16,7 +23,9 @@ export class ChannelGatewayService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly messagesGateway: MessagesGateway,
-    private readonly whatsAppChannel: WhatsAppChannel
+    private readonly whatsAppChannel: WhatsAppChannel,
+    @Inject(forwardRef(() => AgentService))
+    private readonly agentService: AgentService
   ) {}
 
   /**
@@ -53,6 +62,17 @@ export class ChannelGatewayService {
     }
 
     const tenantId = patient.tenantId;
+
+    // Idempotency: skip already-processed messages (Meta may retry webhooks)
+    const existingMessage = await this.prisma.message.findUnique({
+      where: { whatsappMessageId: externalMessageId },
+    });
+    if (existingMessage) {
+      this.logger.warn(
+        `Duplicate webhook: message ${externalMessageId} already processed, skipping`
+      );
+      return null;
+    }
 
     // 2. Get or create active conversation
     const conversation = await this.getOrCreateConversation(
@@ -98,6 +118,31 @@ export class ChannelGatewayService {
     this.logger.log(
       `Incoming ${channel} message from patient ${patient.id} in conversation ${conversation.id}`
     );
+
+    // 6. Forward to agent pipeline (fire-and-forget; only for text messages)
+    // We must NOT await here — Meta requires a 200 OK within 5 seconds,
+    // but the AI pipeline can take up to 30 seconds.
+    if (type === 'TEXT') {
+      setImmediate(() => {
+        this.agentService
+          .processIncomingMessage(
+            patient.id,
+            tenantId,
+            conversation.id,
+            content
+          )
+          .catch((err) =>
+            this.logger.error(
+              `Agent pipeline failed for conversation ${conversation.id}`,
+              err
+            )
+          );
+      });
+    } else {
+      this.logger.log(
+        `Skipping agent pipeline for ${type} message (text-only supported)`
+      );
+    }
 
     return {
       message,

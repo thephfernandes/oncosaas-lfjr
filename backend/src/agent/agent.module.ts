@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { GatewaysModule } from '../gateways/gateways.module';
 import { ChannelGatewayModule } from '../channel-gateway/channel-gateway.module';
@@ -9,7 +9,11 @@ import { DecisionGateService } from './decision-gate.service';
 import { AgentSchedulerService } from './agent-scheduler.service';
 
 @Module({
-  imports: [PrismaModule, GatewaysModule, ChannelGatewayModule],
+  imports: [
+    PrismaModule,
+    GatewaysModule,
+    forwardRef(() => ChannelGatewayModule),
+  ],
   controllers: [AgentController],
   providers: [
     AgentService,
