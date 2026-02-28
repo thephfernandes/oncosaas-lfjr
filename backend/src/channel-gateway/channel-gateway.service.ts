@@ -174,6 +174,7 @@ export class ChannelGatewayService {
       to: normalizePhoneNumber(patient.phone),
       content,
       channel,
+      tenantId,
     };
 
     // Send via appropriate channel

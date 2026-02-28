@@ -23,13 +23,24 @@ export class WhatsAppChannel implements IChannel {
   async send(message: OutgoingMessage): Promise<SendResult> {
     try {
       // Find active WhatsApp connection for the tenant
-      // The tenantId is resolved by the gateway service before calling send
-      const connection = await this.getDefaultConnection(message.to);
+      const connection = await this.getDefaultConnection(message.tenantId);
 
       if (!connection) {
         return {
           success: false,
           error: 'No active WhatsApp connection found',
+        };
+      }
+
+      // B3: Check if OAuth token is expired before using it
+      if (connection.oauthExpiresAt && new Date() >= connection.oauthExpiresAt) {
+        this.logger.error(
+          `WhatsApp OAuth token for tenant ${message.tenantId} expired at ${connection.oauthExpiresAt.toISOString()}. ` +
+            'Reconnect the WhatsApp connection via the integrations page.'
+        );
+        return {
+          success: false,
+          error: 'WhatsApp OAuth token has expired. Please reconnect the integration.',
         };
       }
 
@@ -107,17 +118,25 @@ export class WhatsAppChannel implements IChannel {
   }
 
   /**
-   * Find default WhatsApp connection (used for sending)
+   * Find default WhatsApp connection for a specific tenant (used for sending)
    */
-  private async getDefaultConnection(recipientPhone: string) {
-    // Find connections that are connected and active
-    return this.prisma.whatsAppConnection.findFirst({
+  private async getDefaultConnection(tenantId: string) {
+    const connection = await this.prisma.whatsAppConnection.findFirst({
       where: {
+        tenantId,
         isActive: true,
         isDefault: true,
         status: 'CONNECTED',
       },
     });
+
+    if (!connection) {
+      this.logger.warn(
+        `No default active WhatsApp connection found for tenant ${tenantId}`
+      );
+    }
+
+    return connection;
   }
 
   /**
