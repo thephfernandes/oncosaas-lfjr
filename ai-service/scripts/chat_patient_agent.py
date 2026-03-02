@@ -4,7 +4,6 @@ import asyncio
 import json
 import os
 import sys
-import types
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -17,22 +16,44 @@ sys.path.insert(0, str(AI_SERVICE_ROOT))
 # Carrega variáveis do .env da raiz do repositório
 load_dotenv(REPO_ROOT / ".env")
 
-# Fallback opcional para ambientes sem SDKs externos
-if "openai" not in sys.modules:
-    openai_stub = types.ModuleType("openai")
-    openai_stub.AsyncOpenAI = object
-    sys.modules["openai"] = openai_stub
-
-if "anthropic" not in sys.modules:
-    anthropic_stub = types.ModuleType("anthropic")
-    anthropic_stub.AsyncAnthropic = object
-    sys.modules["anthropic"] = anthropic_stub
-
 from src.agent.orchestrator import orchestrator
+
+
+def resolve_llm_config() -> dict:
+    """Resolve o provedor LLM usando as chaves disponíveis no ambiente."""
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+    openai_key = os.getenv("OPENAI_API_KEY", "")
+
+    if anthropic_key:
+        return {
+            "llm_provider": "anthropic",
+            "llm_model": "claude-sonnet-4-6",
+            "llm_fallback_provider": "openai" if openai_key else None,
+            "llm_fallback_model": "gpt-4o-mini" if openai_key else None,
+            "anthropic_api_key": anthropic_key,
+            "openai_api_key": openai_key,
+        }
+
+    if openai_key:
+        return {
+            "llm_provider": "openai",
+            "llm_model": "gpt-4o-mini",
+            "llm_fallback_provider": None,
+            "llm_fallback_model": None,
+            "anthropic_api_key": anthropic_key,
+            "openai_api_key": openai_key,
+        }
+
+    raise RuntimeError(
+        "Nenhuma chave de API foi encontrada. Configure ANTHROPIC_API_KEY "
+        "ou OPENAI_API_KEY no .env para usar uma LLM real."
+    )
 
 
 def build_initial_session() -> dict:
     """Cria um contexto mínimo para iniciar a conversa."""
+    llm_config = resolve_llm_config()
+
     return {
         "patient_id": "patient-demo-001",
         "tenant_id": "tenant-demo-001",
@@ -56,10 +77,7 @@ def build_initial_session() -> dict:
         "agent_state": {},
         "agent_config": {
             "agent_language": "pt-BR",
-            "llm_provider": "anthropic",
-            "llm_model": "claude-sonnet-4-6",
-            "anthropic_api_key": os.getenv("ANTHROPIC_API_KEY", ""),
-            "openai_api_key": os.getenv("OPENAI_API_KEY", ""),
+            **llm_config,
         },
     }
 
