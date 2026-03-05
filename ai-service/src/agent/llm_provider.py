@@ -8,6 +8,8 @@ from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
 import logging
 import os
+from pathlib import Path
+from dotenv import dotenv_values
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +21,64 @@ class LLMProvider:
         self._anthropic_client: Optional[AsyncAnthropic] = None
         self._openai_client: Optional[AsyncOpenAI] = None
 
+    def _looks_like_placeholder(self, value: Optional[str]) -> bool:
+        if not value:
+            return True
+        normalized = value.strip().lower()
+        return normalized in {
+            "",
+            "your-openai-api-key",
+            "your-anthropic-api-key",
+            "none",
+            "null",
+        }
+
+    def _read_dotenv_key(self, key_name: str) -> Optional[str]:
+        """
+        Resolve API keys from local files first to avoid stale OS env overrides.
+        Priority:
+        1) ai-service/.env
+        2) project root ../.env
+        """
+        service_root = Path(__file__).resolve().parents[2]  # ai-service/
+        project_root = service_root.parent                  # repo root
+
+        for env_path in (service_root / ".env", project_root / ".env"):
+            if not env_path.exists():
+                continue
+            values = dotenv_values(env_path)
+            value = values.get(key_name)
+            if value and not self._looks_like_placeholder(value):
+                return value.strip()
+
+        return None
+
+    def _resolve_api_key(self, key_name: str, explicit_key: Optional[str]) -> Optional[str]:
+        # Explicit runtime key has highest priority.
+        if explicit_key and not self._looks_like_placeholder(explicit_key):
+            return explicit_key.strip()
+
+        # Then prefer .env file values over process environment variables.
+        file_key = self._read_dotenv_key(key_name)
+        if file_key:
+            return file_key
+
+        env_key = os.getenv(key_name)
+        if env_key and not self._looks_like_placeholder(env_key):
+            return env_key.strip()
+
+        return None
+
     def _get_anthropic_client(self, api_key: Optional[str] = None) -> Optional[AsyncAnthropic]:
         """Get or create Anthropic client."""
-        key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        key = self._resolve_api_key("ANTHROPIC_API_KEY", api_key)
         if not key:
             return None
         return AsyncAnthropic(api_key=key)
 
     def _get_openai_client(self, api_key: Optional[str] = None) -> Optional[AsyncOpenAI]:
         """Get or create OpenAI client."""
-        key = api_key or os.getenv("OPENAI_API_KEY")
+        key = self._resolve_api_key("OPENAI_API_KEY", api_key)
         if not key:
             return None
         return AsyncOpenAI(api_key=key)

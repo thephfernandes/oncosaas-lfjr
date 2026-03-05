@@ -1,15 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
-import { Message } from '@prisma/client';
+import { ChannelType, Message } from '@prisma/client';
 import { MessagesGateway } from '../gateways/messages.gateway';
+import { AgentService } from '../agent/agent.service';
 
 @Injectable()
 export class MessagesService {
+  private readonly logger = new Logger(MessagesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
-    private readonly messagesGateway: MessagesGateway
+    private readonly messagesGateway: MessagesGateway,
+    private readonly agentService: AgentService
   ) {}
 
   async findAll(
@@ -82,9 +86,16 @@ export class MessagesService {
       );
     }
 
+    const conversationId = await this.resolveConversationId(
+      tenantId,
+      createMessageDto.patientId,
+      createMessageDto.conversationId
+    );
+
     const message = await this.prisma.message.create({
       data: {
         ...createMessageDto,
+        conversationId,
         tenantId, // SEMPRE incluir tenantId
         whatsappTimestamp: new Date(createMessageDto.whatsappTimestamp),
       },
@@ -99,11 +110,43 @@ export class MessagesService {
       },
     });
 
+    // Manter metadados da conversa atualizados para listas/ordenação
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        lastMessageAt: new Date(),
+        messageCount: { increment: 1 },
+      },
+    });
+
     // Emitir evento WebSocket para notificar clientes conectados
     if (message.direction === 'INBOUND') {
       this.messagesGateway.emitNewMessage(tenantId, message);
     } else {
       this.messagesGateway.emitMessageSent(tenantId, message);
+    }
+
+    // Quando a mensagem chega como INBOUND (ex: /teste), disparar pipeline do agente.
+    // Fire-and-forget para não bloquear a resposta HTTP.
+    if (message.direction === 'INBOUND' && message.type === 'TEXT') {
+      const isSimulatedMessage = message.whatsappMessageId.startsWith('sim_');
+
+      setImmediate(() => {
+        this.agentService
+          .processIncomingMessage(
+            message.patientId,
+            tenantId,
+            conversationId,
+            message.content,
+            { skipExternalSend: isSimulatedMessage }
+          )
+          .catch((error) =>
+            this.logger.error(
+              `Agent pipeline failed for conversation ${conversationId}`,
+              error instanceof Error ? error.stack : String(error)
+            )
+          );
+      });
     }
 
     return message;
@@ -212,5 +255,56 @@ export class MessagesService {
         assumedBy: null, // Não assumidas
       },
     });
+  }
+
+  private async resolveConversationId(
+    tenantId: string,
+    patientId: string,
+    providedConversationId?: string
+  ): Promise<string> {
+    if (providedConversationId) {
+      const existingConversation = await this.prisma.conversation.findFirst({
+        where: {
+          id: providedConversationId,
+          tenantId,
+          patientId,
+        },
+      });
+
+      if (!existingConversation) {
+        throw new NotFoundException(
+          `Conversation with ID ${providedConversationId} not found for patient ${patientId}`
+        );
+      }
+
+      return existingConversation.id;
+    }
+
+    const activeConversation = await this.prisma.conversation.findFirst({
+      where: {
+        tenantId,
+        patientId,
+        channel: ChannelType.WHATSAPP,
+        status: { in: ['ACTIVE', 'WAITING'] },
+      },
+      orderBy: { lastMessageAt: 'desc' },
+    });
+
+    if (activeConversation) {
+      return activeConversation.id;
+    }
+
+    const createdConversation = await this.prisma.conversation.create({
+      data: {
+        tenantId,
+        patientId,
+        channel: ChannelType.WHATSAPP,
+        status: 'ACTIVE',
+        handledBy: 'AGENT',
+        lastMessageAt: new Date(),
+      },
+    });
+
+    return createdConversation.id;
   }
 }

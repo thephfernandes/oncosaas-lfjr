@@ -4,10 +4,26 @@ Serviço de IA para priorização de casos e agente conversacional
 """
 
 import logging
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic_settings import BaseSettings
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+# Load environment variables early, before importing modules that may read os.getenv.
+# Priority order:
+# 1) Project root .env (../.env) for shared local dev config
+# 2) ai-service/.env for service-specific overrides
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_ENV_PATH = BASE_DIR.parent / ".env"
+LOCAL_ENV_PATH = BASE_DIR / ".env"
+
+if ROOT_ENV_PATH.exists():
+    load_dotenv(ROOT_ENV_PATH, override=True)
+if LOCAL_ENV_PATH.exists():
+    load_dotenv(LOCAL_ENV_PATH, override=True)
+
 from src.api.routes import router
 
 logging.basicConfig(level=logging.INFO)

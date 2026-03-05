@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AgentDecisionType } from '@prisma/client';
 import { AgentDecision } from './interfaces/agent-decision.interface';
 
 /**
@@ -33,6 +34,14 @@ const NEEDS_APPROVAL_ACTIONS = new Set([
   // Questionnaire-triggered high-severity escalations
   'QUESTIONNAIRE_ESCALATION',
 ]);
+
+const DECISION_TYPE_ALIASES: Record<string, AgentDecisionType> = {
+  APPLY_QUESTIONNAIRE: AgentDecisionType.QUESTIONNAIRE_STARTED,
+};
+
+const VALID_DECISION_TYPES = new Set<AgentDecisionType>(
+  Object.values(AgentDecisionType)
+);
 
 @Injectable()
 export class DecisionGateService {
@@ -82,12 +91,16 @@ export class DecisionGateService {
     patientId: string,
     decision: AgentDecision
   ) {
+    const normalizedDecisionType = this.normalizeDecisionType(
+      decision.decisionType
+    );
+
     return this.prisma.agentDecisionLog.create({
       data: {
         tenantId,
         conversationId,
         patientId,
-        decisionType: decision.decisionType,
+        decisionType: normalizedDecisionType,
         reasoning: decision.reasoning,
         confidence: decision.confidence,
         inputData: decision.inputData,
@@ -95,6 +108,27 @@ export class DecisionGateService {
         requiresApproval: decision.requiresApproval,
       },
     });
+  }
+
+  private normalizeDecisionType(decisionType: unknown): AgentDecisionType {
+    const rawType = typeof decisionType === 'string' ? decisionType : '';
+
+    if (VALID_DECISION_TYPES.has(rawType as AgentDecisionType)) {
+      return rawType as AgentDecisionType;
+    }
+
+    if (rawType && DECISION_TYPE_ALIASES[rawType]) {
+      const mappedType = DECISION_TYPE_ALIASES[rawType];
+      this.logger.warn(
+        `Mapping legacy decisionType '${rawType}' to '${mappedType}'`
+      );
+      return mappedType;
+    }
+
+    this.logger.warn(
+      `Unknown decisionType '${rawType || 'undefined'}', defaulting to RESPONSE_GENERATED`
+    );
+    return AgentDecisionType.RESPONSE_GENERATED;
   }
 
   /**
@@ -107,7 +141,9 @@ export class DecisionGateService {
       where: { id: decisionId, tenantId },
     });
     if (!existing) {
-      throw new Error(`Decision ${decisionId} not found for tenant ${tenantId}`);
+      throw new Error(
+        `Decision ${decisionId} not found for tenant ${tenantId}`
+      );
     }
     if (existing.approvedBy !== null) {
       throw new Error(`Decision ${decisionId} has already been approved`);
@@ -136,7 +172,9 @@ export class DecisionGateService {
       where: { id: decisionId, tenantId },
     });
     if (!existing) {
-      throw new Error(`Decision ${decisionId} not found for tenant ${tenantId}`);
+      throw new Error(
+        `Decision ${decisionId} not found for tenant ${tenantId}`
+      );
     }
     if (existing.rejected) {
       throw new Error(`Decision ${decisionId} has already been rejected`);

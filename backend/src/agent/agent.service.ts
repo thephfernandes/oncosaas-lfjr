@@ -41,8 +41,13 @@ export class AgentService {
     patientId: string,
     tenantId: string,
     conversationId: string,
-    messageContent: string
+    messageContent: string,
+    options?: {
+      skipExternalSend?: boolean;
+    }
   ): Promise<AgentResponse | null> {
+    const skipExternalSend = options?.skipExternalSend === true;
+
     // 1. Get conversation and check if it's handled by nursing
     const conversation = await this.conversationService.findOne(
       conversationId,
@@ -102,7 +107,8 @@ export class AgentService {
         tenantId,
         fallbackMessage,
         conversation.channel,
-        conversationId
+        conversationId,
+        { skipExternalSend }
       );
       return null;
     }
@@ -112,7 +118,8 @@ export class AgentService {
     // nothing to the patient. Treat it like an unavailable AI service.
     if (
       typeof aiResponse !== 'object' ||
-      (aiResponse.response !== undefined && typeof aiResponse.response !== 'string')
+      (aiResponse.response !== undefined &&
+        typeof aiResponse.response !== 'string')
     ) {
       this.logger.error(
         `AI service returned invalid response structure for conversation ${conversationId}: ` +
@@ -126,7 +133,8 @@ export class AgentService {
         tenantId,
         fallbackMessage,
         conversation.channel,
-        conversationId
+        conversationId,
+        { skipExternalSend }
       );
       return null;
     }
@@ -166,7 +174,8 @@ export class AgentService {
         tenantId,
         aiResponse.response,
         conversation.channel,
-        conversationId
+        conversationId,
+        { skipExternalSend }
       );
     }
 
@@ -315,6 +324,8 @@ export class AgentService {
             ? {
                 llm_provider: request.agentConfig.llmProvider,
                 llm_model: request.agentConfig.llmModel,
+                llm_fallback_provider: request.agentConfig.llmFallbackProvider,
+                llm_fallback_model: request.agentConfig.llmFallbackModel,
                 agent_language: request.agentConfig.agentLanguage,
                 max_auto_replies: request.agentConfig.maxAutoReplies,
               }
@@ -330,11 +341,32 @@ export class AgentService {
         return null;
       }
 
-      return await response.json();
+      const raw = await response.json();
+      return this.normalizeAIServiceResponse(raw);
     } catch (error) {
       this.logger.error('Failed to call AI service', error);
       return null;
     }
+  }
+
+  private normalizeAIServiceResponse(raw: any): AgentResponse {
+    const rawDecisions = Array.isArray(raw?.decisions) ? raw.decisions : [];
+
+    return {
+      response: typeof raw?.response === 'string' ? raw.response : '',
+      actions: Array.isArray(raw?.actions) ? raw.actions : [],
+      symptomAnalysis:
+        raw?.symptomAnalysis ?? raw?.symptom_analysis ?? undefined,
+      newState: raw?.newState ?? raw?.new_state ?? undefined,
+      decisions: rawDecisions.map((decision: any) => ({
+        ...decision,
+        // Compatibilidade com ai-service legado ainda não reiniciado
+        decisionType:
+          decision?.decisionType === 'APPLY_QUESTIONNAIRE'
+            ? 'QUESTIONNAIRE_STARTED'
+            : decision?.decisionType,
+      })),
+    };
   }
 
   /**
@@ -504,7 +536,9 @@ export class AgentService {
     const { treatmentId, newStatus, reason } =
       decision.outputAction?.payload || {};
     if (!treatmentId || !newStatus) {
-      this.logger.warn('CHANGE_TREATMENT_STATUS missing treatmentId or newStatus');
+      this.logger.warn(
+        'CHANGE_TREATMENT_STATUS missing treatmentId or newStatus'
+      );
       return;
     }
 
@@ -551,7 +585,7 @@ export class AgentService {
         tenantId,
         patientId,
         conversationId,
-        actionType: 'APPOINTMENT',
+        actionType: 'APPOINTMENT_REMINDER',
         scheduledAt,
         payload: { reason, urgency, specialty, ...payload },
       },
@@ -563,7 +597,7 @@ export class AgentService {
       data: {
         tenantId,
         patientId,
-        type: 'APPOINTMENT_RECOMMENDED',
+        type: 'NAVIGATION_DELAY',
         severity,
         message: `Consulta recomendada${specialty ? ` com ${specialty}` : ''}${reason ? `: ${reason}` : ''}`,
         context: decision.inputData,
@@ -598,7 +632,7 @@ export class AgentService {
       data: {
         tenantId,
         patientId,
-        type: 'SPECIALIST_HANDOFF',
+        type: 'NAVIGATION_DELAY',
         severity: 'HIGH',
         message: `Paciente necessita de encaminhamento${specialistType ? ` para ${specialistType}` : ''}${reason ? `: ${reason}` : ''}`,
         context: decision.inputData,

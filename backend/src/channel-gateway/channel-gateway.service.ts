@@ -86,11 +86,19 @@ export class ChannelGatewayService {
     // The Meta webhook delivers an opaque Media ID; we must call the Graph API
     // to get the actual CDN URL before saving so the frontend can render it.
     let resolvedMediaUrl = mediaUrl;
-    if (mediaUrl && (type === 'AUDIO' || type === 'IMAGE' || type === 'DOCUMENT')) {
-      const url = await this.whatsAppChannel.resolveMediaUrl(mediaUrl, tenantId);
+    if (
+      mediaUrl &&
+      (type === 'AUDIO' || type === 'IMAGE' || type === 'DOCUMENT')
+    ) {
+      const url = await this.whatsAppChannel.resolveMediaUrl(
+        mediaUrl,
+        tenantId
+      );
       if (url) {
         resolvedMediaUrl = url;
-        this.logger.log(`Resolved media ID ${mediaUrl} → URL for ${type} message`);
+        this.logger.log(
+          `Resolved media ID ${mediaUrl} → URL for ${type} message`
+        );
       } else {
         this.logger.warn(
           `Could not resolve media ID ${mediaUrl} for ${type} message — storing ID as fallback`
@@ -177,7 +185,10 @@ export class ChannelGatewayService {
     tenantId: string,
     content: string,
     channel: ChannelType = ChannelType.WHATSAPP,
-    conversationId?: string
+    conversationId?: string,
+    options?: {
+      skipExternalSend?: boolean;
+    }
   ): Promise<{ message: any; sendResult: SendResult }> {
     const patient = await this.prisma.patient.findFirst({
       where: { id: patientId, tenantId },
@@ -194,17 +205,29 @@ export class ChannelGatewayService {
       tenantId,
     };
 
-    // Send via appropriate channel
+    const skipExternalSend = options?.skipExternalSend === true;
+
+    // Send via appropriate channel (unless explicitly simulated)
     let sendResult: SendResult;
-    switch (channel) {
-      case ChannelType.WHATSAPP:
-        sendResult = await this.whatsAppChannel.send(outgoing);
-        break;
-      default:
-        sendResult = {
-          success: false,
-          error: `Channel ${channel} not yet implemented`,
-        };
+    if (skipExternalSend) {
+      sendResult = {
+        success: true,
+        externalMessageId: `sim_out_${randomUUID()}`,
+      };
+      this.logger.debug(
+        `Skipping external ${channel} send for simulated conversation (patient ${patientId})`
+      );
+    } else {
+      switch (channel) {
+        case ChannelType.WHATSAPP:
+          sendResult = await this.whatsAppChannel.send(outgoing);
+          break;
+        default:
+          sendResult = {
+            success: false,
+            error: `Channel ${channel} not yet implemented`,
+          };
+      }
     }
 
     // Save outbound message
@@ -214,7 +237,8 @@ export class ChannelGatewayService {
         patientId,
         conversationId,
         channel,
-        whatsappMessageId: sendResult.externalMessageId || `out_${randomUUID()}`,
+        whatsappMessageId:
+          sendResult.externalMessageId || `out_${randomUUID()}`,
         whatsappTimestamp: new Date(),
         type: 'TEXT',
         direction: 'OUTBOUND',

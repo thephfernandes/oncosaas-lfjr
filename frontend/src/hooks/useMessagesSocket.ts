@@ -6,9 +6,9 @@ import { useSocket } from './useSocket';
 import { Message } from '@/lib/api/messages';
 
 /**
- * Hook para escutar atualizações de mensagens em tempo real via WebSocket
+ * Hook para escutar atualizacoes de mensagens em tempo real via WebSocket
  *
- * @param patientId - ID do paciente para escutar mensagens específicas
+ * @param patientId - ID do paciente para escutar mensagens especificas
  */
 export const useMessagesSocket = (patientId?: string) => {
   const { socket, isConnected } = useSocket('/messages');
@@ -17,19 +17,19 @@ export const useMessagesSocket = (patientId?: string) => {
   useEffect(() => {
     if (!socket || !isConnected || !patientId) return;
 
-    // Inscrever-se para receber mensagens do paciente específico
+    // Inscrever-se para receber mensagens do paciente especifico
     socket.emit('subscribe_patient_messages', { patientId });
 
     // Escutar novos eventos de mensagem
     const handleNewMessage = (message: Message) => {
-      // Só processar se a mensagem é do paciente correto
+      // So processar se a mensagem e do paciente correto
       if (message.patientId !== patientId) return;
 
       // Atualizar cache do React Query
       queryClient.setQueryData<Message[]>(['messages', patientId], (old) => {
         if (!old) return [message];
 
-        // Evitar duplicatas (verificar se mensagem já existe)
+        // Evitar duplicatas (verificar se mensagem ja existe)
         if (
           old.some(
             (m) =>
@@ -43,30 +43,42 @@ export const useMessagesSocket = (patientId?: string) => {
         // Adicionar nova mensagem e ordenar por timestamp
         return [...old, message].sort(
           (a, b) =>
-            new Date(a.whatsappTimestamp).getTime() -
-            new Date(b.whatsappTimestamp).getTime()
+            new Date(a.whatsappTimestamp || a.createdAt).getTime() -
+            new Date(b.whatsappTimestamp || b.createdAt).getTime()
         );
       });
 
-      // Invalidar contador de mensagens não assumidas
+      // Invalidar contador de mensagens nao assumidas
       queryClient.invalidateQueries({
         queryKey: ['messages', 'unassumed', 'count'],
       });
     };
 
-    // Escutar quando mensagem é atualizada (assumida, enviada, etc.)
+    // Escutar quando mensagem e atualizada (assumida, enviada, etc.)
     const handleMessageUpdate = (message: Message) => {
-      // Só processar se a mensagem é do paciente correto
+      // So processar se a mensagem e do paciente correto
       if (message.patientId !== patientId) return;
 
-      // Atualizar mensagem específica no cache
+      // Atualizar mensagem especifica no cache
       queryClient.setQueryData<Message[]>(['messages', patientId], (old) => {
         if (!old) return [message];
-        return old.map((msg) =>
-          msg.id === message.id ||
-          msg.whatsappMessageId === message.whatsappMessageId
-            ? message
-            : msg
+
+        const existingIndex = old.findIndex(
+          (msg) =>
+            msg.id === message.id ||
+            msg.whatsappMessageId === message.whatsappMessageId
+        );
+
+        if (existingIndex === -1) {
+          return [...old, message].sort(
+            (a, b) =>
+              new Date(a.whatsappTimestamp || a.createdAt).getTime() -
+              new Date(b.whatsappTimestamp || b.createdAt).getTime()
+          );
+        }
+
+        return old.map((msg, index) =>
+          index === existingIndex ? message : msg
         );
       });
 
@@ -76,19 +88,45 @@ export const useMessagesSocket = (patientId?: string) => {
       });
     };
 
-    // Escutar quando mensagem é enviada (confirmação)
+    // Escutar quando mensagem e enviada (confirmacao)
     const handleMessageSent = (message: Message) => {
-      // Só processar se a mensagem é do paciente correto
+      // So processar se a mensagem e do paciente correto
       if (message.patientId !== patientId) return;
 
-      // Atualizar mensagem temporária com dados reais do servidor
+      // Atualizar placeholder temporario ou inserir nova mensagem no historico
       queryClient.setQueryData<Message[]>(['messages', patientId], (old) => {
         if (!old) return [message];
-        return old.map((msg) =>
-          msg.id.startsWith('temp-') && msg.content === message.content
-            ? message
-            : msg
+
+        const existingIndex = old.findIndex(
+          (msg) =>
+            msg.id === message.id ||
+            msg.whatsappMessageId === message.whatsappMessageId
         );
+        if (existingIndex !== -1) {
+          return old.map((msg, index) =>
+            index === existingIndex ? message : msg
+          );
+        }
+
+        const tempIndex = old.findIndex(
+          (msg) =>
+            msg.id.startsWith('temp-') &&
+            msg.direction === 'OUTBOUND' &&
+            msg.content === message.content
+        );
+        if (tempIndex !== -1) {
+          return old.map((msg, index) => (index === tempIndex ? message : msg));
+        }
+
+        return [...old, message].sort(
+          (a, b) =>
+            new Date(a.whatsappTimestamp || a.createdAt).getTime() -
+            new Date(b.whatsappTimestamp || b.createdAt).getTime()
+        );
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ['messages', 'unassumed', 'count'],
       });
     };
 
@@ -97,7 +135,7 @@ export const useMessagesSocket = (patientId?: string) => {
     socket.on('message_updated', handleMessageUpdate);
     socket.on('message_sent', handleMessageSent);
 
-    // Cleanup: remover listeners e cancelar inscrição
+    // Cleanup: remover listeners e cancelar inscricao
     return () => {
       socket.off('new_message', handleNewMessage);
       socket.off('message_updated', handleMessageUpdate);

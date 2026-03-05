@@ -113,7 +113,9 @@ export default function ChatPage() {
 
   // Obter conversationId da primeira mensagem (se existir)
   const conversationId =
-    messages && messages.length > 0 ? messages[0].conversationId : undefined;
+    messages && messages.length > 0
+      ? messages[messages.length - 1].conversationId
+      : undefined;
 
   // Encontrar mensagem assumida mais recente para mostrar quem assumiu
   const assumedMessage = messages
@@ -289,7 +291,9 @@ export default function ChatPage() {
                     Pacientes
                     {unassumedCount && unassumedCount.count > 0 ? (
                       <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
-                        {unassumedCount.count > 99 ? '99+' : unassumedCount.count}
+                        {unassumedCount.count > 99
+                          ? '99+'
+                          : unassumedCount.count}
                       </span>
                     ) : null}
                   </button>
@@ -304,7 +308,9 @@ export default function ChatPage() {
                     Alertas
                     {criticalAlertsCount && criticalAlertsCount.count > 0 ? (
                       <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
-                        {criticalAlertsCount.count > 99 ? '99+' : criticalAlertsCount.count}
+                        {criticalAlertsCount.count > 99
+                          ? '99+'
+                          : criticalAlertsCount.count}
                       </span>
                     ) : null}
                   </button>

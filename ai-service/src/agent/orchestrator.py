@@ -5,6 +5,7 @@ Receives message + context → returns response + actions.
 """
 
 from typing import Dict, List, Optional, Any
+from datetime import datetime, timezone
 import logging
 
 from .llm_provider import llm_provider
@@ -168,7 +169,7 @@ class AgentOrchestrator:
 
             # Clear active questionnaire from state
             new_state.pop("active_questionnaire", None)
-            new_state["last_questionnaire_at"] = None  # Will be set by backend
+            new_state["last_questionnaire_at"] = datetime.now(timezone.utc).isoformat()
             new_state[f"last_{q_type.lower()}_scores"] = scores.get("items") or scores.get("grades")
 
             # Generate alerts for high scores
@@ -409,7 +410,7 @@ class AgentOrchestrator:
                 "requiresApproval": False,
             })
             decisions.append({
-                "decisionType": "APPLY_QUESTIONNAIRE",
+                "decisionType": "QUESTIONNAIRE_STARTED",
                 "reasoning": questionnaire_to_start.get("reason", f"Questionário {q_type} agendado"),
                 "confidence": 0.9,
                 "inputData": {},
