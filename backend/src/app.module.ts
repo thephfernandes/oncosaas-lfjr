@@ -27,6 +27,11 @@ import { AuditLogInterceptor } from './audit-log/audit-log.interceptor';
 import { ScheduledActionsModule } from './scheduled-actions/scheduled-actions.module';
 import { ComplementaryExamsModule } from './complementary-exams/complementary-exams.module';
 import { QuestionnaireResponsesModule } from './questionnaire-responses/questionnaire-responses.module';
+import { MedicationsModule } from './medications/medications.module';
+import { ComorbiditiesModule } from './comorbidities/comorbidities.module';
+import { PerformanceStatusModule } from './performance-status/performance-status.module';
+import { EmergencyReferencesModule } from './emergency-references/emergency-references.module';
+import { DispositionFeedbackModule } from './disposition-feedback/disposition-feedback.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { ThrottleGuard } from './common/guards/throttle.guard';
 
@@ -60,6 +65,11 @@ import { ThrottleGuard } from './common/guards/throttle.guard';
     ScheduledActionsModule,
     ComplementaryExamsModule,
     QuestionnaireResponsesModule,
+    MedicationsModule,
+    ComorbiditiesModule,
+    PerformanceStatusModule,
+    EmergencyReferencesModule,
+    DispositionFeedbackModule,
   ],
   controllers: [AppController],
   providers: [

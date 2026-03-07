@@ -60,6 +60,10 @@ export class CreateTreatmentDto {
   @IsOptional()
   lastCycleDate?: string;
 
+  @IsDateString()
+  @IsOptional()
+  lastApplicationDate?: string; // Data real da última infusão/aplicação (D0 para cálculo D+N)
+
   @IsInt()
   @IsOptional()
   @Min(1)

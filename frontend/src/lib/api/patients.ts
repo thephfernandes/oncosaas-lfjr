@@ -104,10 +104,148 @@ export interface PatientJourney {
   updatedAt: string;
 }
 
-export interface Comorbidity {
+// ─── Enums clínicos ────────────────────────────────────────────────────────────
+
+export type MedicationCategory =
+  | 'ANTICOAGULANT'
+  | 'ANTIPLATELET'
+  | 'CORTICOSTEROID'
+  | 'IMMUNOSUPPRESSANT'
+  | 'NSAID'
+  | 'OPIOID_ANALGESIC'
+  | 'NON_OPIOID_ANALGESIC'
+  | 'ANTIEMETIC'
+  | 'ANTIBIOTIC'
+  | 'ANTIFUNGAL'
+  | 'ANTIVIRAL'
+  | 'ANTIHYPERTENSIVE'
+  | 'ANTIDIABETIC'
+  | 'BISPHOSPHONATE'
+  | 'GROWTH_FACTOR'
+  | 'PROTON_PUMP_INHIBITOR'
+  | 'LAXATIVE'
+  | 'OTHER';
+
+export type ComorbidityType =
+  | 'DIABETES_TYPE_1'
+  | 'DIABETES_TYPE_2'
+  | 'HYPERTENSION'
+  | 'HEART_FAILURE'
+  | 'CORONARY_ARTERY_DISEASE'
+  | 'ATRIAL_FIBRILLATION'
+  | 'COPD'
+  | 'ASTHMA'
+  | 'CHRONIC_KIDNEY_DISEASE'
+  | 'LIVER_CIRRHOSIS'
+  | 'HIV_AIDS'
+  | 'AUTOIMMUNE_DISEASE'
+  | 'STROKE_HISTORY'
+  | 'DEEP_VEIN_THROMBOSIS'
+  | 'PULMONARY_EMBOLISM'
+  | 'PERIPHERAL_NEUROPATHY'
+  | 'OBESITY'
+  | 'DEPRESSION'
+  | 'ANXIETY_DISORDER'
+  | 'OTHER';
+
+export type ComorbiditySeverity = 'MILD' | 'MODERATE' | 'SEVERE';
+
+export type ClinicalDisposition =
+  | 'REMOTE_NURSING'
+  | 'SCHEDULED_CONSULT'
+  | 'ADVANCE_CONSULT'
+  | 'ER_DAYS'
+  | 'ER_IMMEDIATE';
+
+// ─── Modelos estruturados ───────────────────────────────────────────────────────
+
+export interface Medication {
+  id: string;
+  patientId: string;
+  tenantId: string;
   name: string;
-  severity: string;
+  dosage: string | null;
+  frequency: string | null;
+  indication: string | null;
+  route: string | null;
+  category: MedicationCategory;
+  isAnticoagulant: boolean;
+  isAntiplatelet: boolean;
+  isCorticosteroid: boolean;
+  isImmunosuppressant: boolean;
+  isOpioid: boolean;
+  isNSAID: boolean;
+  isGrowthFactor: boolean;
+  isActive: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateMedicationDto {
+  name: string;
+  dosage?: string;
+  frequency?: string;
+  indication?: string;
+  route?: string;
+  category?: MedicationCategory;
+  isActive?: boolean;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+}
+
+export interface Comorbidity {
+  id: string;
+  patientId: string;
+  tenantId: string;
+  name: string;
+  type: ComorbidityType;
+  severity: ComorbiditySeverity;
   controlled: boolean;
+  increasesSepsisRisk: boolean;
+  increasesBleedingRisk: boolean;
+  increasesThrombosisRisk: boolean;
+  affectsRenalClearance: boolean;
+  affectsPulmonaryReserve: boolean;
+  diagnosedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateComorbidityDto {
+  name: string;
+  type?: ComorbidityType;
+  severity?: ComorbiditySeverity;
+  controlled?: boolean;
+  diagnosedAt?: string;
+  notes?: string;
+}
+
+export interface PerformanceStatusEntry {
+  id: string;
+  patientId: string;
+  ecogScore: number;
+  assessedAt: string;
+  assessedBy: string | null;
+  source: string;
+  notes: string | null;
+}
+
+export interface EmergencyReference {
+  id: string;
+  tenantId: string;
+  hospitalName: string;
+  address: string | null;
+  city: string | null;
+  phone: string | null;
+  distanceKm: number | null;
+  hasOncologyER: boolean;
+  hasHematologyER: boolean;
+  notes: string | null;
 }
 
 export interface FamilyHistory {
@@ -116,6 +254,7 @@ export interface FamilyHistory {
   ageAtDiagnosis?: number;
 }
 
+// CurrentMedication mantido apenas para compatibilidade com seed data legado
 export interface CurrentMedication {
   name: string;
   dosage?: string;
@@ -132,19 +271,24 @@ export interface Patient {
   gender: 'male' | 'female' | 'other';
   phone: string;
   email: string | null;
-  cancerType: string | null; // Pode ser null para pacientes em rastreio
+  cancerType: string | null;
   stage: string | null;
   diagnosisDate: string | null;
   performanceStatus: number | null;
-  // Comorbidades e Fatores de Risco
-  comorbidities: Comorbidity[] | null;
-  currentMedications: CurrentMedication[] | null;
+  // Fatores de risco
   smokingHistory: string | null;
   alcoholHistory: string | null;
   occupationalExposure: string | null;
   familyHistory: FamilyHistory[] | null;
-  currentStage: string; // SCREENING, NAVIGATION, DIAGNOSIS, TREATMENT, FOLLOW_UP
+  // Disposição clínica (output do algoritmo de risco)
+  clinicalDisposition: ClinicalDisposition | null;
+  clinicalDispositionAt: string | null;
+  clinicalDispositionReason: string | null;
+  preferredEmergencyHospital: string | null;
+  // Jornada
+  currentStage: string;
   currentSpecialty: string | null;
+  // Priorização IA
   priorityScore: number;
   priorityCategory: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   priorityReason: string | null;
@@ -155,14 +299,16 @@ export interface Patient {
   lastInteraction: string | null;
   createdAt: string;
   updatedAt: string;
-  journey?: PatientJourney | null; // Jornada do paciente (rastreio, diagnóstico, tratamento)
-  cancerDiagnoses?: CancerDiagnosis[]; // Múltiplos diagnósticos de câncer
+  journey?: PatientJourney | null;
+  cancerDiagnoses?: CancerDiagnosis[];
+  medications?: Medication[];
+  comorbidities?: Comorbidity[];
+  performanceStatusHistory?: PerformanceStatusEntry[];
   _count?: {
     messages: number;
     alerts: number;
     observations: number;
   };
-  /** Contagem de alertas PENDING (alinhado com aba Alertas) */
   pendingAlertsCount?: number;
 }
 
@@ -223,14 +369,31 @@ export type ComplementaryExamType =
   | 'IMMUNOHISTOCHEMICAL'
   | 'IMAGING';
 
+export type LabCategory =
+  | 'CBC'
+  | 'METABOLIC'
+  | 'COAGULATION'
+  | 'LIVER_FUNCTION'
+  | 'RENAL_FUNCTION'
+  | 'THYROID'
+  | 'TUMOR_MARKERS'
+  | 'INFLAMMATORY'
+  | 'CULTURES'
+  | 'IMAGING_REPORT'
+  | 'PATHOLOGY_REPORT'
+  | 'OTHER';
+
 export interface ComplementaryExamResult {
   id: string;
   performedAt: string;
+  collectionId: string | null;
   valueNumeric: number | null;
   valueText: string | null;
   unit: string | null;
   referenceRange: string | null;
   isAbnormal: boolean | null;
+  criticalHigh: boolean | null;
+  criticalLow: boolean | null;
   report: string | null;
 }
 
@@ -241,6 +404,9 @@ export interface ComplementaryExam {
   type: ComplementaryExamType;
   name: string;
   code: string | null;
+  loincCode: string | null;
+  labCategory: LabCategory | null;
+  isCriticalMetric: boolean;
   unit: string | null;
   referenceRange: string | null;
   results: ComplementaryExamResult[];
@@ -479,5 +645,111 @@ export const patientsApi = {
     await apiClient.delete(
       `/patients/${patientId}/complementary-exams/${examId}/results/${resultId}`
     );
+  },
+
+  // ── Medications ────────────────────────────────────────────────────────────
+
+  async getMedications(patientId: string): Promise<Medication[]> {
+    return apiClient.get<Medication[]>(`/patients/${patientId}/medications`);
+  },
+
+  async createMedication(
+    patientId: string,
+    data: CreateMedicationDto
+  ): Promise<Medication> {
+    return apiClient.post<Medication>(
+      `/patients/${patientId}/medications`,
+      data
+    );
+  },
+
+  async updateMedication(
+    patientId: string,
+    medicationId: string,
+    data: Partial<CreateMedicationDto>
+  ): Promise<Medication> {
+    return apiClient.patch<Medication>(
+      `/patients/${patientId}/medications/${medicationId}`,
+      data
+    );
+  },
+
+  async deleteMedication(
+    patientId: string,
+    medicationId: string
+  ): Promise<void> {
+    await apiClient.delete(
+      `/patients/${patientId}/medications/${medicationId}`
+    );
+  },
+
+  // ── Comorbidities ──────────────────────────────────────────────────────────
+
+  async getComorbidities(patientId: string): Promise<Comorbidity[]> {
+    return apiClient.get<Comorbidity[]>(
+      `/patients/${patientId}/comorbidities`
+    );
+  },
+
+  async createComorbidity(
+    patientId: string,
+    data: CreateComorbidityDto
+  ): Promise<Comorbidity> {
+    return apiClient.post<Comorbidity>(
+      `/patients/${patientId}/comorbidities`,
+      data
+    );
+  },
+
+  async updateComorbidity(
+    patientId: string,
+    comorbidityId: string,
+    data: Partial<CreateComorbidityDto>
+  ): Promise<Comorbidity> {
+    return apiClient.patch<Comorbidity>(
+      `/patients/${patientId}/comorbidities/${comorbidityId}`,
+      data
+    );
+  },
+
+  async deleteComorbidity(
+    patientId: string,
+    comorbidityId: string
+  ): Promise<void> {
+    await apiClient.delete(
+      `/patients/${patientId}/comorbidities/${comorbidityId}`
+    );
+  },
+
+  // ── Performance Status (ECOG History) ─────────────────────────────────────
+
+  async getPerformanceStatusHistory(
+    patientId: string
+  ): Promise<PerformanceStatusEntry[]> {
+    return apiClient.get<PerformanceStatusEntry[]>(
+      `/patients/${patientId}/performance-status`
+    );
+  },
+
+  async addPerformanceStatus(
+    patientId: string,
+    data: { ecogScore: number; assessedAt?: string; notes?: string; source?: string }
+  ): Promise<PerformanceStatusEntry> {
+    return apiClient.post<PerformanceStatusEntry>(
+      `/patients/${patientId}/performance-status`,
+      data
+    );
+  },
+
+  // ── Emergency Reference ────────────────────────────────────────────────────
+
+  async getEmergencyReference(): Promise<EmergencyReference | null> {
+    return apiClient.get<EmergencyReference | null>('/emergency-reference');
+  },
+
+  async upsertEmergencyReference(
+    data: Partial<EmergencyReference>
+  ): Promise<EmergencyReference> {
+    return apiClient.put<EmergencyReference>('/emergency-reference', data);
   },
 };

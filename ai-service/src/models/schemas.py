@@ -73,6 +73,15 @@ class AgentProcessResponse(BaseModel):
         default_factory=list, description="Actions to execute"
     )
     symptom_analysis: Optional[SymptomAnalysisResult] = None
+    clinical_disposition: Optional[str] = Field(
+        None, description="Clinical disposition from rules engine (REMOTE_NURSING→ER_IMMEDIATE)"
+    )
+    clinical_disposition_reason: Optional[str] = Field(
+        None, description="Clinical reasoning behind the disposition"
+    )
+    clinical_rules_findings: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Individual clinical rules that fired"
+    )
     new_state: Dict[str, Any] = Field(
         default_factory=dict, description="Updated agent state"
     )

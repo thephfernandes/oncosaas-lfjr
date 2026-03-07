@@ -19,6 +19,8 @@ from .prompts.system_prompt import build_system_prompt
 from .prompts.action_tools import AGENT_ACTION_TOOLS
 from .prompts.orchestrator_prompt import build_orchestrator_prompt, ORCHESTRATOR_ROUTING_TOOLS
 from .subagents import SymptomAgent, NavigationAgent, QuestionnaireAgent, EmotionalSupportAgent
+from .clinical_rules import clinical_rules_engine, ER_IMMEDIATE, ER_DAYS
+from .clinical_scores import clinical_scores
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +103,20 @@ class AgentOrchestrator:
             use_llm=use_llm_analysis,
             llm_config=agent_config,
         )
+
+        # 2.5. Layer 1: deterministic clinical rules (pre-ML, cannot be overridden)
+        clinical_rules_result = clinical_rules_engine.evaluate(
+            symptom_analysis=symptom_analysis,
+            clinical_context=clinical_context,
+        )
+        if clinical_rules_result.is_immediate:
+            logger.warning(
+                f"ClinicalRules ER_IMMEDIATE: {clinical_rules_result.reasoning[:120]}"
+            )
+        elif clinical_rules_result.is_er:
+            logger.info(
+                f"ClinicalRules ER_DAYS: {clinical_rules_result.reasoning[:120]}"
+            )
 
         # 3. Evaluate protocol rules (check-ins, questionnaire triggers, critical symptoms)
         protocol_actions = protocol_engine.evaluate(
@@ -197,6 +213,7 @@ class AgentOrchestrator:
             clinical_context=clinical_context,
             protocol_actions=protocol_actions,
             questionnaire_to_start=questionnaire_to_start,
+            clinical_rules_result=clinical_rules_result,
         )
         actions = self._merge_actions(llm_actions, rule_actions)
         decisions = llm_decisions + rule_decisions
@@ -213,6 +230,12 @@ class AgentOrchestrator:
             "response": response_text,
             "actions": actions,
             "symptom_analysis": symptom_analysis,
+            "clinical_disposition": clinical_rules_result.disposition,
+            "clinical_disposition_reason": clinical_rules_result.reasoning,
+            "clinical_rules_findings": [
+                {"rule_id": f.rule_id, "disposition": f.disposition, "reason": f.reason}
+                for f in clinical_rules_result.findings
+            ],
             "new_state": new_state,
             "decisions": decisions,
             "intent": intent_result,
@@ -861,6 +884,7 @@ class AgentOrchestrator:
         clinical_context: Dict[str, Any],
         protocol_actions: Optional[List[Dict[str, Any]]] = None,
         questionnaire_to_start: Optional[Dict[str, Any]] = None,
+        clinical_rules_result=None,
     ) -> tuple:
         """
         Compile actions and decisions based on analysis results.
@@ -992,6 +1016,58 @@ class AgentOrchestrator:
                             "message": alert_message,
                         },
                     },
+                    "requiresApproval": False,
+                })
+
+        # Clinical rules: persist disposition to backend and escalate when needed
+        if clinical_rules_result and clinical_rules_result.disposition != "REMOTE_NURSING":
+            disposition = clinical_rules_result.disposition
+            reasoning = clinical_rules_result.reasoning
+
+            actions.append({
+                "type": "UPDATE_CLINICAL_DISPOSITION",
+                "payload": {
+                    "disposition": disposition,
+                    "reason": reasoning,
+                },
+                "requiresApproval": False,
+                "source": "clinical_rules_engine",
+            })
+            decisions.append({
+                "decisionType": "CLINICAL_DISPOSITION_SET",
+                "reasoning": reasoning,
+                "confidence": clinical_rules_result.confidence,
+                "inputData": {
+                    "rules_fired": [f.rule_id for f in clinical_rules_result.findings],
+                    "disposition": disposition,
+                },
+                "outputAction": {
+                    "type": "UPDATE_CLINICAL_DISPOSITION",
+                    "payload": {"disposition": disposition, "reason": reasoning},
+                },
+                "requiresApproval": False,
+            })
+
+            # Auto-create alert for ER-level dispositions not yet covered by symptom analysis
+            if clinical_rules_result.is_er and not requires_escalation:
+                is_critical = disposition == ER_IMMEDIATE
+                alert_payload = {
+                    "type": "CLINICAL_RULES_ALERT",
+                    "severity": "CRITICAL" if is_critical else "HIGH",
+                    "message": f"Disposição clínica: {disposition}. {reasoning[:200]}",
+                }
+                actions.append({
+                    "type": "CREATE_HIGH_CRITICAL_ALERT",
+                    "payload": alert_payload,
+                    "requiresApproval": False,
+                    "source": "clinical_rules_engine",
+                })
+                decisions.append({
+                    "decisionType": "CRITICAL_ESCALATION" if is_critical else "ALERT_CREATED",
+                    "reasoning": reasoning,
+                    "confidence": clinical_rules_result.confidence,
+                    "inputData": {"disposition": disposition},
+                    "outputAction": {"type": "CREATE_HIGH_CRITICAL_ALERT", "payload": alert_payload},
                     "requiresApproval": False,
                 })
 

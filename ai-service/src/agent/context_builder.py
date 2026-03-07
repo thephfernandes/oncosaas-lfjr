@@ -64,6 +64,14 @@ class ClinicalContextBuilder:
         if treatments:
             sections.append(self._format_treatments(treatments))
 
+        medications = clinical_context.get("medications", [])
+        if medications:
+            sections.append(self._format_medications(medications))
+
+        comorbidities = clinical_context.get("comorbidities", [])
+        if comorbidities:
+            sections.append(self._format_comorbidities(comorbidities))
+
         nav_steps = clinical_context.get("navigationSteps", [])
         if nav_steps:
             if symptom_topic_active:
@@ -224,17 +232,22 @@ class ClinicalContextBuilder:
         return "\n".join(lines)
 
     def _format_treatments(self, treatments: List[Dict]) -> str:
-        """Format active treatments."""
+        """Format active treatments — includes D+N calculation for neutropenia risk."""
+        from datetime import datetime, timezone
+
         lines = ["### Tratamentos Ativos"]
 
         for tx in treatments[:5]:
             name = tx.get("treatmentName") or tx.get("treatmentType", "Não especificado")
             status = tx.get("status", "")
             line_num = tx.get("line")
+            intent = tx.get("intent", "")
 
             detail = f"- **{name}**"
             if line_num:
                 detail += f" ({line_num}ª linha)"
+            if intent == "PALLIATIVE":
+                detail += " [PALIATIVO]"
             if status:
                 detail += f" - {status}"
             lines.append(detail)
@@ -246,8 +259,31 @@ class ClinicalContextBuilder:
             elif cycle:
                 lines.append(f"  Ciclo atual: {cycle}")
 
-            if tx.get("lastCycleDate"):
-                lines.append(f"  Último ciclo: {tx['lastCycleDate']}")
+            # D+N calculation — critical for neutropenic nadir window (D7-D14)
+            last_app = tx.get("lastApplicationDate") or tx.get("lastCycleDate")
+            if last_app:
+                try:
+                    app_date = datetime.fromisoformat(
+                        last_app.replace("Z", "+00:00")
+                    ).replace(tzinfo=timezone.utc)
+                    now = datetime.now(tz=timezone.utc)
+                    days_post = (now - app_date).days
+                    lines.append(f"  Última aplicação: {last_app[:10]} (D+{days_post})")
+
+                    treatment_type = tx.get("treatmentType", "")
+                    if treatment_type in ("CHEMOTHERAPY", "COMBINED"):
+                        if 7 <= days_post <= 14:
+                            lines.append(
+                                "  ⚠️ **NADIR NEUTROPÊNICO ATIVO (D7-D14)** — "
+                                "febre neste período = emergência hematológica"
+                            )
+                        elif days_post <= 21:
+                            lines.append(
+                                f"  ⚡ Janela de risco pós-quimio: D+{days_post} "
+                                "(risco neutropênico até D+21)"
+                            )
+                except Exception:
+                    lines.append(f"  Última aplicação: {last_app[:10]}")
 
             toxicities = tx.get("toxicities")
             if toxicities and isinstance(toxicities, list):
@@ -356,6 +392,109 @@ class ClinicalContextBuilder:
                         f"  - {symptom.get('keyword', '?')} "
                         f"[{symptom.get('severity', '?')}] → {symptom.get('action', '?')}"
                     )
+
+        return "\n".join(lines)
+
+    def _format_medications(self, medications: List[Dict]) -> str:
+        """Format structured medications with clinical risk flags."""
+        lines = ["### Medicamentos em Uso"]
+
+        risk_meds = []
+        regular_meds = []
+
+        for med in medications:
+            if not med.get("isActive", True):
+                continue
+            is_risky = any([
+                med.get("isAnticoagulant"),
+                med.get("isAntiplatelet"),
+                med.get("isCorticosteroid"),
+                med.get("isImmunosuppressant"),
+                med.get("isOpioid"),
+                med.get("isNSAID"),
+            ])
+            if is_risky:
+                risk_meds.append(med)
+            else:
+                regular_meds.append(med)
+
+        if risk_meds:
+            lines.append("**⚠️ Com flags de risco clínico:**")
+            for med in risk_meds[:8]:
+                flags = []
+                if med.get("isAnticoagulant") or med.get("isAntiplatelet"):
+                    flags.append("ANTICOAGULANTE/ANTIPLAQUETÁRIO — qualquer sangramento é emergência")
+                if med.get("isCorticosteroid"):
+                    flags.append("CORTICOIDE — pode mascarar febre e infecção")
+                if med.get("isImmunosuppressant"):
+                    flags.append("IMUNOSSUPRESSOR — risco infeccioso aumentado")
+                if med.get("isOpioid"):
+                    flags.append("OPIOIDE — avaliar sedação e constipação")
+                if med.get("isNSAID"):
+                    flags.append("AINE — risco GI e renal")
+                dosage = f" {med['dosage']}" if med.get("dosage") else ""
+                freq = f" {med['frequency']}" if med.get("frequency") else ""
+                lines.append(f"  - **{med['name']}**{dosage}{freq} → {'; '.join(flags)}")
+
+        if regular_meds:
+            lines.append("**Uso contínuo (sem flag de risco):**")
+            med_list = []
+            for med in regular_meds[:10]:
+                parts = [med["name"]]
+                if med.get("dosage"):
+                    parts.append(med["dosage"])
+                if med.get("frequency"):
+                    parts.append(med["frequency"])
+                med_list.append(" ".join(parts))
+            lines.append(f"  {', '.join(med_list)}")
+
+        return "\n".join(lines)
+
+    def _format_comorbidities(self, comorbidities: List[Dict]) -> str:
+        """Format structured comorbidities with risk flags."""
+        lines = ["### Comorbidades"]
+
+        high_risk = []
+        regular = []
+
+        for c in comorbidities:
+            has_risk = any([
+                c.get("increasesSepsisRisk"),
+                c.get("increasesBleedingRisk"),
+                c.get("increasesThrombosisRisk"),
+                c.get("affectsRenalClearance"),
+                c.get("affectsPulmonaryReserve"),
+            ])
+            if has_risk:
+                high_risk.append(c)
+            else:
+                regular.append(c)
+
+        if high_risk:
+            lines.append("**Com impacto no risco clínico:**")
+            for c in high_risk:
+                flags = []
+                if c.get("increasesSepsisRisk"):
+                    flags.append("↑ risco de sepse")
+                if c.get("increasesThrombosisRisk"):
+                    flags.append("↑ risco trombótico")
+                if c.get("affectsRenalClearance"):
+                    flags.append("↓ clearance renal")
+                if c.get("affectsPulmonaryReserve"):
+                    flags.append("↓ reserva pulmonar")
+                if c.get("increasesBleedingRisk"):
+                    flags.append("↑ risco de sangramento")
+                severity_pt = {"MILD": "Leve", "MODERATE": "Moderada", "SEVERE": "Grave"}.get(
+                    c.get("severity", ""), c.get("severity", "")
+                )
+                controlled = "controlada" if c.get("controlled") else "não controlada"
+                lines.append(
+                    f"  - **{c['name']}** ({severity_pt}, {controlled}) → {'; '.join(flags)}"
+                )
+
+        if regular:
+            names = [c["name"] for c in regular[:8]]
+            lines.append(f"**Outras:** {', '.join(names)}")
 
         return "\n".join(lines)
 

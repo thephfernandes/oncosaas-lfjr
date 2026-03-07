@@ -129,13 +129,10 @@ export class PatientsService {
         tenantId, // SEMPRE incluir tenantId para isolamento
       },
       include: {
-        journey: true, // Incluir jornada (rastreio, diagnóstico, tratamento)
+        journey: true,
         cancerDiagnoses: {
-          where: { isActive: true, primaryDiagnosisId: null }, // Apenas primários ativos (metastáticos vêm aninhados)
-          orderBy: [
-            { isPrimary: 'desc' },
-            { diagnosisDate: 'desc' },
-          ],
+          where: { isActive: true, primaryDiagnosisId: null },
+          orderBy: [{ isPrimary: 'desc' }, { diagnosisDate: 'desc' }],
           include: {
             metastaticDiagnoses: {
               where: { isActive: true },
@@ -143,14 +140,23 @@ export class PatientsService {
             },
           },
         },
+        medications: {
+          where: { isActive: true },
+          orderBy: { name: 'asc' },
+        },
+        comorbidities: {
+          orderBy: [{ severity: 'desc' }, { name: 'asc' }],
+        },
+        performanceStatusHistory: {
+          orderBy: { assessedAt: 'desc' },
+          take: 5, // Últimas 5 avaliações para calcular delta
+        },
         messages: {
           orderBy: { createdAt: 'desc' },
-          take: 10, // Últimas 10 mensagens
+          take: 10,
         },
         alerts: {
-          where: {
-            status: { not: 'RESOLVED' },
-          },
+          where: { status: { not: 'RESOLVED' } },
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -196,6 +202,17 @@ export class PatientsService {
                 orderBy: { diagnosisDate: 'desc' },
               },
             },
+          },
+          medications: {
+            where: { isActive: true },
+            orderBy: { name: 'asc' },
+          },
+          comorbidities: {
+            orderBy: [{ severity: 'desc' }, { name: 'asc' }],
+          },
+          performanceStatusHistory: {
+            orderBy: { assessedAt: 'desc' },
+            take: 5,
           },
           messages: {
             orderBy: { createdAt: 'desc' },
@@ -266,8 +283,6 @@ export class PatientsService {
           : undefined,
         performanceStatus: patientData.performanceStatus,
         currentStage: patientData.currentStage as JourneyStage,
-        comorbidities: patientData.comorbidities as any,
-        currentMedications: patientData.currentMedications as any,
         smokingHistory: patientData.smokingHistory,
         alcoholHistory: patientData.alcoholHistory,
         occupationalExposure: patientData.occupationalExposure,
@@ -378,12 +393,6 @@ export class PatientsService {
     if (updatePatientDto.currentStage !== undefined) {
       updateData.currentStage = updatePatientDto.currentStage as JourneyStage;
     }
-    if (updatePatientDto.comorbidities !== undefined) {
-      updateData.comorbidities = updatePatientDto.comorbidities as any;
-    }
-    if (updatePatientDto.currentMedications !== undefined) {
-      updateData.currentMedications = updatePatientDto.currentMedications as any;
-    }
     if (updatePatientDto.smokingHistory !== undefined) {
       updateData.smokingHistory = updatePatientDto.smokingHistory;
     }
@@ -398,6 +407,18 @@ export class PatientsService {
     }
     if (updatePatientDto.ehrId !== undefined) {
       updateData.ehrPatientId = updatePatientDto.ehrId;
+    }
+    if ((updatePatientDto as any).clinicalDisposition !== undefined) {
+      updateData.clinicalDisposition = (updatePatientDto as any).clinicalDisposition;
+    }
+    if ((updatePatientDto as any).clinicalDispositionAt !== undefined) {
+      updateData.clinicalDispositionAt = new Date((updatePatientDto as any).clinicalDispositionAt);
+    }
+    if ((updatePatientDto as any).clinicalDispositionReason !== undefined) {
+      updateData.clinicalDispositionReason = (updatePatientDto as any).clinicalDispositionReason;
+    }
+    if ((updatePatientDto as any).preferredEmergencyHospital !== undefined) {
+      updateData.preferredEmergencyHospital = (updatePatientDto as any).preferredEmergencyHospital;
     }
 
     const updatedPatient = await this.prisma.patient.update({

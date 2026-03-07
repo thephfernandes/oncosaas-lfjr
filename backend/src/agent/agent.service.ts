@@ -223,6 +223,9 @@ export class AgentService {
       recentAlerts,
       questionnaireResponses,
       observations,
+      medications,
+      comorbidities,
+      performanceStatusHistory,
     ] = await Promise.all([
       this.prisma.patient.findFirst({
         where: { id: patientId, tenantId },
@@ -265,6 +268,21 @@ export class AgentService {
         orderBy: { effectiveDateTime: 'desc' },
         take: 20,
       }),
+      this.prisma.medication.findMany({
+        where: { patientId, tenantId, isActive: true },
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+      }),
+      this.prisma.comorbidity.findMany({
+        where: { patientId, tenantId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+      this.prisma.performanceStatusHistory.findMany({
+        where: { patientId, tenantId },
+        orderBy: { assessedAt: 'desc' },
+        take: 5,
+      }),
     ]);
 
     const currentStage = patient?.currentStage || 'SCREENING';
@@ -282,6 +300,7 @@ export class AgentService {
         performanceStatus: patient?.performanceStatus || undefined,
         priorityScore: patient?.priorityScore || 0,
         priorityCategory: patient?.priorityCategory || 'LOW',
+        clinicalDisposition: patient?.clinicalDisposition || undefined,
       },
       diagnoses,
       treatments,
@@ -289,6 +308,9 @@ export class AgentService {
       recentAlerts,
       questionnaireResponses,
       observations,
+      medications: medications || [],
+      comorbidities: comorbidities || [],
+      performanceStatusHistory: performanceStatusHistory || [],
     };
   }
 
@@ -515,6 +537,9 @@ export class AgentService {
             tenantId
           );
           break;
+        case 'UPDATE_CLINICAL_DISPOSITION':
+          await this.updateClinicalDisposition(decision, tenantId, patientId);
+          break;
         case 'START_QUESTIONNAIRE':
         case 'CONTINUE_QUESTIONNAIRE':
         case 'PROTOCOL_ALERT':
@@ -528,6 +553,31 @@ export class AgentService {
     } catch (error) {
       this.logger.error(`Failed to execute decision ${actionType}`, error);
     }
+  }
+
+  private async updateClinicalDisposition(
+    decision: any,
+    tenantId: string,
+    patientId: string
+  ) {
+    const { disposition, reason } = decision.outputAction?.payload || {};
+    if (!disposition) {
+      this.logger.warn(`updateClinicalDisposition skipped: missing disposition`);
+      return;
+    }
+
+    this.logger.log(
+      `Updating clinical disposition: ${disposition} for patient ${patientId}`
+    );
+
+    await this.prisma.patient.update({
+      where: { id: patientId, tenantId },
+      data: {
+        clinicalDisposition: disposition,
+        clinicalDispositionAt: new Date(),
+        clinicalDispositionReason: reason || null,
+      },
+    });
   }
 
   private async recordSymptom(

@@ -15,9 +15,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateCancerDiagnosisDto } from './create-cancer-diagnosis.dto';
-import { ComorbidityDto } from './comorbidity.dto';
 import { FamilyHistoryDto } from './family-history.dto';
-import { CurrentMedicationDto } from './current-medication.dto';
 
 export enum Gender {
   MALE = 'male',
@@ -107,13 +105,7 @@ export class CreatePatientDto {
   @Type(() => CreateCancerDiagnosisDto)
   cancerDiagnoses?: CreateCancerDiagnosisDto[];
 
-  // Comorbidades e Fatores de Risco
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => ComorbidityDto)
-  comorbidities?: ComorbidityDto[];
-
+  // Fatores de Risco
   @IsString()
   @IsOptional()
   smokingHistory?: string; // nunca fumou, ex-fumante, fumante atual (anos-maço)
@@ -132,9 +124,6 @@ export class CreatePatientDto {
   @Type(() => FamilyHistoryDto)
   familyHistory?: FamilyHistoryDto[];
 
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => CurrentMedicationDto)
-  currentMedications?: CurrentMedicationDto[];
+  // Nota: comorbidades e medicamentos são gerenciados via endpoints dedicados
+  // POST /patients/:id/comorbidities e POST /patients/:id/medications
 }

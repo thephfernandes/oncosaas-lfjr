@@ -207,6 +207,88 @@ class BackendClient:
         return None
 
 
+    async def update_clinical_disposition(
+        self,
+        patient_id: str,
+        disposition: str,
+        reason: str,
+        tenant_id: Optional[str] = None,
+    ) -> Optional[Dict]:
+        """
+        Updates the patient's clinical disposition (output of the risk algorithm).
+
+        Args:
+            patient_id: Patient UUID
+            disposition: One of REMOTE_NURSING | SCHEDULED_CONSULT | ADVANCE_CONSULT |
+                         ER_DAYS | ER_IMMEDIATE
+            reason: Human-readable clinical reasoning
+            tenant_id: Tenant ID
+
+        Returns:
+            Updated patient data or None on error
+        """
+        if not self.service_token:
+            logger.error("BACKEND_SERVICE_TOKEN não configurado")
+            return None
+
+        from datetime import datetime, timezone
+
+        url = f"{self.base_url}/api/v1/patients/{patient_id}"
+        headers = {
+            "Authorization": f"Bearer {self.service_token}",
+            "Content-Type": "application/json",
+        }
+        if tenant_id:
+            headers["X-Tenant-Id"] = tenant_id
+
+        payload = {
+            "clinicalDisposition": disposition,
+            "clinicalDispositionAt": datetime.now(tz=timezone.utc).isoformat(),
+            "clinicalDispositionReason": reason,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.patch(url, json=payload, headers=headers)
+                response.raise_for_status()
+                return response.json()
+        except Exception as e:
+            logger.error(f"❌ Erro ao atualizar disposição clínica: {e}")
+            return None
+
+    async def record_performance_status(
+        self,
+        patient_id: str,
+        ecog_score: int,
+        tenant_id: Optional[str] = None,
+        notes: Optional[str] = None,
+    ) -> Optional[Dict]:
+        """Records an ECOG assessment from the agent."""
+        if not self.service_token:
+            return None
+
+        url = f"{self.base_url}/api/v1/patients/{patient_id}/performance-status"
+        headers = {
+            "Authorization": f"Bearer {self.service_token}",
+            "Content-Type": "application/json",
+        }
+        if tenant_id:
+            headers["X-Tenant-Id"] = tenant_id
+
+        payload = {"ecogScore": ecog_score, "source": "AGENT"}
+        if notes:
+            payload["notes"] = notes
+
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                response.raise_for_status()
+                return response.json()
+        except Exception as e:
+            logger.error(f"❌ Erro ao registrar ECOG: {e}")
+            return None
+
+
 # Instância global do cliente
 backend_client = BackendClient()
 

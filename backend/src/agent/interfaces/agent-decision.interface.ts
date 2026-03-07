@@ -46,6 +46,7 @@ export interface ClinicalContext {
     performanceStatus?: number;
     priorityScore: number;
     priorityCategory: string;
+    clinicalDisposition?: string;
   };
   diagnoses: any[];
   treatments: any[];
@@ -53,4 +54,7 @@ export interface ClinicalContext {
   recentAlerts: any[];
   questionnaireResponses: any[];
   observations: any[];
+  medications: any[];
+  comorbidities: any[];
+  performanceStatusHistory: any[];
 }

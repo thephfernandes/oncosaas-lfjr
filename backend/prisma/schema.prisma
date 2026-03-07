@@ -67,12 +67,18 @@ model Patient {
   performanceStatus Int? // ECOG (0-4) ou Karnofsky (0-100)
 
   // Comorbidades e Fatores de Risco
-  comorbidities        Json? // Array de objetos: { name: string, severity: string, controlled: boolean }
-  currentMedications   Json? // Array de objetos: { name: string, dosage?: string, frequency?: string, indication?: string }
   smokingHistory       String? // nunca fumou, ex-fumante, fumante atual (anos-maço)
   alcoholHistory       String? // nunca, ocasional, moderado, pesado (g/dia)
   occupationalExposure String? // Exposições ocupacionais conhecidas
   familyHistory        Json? // Array de objetos: { relationship: string, cancerType: string, ageAtDiagnosis: number }
+
+  // Disposição clínica calculada pelo algoritmo de risco
+  clinicalDisposition       ClinicalDisposition? // Disposição clínica atual (output do algoritmo)
+  clinicalDispositionAt     DateTime?            // Quando foi calculada
+  clinicalDispositionReason String?              // Raciocínio clínico (explicabilidade)
+
+  // Hospital de referência para emergência (override do tenant)
+  preferredEmergencyHospital String? // Nome do PS preferido (se diferente do padrão do tenant)
 
   // Jornada oncológica
   currentStage     JourneyStage @default(SCREENING)
@@ -106,7 +112,11 @@ model Patient {
   internalNotes          InternalNote[]
   interventions          Intervention[]
   conversations          Conversation[] // Conversas do agente IA
-  complementaryExams    ComplementaryExam[] // Exames complementares (lab, anatomo, imuno, imagem)
+  complementaryExams        ComplementaryExam[]        // Exames complementares (lab, anatomo, imuno, imagem)
+  medications               Medication[]               // Medicamentos em uso (estruturado)
+  comorbidities             Comorbidity[]              // Comorbidades (estruturado)
+  performanceStatusHistory  PerformanceStatusHistory[] // Histórico ECOG para cálculo de delta
+  dispositionFeedback       ClinicalDispositionFeedback[] // Correções de disposição para retraining
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -362,10 +372,11 @@ model Treatment {
   intent           TreatmentIntent @default(CURATIVE) // Curativo ou paliativo
 
   // Datas
-  startDate        DateTime? // Data de início
-  plannedEndDate   DateTime? // Data prevista de término
-  actualEndDate    DateTime? // Data real de término
-  lastCycleDate    DateTime? // Data do último ciclo
+  startDate           DateTime? // Data de início
+  plannedEndDate      DateTime? // Data prevista de término
+  actualEndDate       DateTime? // Data real de término
+  lastCycleDate       DateTime? // Data do início do último ciclo
+  lastApplicationDate DateTime? // Data da última infusão/aplicação real (D0 para cálculo D+N)
 
   // Ciclos
   currentCycle     Int? // Ciclo atual
@@ -1106,10 +1117,13 @@ model ComplementaryExam {
   tenantId  String
   patientId String
   type      ComplementaryExamType
-  name      String   // Ex: "Hemograma", "Biópsia de mama"
-  code      String?  // Ex: "HEMO", "CK20"
-  unit      String?  // Ex: "g/dL", "mm"
-  referenceRange String? // Ex: "4.5-5.5"
+  name      String              // Ex: "Hemoglobina", "Neutrófilos (ANC)", "Creatinina"
+  code      String?             // Ex: "HGB", "ANC", "CREAT"
+  loincCode String?             // Código LOINC padronizado (ex: "718-7" para Hgb, "751-8" para Neutrófilos)
+  labCategory LabCategory?      // Categoria clínica para agrupamento e scoring de risco
+  isCriticalMetric Boolean @default(false) // True para métricas de monitoramento crítico (ANC, Hgb, Plaquetas, Creat...)
+  unit      String?             // Ex: "g/dL", "/mm³"
+  referenceRange String?        // Ex: "12.0-16.0", "1500-8000"
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patient  Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -1128,12 +1142,15 @@ model ComplementaryExamResult {
   id             String   @id @default(uuid())
   tenantId       String
   examId         String
-  performedAt    DateTime // Data da realização
+  performedAt    DateTime // Data da realização / coleta
+  collectionId   String?  // UUID para agrupar resultados da mesma coleta (mesmo sangue/exame)
   valueNumeric   Float?   // Valor numérico (para laboratorial/séries)
   valueText      String?  // Valor textual ou laudo (anatomo, imuno, imagem)
   unit           String?
   referenceRange String?
-  isAbnormal     Boolean? // Fora da referência
+  isAbnormal     Boolean? // Fora da faixa de referência
+  criticalHigh   Boolean? // Valor criticamente alto (acima do limite crítico superior)
+  criticalLow    Boolean? // Valor criticamente baixo (abaixo do limite crítico inferior)
   report         String?  // Laudo completo (anatomo, imagem)
 
   tenant Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1208,15 +1225,20 @@ model Tenant {
   whatsappConnections    WhatsAppConnection[]
   internalNotes          InternalNote[]
   interventions          Intervention[]
-  complementaryExams      ComplementaryExam[]
-  complementaryExamResults ComplementaryExamResult[]
-  fhirIntegrationConfig   FHIRIntegrationConfig?
+  complementaryExams        ComplementaryExam[]
+  complementaryExamResults  ComplementaryExamResult[]
+  fhirIntegrationConfig     FHIRIntegrationConfig?
+  medications               Medication[]
+  comorbidities             Comorbidity[]
+  performanceStatusHistory  PerformanceStatusHistory[]
+  emergencyReference        EmergencyReference?
   // Agente IA
   agentConfig            AgentConfig?
   conversations          Conversation[]
   agentDecisionLogs      AgentDecisionLog[]
-  scheduledActions       ScheduledAction[]
-  clinicalProtocols      ClinicalProtocol[]
+  scheduledActions            ScheduledAction[]
+  clinicalProtocols           ClinicalProtocol[]
+  dispositionFeedback         ClinicalDispositionFeedback[]
 
   @@map("tenants")
 }
@@ -1241,6 +1263,249 @@ model FHIRIntegrationConfig {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("fhir_integration_configs")
+}
+
+// ============================================
+// MÓDULO DE RISCO CLÍNICO - FASE 0
+// ============================================
+
+// Disposição clínica — 5 níveis de ação definidos pelo algoritmo de risco
+enum ClinicalDisposition {
+  REMOTE_NURSING    // Manejo remoto pela enfermagem (orientação por WhatsApp/telefone)
+  SCHEDULED_CONSULT // Consulta ambulatorial na data já agendada
+  ADVANCE_CONSULT   // Antecipar consulta (contato para reagendar em 24-72h)
+  ER_DAYS           // Ir ao pronto-socorro nos próximos dias (24-48h)
+  ER_IMMEDIATE      // Ir ao pronto-socorro imediatamente
+}
+
+// Categoria clínica de medicamento (para flags de risco no algoritmo)
+enum MedicationCategory {
+  ANTICOAGULANT         // Anticoagulantes: warfarina, apixabana, rivaroxabana, heparina
+  ANTIPLATELET          // Antiplaquetários: AAS, clopidogrel, ticagrelor
+  CORTICOSTEROID        // Corticosteroides: prednisona, dexametasona, hidrocortisona, metilprednisolona
+  IMMUNOSUPPRESSANT     // Imunossupressores: tacrolimus, micofenolato, azatioprina, ciclosporina
+  NSAID                 // AINEs: ibuprofeno, diclofenaco, naproxeno, meloxicam
+  OPIOID_ANALGESIC      // Opioides: morfina, oxicodona, tramadol, codeína, fentanil
+  NON_OPIOID_ANALGESIC  // Analgésicos não-opioides: dipirona, paracetamol
+  ANTIEMETIC            // Antieméticos: ondansetrona, metoclopramida, domperidona
+  ANTIBIOTIC            // Antibióticos (uso profilático ou terapêutico)
+  ANTIFUNGAL            // Antifúngicos: fluconazol, voriconazol, anfotericina
+  ANTIVIRAL             // Antivirais: aciclovir, valaciclovir
+  ANTIHYPERTENSIVE      // Anti-hipertensivos
+  ANTIDIABETIC          // Antidiabéticos: metformina, insulina, glipizida
+  BISPHOSPHONATE        // Bisfosfonatos/RANK-L: ácido zoledrônico, denosumabe
+  GROWTH_FACTOR         // Fatores de crescimento: filgrastim (G-CSF), pegfilgrastim
+  PROTON_PUMP_INHIBITOR // Inibidores de bomba: omeprazol, pantoprazol, esomeprazol
+  LAXATIVE              // Laxantes: lactulose, bisacodil, macrogol
+  OTHER                 // Outros
+}
+
+// Tipo estruturado de comorbidade
+enum ComorbidityType {
+  DIABETES_TYPE_1
+  DIABETES_TYPE_2
+  HYPERTENSION
+  HEART_FAILURE
+  CORONARY_ARTERY_DISEASE
+  ATRIAL_FIBRILLATION
+  COPD                    // Doença Pulmonar Obstrutiva Crônica
+  ASTHMA
+  CHRONIC_KIDNEY_DISEASE
+  LIVER_CIRRHOSIS
+  HIV_AIDS
+  AUTOIMMUNE_DISEASE      // Lúpus, artrite reumatoide, esclerose múltipla, etc.
+  STROKE_HISTORY          // AVC prévio
+  DEEP_VEIN_THROMBOSIS    // TVP prévia
+  PULMONARY_EMBOLISM      // TEP prévio
+  PERIPHERAL_NEUROPATHY   // Neuropatia periférica pré-existente
+  OBESITY
+  DEPRESSION
+  ANXIETY_DISORDER
+  OTHER
+}
+
+enum ComorbiditySeverity {
+  MILD     // Leve — controlada sem impacto funcional significativo
+  MODERATE // Moderada — controlada mas com impacto funcional parcial
+  SEVERE   // Grave — difícil controle ou com impacto funcional importante
+}
+
+// Categoria de exame laboratorial para scoring de risco
+enum LabCategory {
+  CBC               // Hemograma completo (Hgb, Leucócitos, ANC, Plaquetas)
+  METABOLIC         // Eletrólitos, glicemia, magnésio
+  COAGULATION       // INR, TTPA, fibrinogênio, D-dímero
+  LIVER_FUNCTION    // TGO, TGP, FA, GGT, bilirrubinas, albumina
+  RENAL_FUNCTION    // Creatinina, ureia, ácido úrico, clearance
+  THYROID           // TSH, T4 livre
+  TUMOR_MARKERS     // CEA, CA 19-9, CA 125, CA 15-3, AFP, PSA, β-HCG
+  INFLAMMATORY      // PCR, VHS, ferritina, procalcitonina
+  CULTURES          // Hemocultura, urocultura, cultura de escarro
+  IMAGING_REPORT    // Laudos de imagem (TC, PET-CT, RM, RX)
+  PATHOLOGY_REPORT  // Laudos anatomopatológicos
+  OTHER
+}
+
+// Medicamento em uso (estruturado — substitui currentMedications Json)
+model Medication {
+  id        String @id @default(uuid())
+  tenantId  String
+  patientId String
+
+  name       String              // Nome do medicamento (genérico ou comercial)
+  dosage     String?             // Dose (ex: "50 mg", "10 UI")
+  frequency  String?             // Frequência (ex: "1x/dia", "12/12h", "Contínuo")
+  indication String?             // Indicação clínica ou CID (ex: "HAS", "DM2", "Dor oncológica")
+  route      String?             // Via: VO, IV, SC, IM, transdérmico
+
+  // Categoria clínica — usada pelo algoritmo de risco
+  category   MedicationCategory @default(OTHER)
+
+  // Flags de risco clínico (derivados da category, facilita queries)
+  isAnticoagulant    Boolean @default(false) // Risco de sangramento — baixa o limiar para qualquer sangramento
+  isAntiplatelet     Boolean @default(false) // Risco de sangramento aumentado
+  isCorticosteroid   Boolean @default(false) // Pode mascarar febre/infecção; eleva glicemia
+  isImmunosuppressant Boolean @default(false) // Aumenta risco infeccioso; pode mascarar sinais
+  isOpioid           Boolean @default(false) // Sedação; constipação; depressão respiratória em superdose
+  isNSAID            Boolean @default(false) // Risco de sangramento GI; nefrotoxicidade; interage com anticoag.
+  isGrowthFactor     Boolean @default(false) // G-CSF ativo → neutropenia em recuperação
+
+  isActive   Boolean  @default(true)
+  startDate  DateTime?
+  endDate    DateTime?
+  notes      String?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([category])
+  @@index([isActive])
+  @@index([isAnticoagulant])
+  @@index([isCorticosteroid])
+  @@index([isImmunosuppressant])
+  @@map("medications")
+}
+
+// Comorbidade estruturada (substitui comorbidities Json)
+model Comorbidity {
+  id        String @id @default(uuid())
+  tenantId  String
+  patientId String
+
+  name       String              // Nome legível (ex: "Diabetes Mellitus tipo 2")
+  type       ComorbidityType    @default(OTHER)
+  severity   ComorbiditySeverity @default(MODERATE)
+  controlled Boolean             @default(false) // Está sob controle clínico?
+
+  // Flags de risco clínico (usados diretamente pelo algoritmo)
+  increasesSepsisRisk     Boolean @default(false) // DM, IRC, IC: aumenta mortalidade em sepse
+  increasesBleedingRisk   Boolean @default(false) // Coagulopatias, trombocitopenia
+  increasesThrombosisRisk Boolean @default(false) // FA, TEP/TVP prévio
+  affectsRenalClearance   Boolean @default(false) // IRC: impacto na eliminação de fármacos
+  affectsPulmonaryReserve Boolean @default(false) // DPOC, asma: reduz reserva para dispneia
+
+  diagnosedAt DateTime?
+  notes       String?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([type])
+  @@index([increasesSepsisRisk])
+  @@map("comorbidities")
+}
+
+// Histórico de ECOG/Performance Status — permite calcular delta (piora funcional)
+model PerformanceStatusHistory {
+  id        String @id @default(uuid())
+  tenantId  String
+  patientId String
+
+  ecogScore  Int      // 0-4 (escala ECOG)
+  assessedAt DateTime @default(now()) // Data da avaliação
+  assessedBy String?  // userId do profissional que avaliou (null = auto-registrado pelo agente)
+  source     String   @default("MANUAL") // "MANUAL" | "AGENT" | "QUESTIONNAIRE"
+  notes      String?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([assessedAt])
+  @@map("performance_status_history")
+}
+
+// Hospital/PS de referência por tenant (padrão para todos os pacientes)
+// O paciente pode ter um override em Patient.preferredEmergencyHospital
+model EmergencyReference {
+  id       String @id @default(uuid())
+  tenantId String @unique // Um por tenant
+
+  hospitalName    String
+  address         String?
+  city            String?
+  phone           String?   // Telefone de triagem ou emergência
+  distanceKm      Float?    // Distância média da instituição (referência para calcular urgência logística)
+  hasOncologyER   Boolean   @default(false) // Possui pronto-socorro oncológico específico?
+  hasHematologyER Boolean   @default(false) // Possui suporte hematológico 24h?
+  notes           String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("emergency_references")
+}
+
+// ─── Phase 4: Real Data Pipeline ────────────────────────────────────────────
+// Stores nurse-corrected clinical dispositions for ML retraining
+
+model ClinicalDispositionFeedback {
+  id              String   @id @default(cuid())
+  tenantId        String
+  patientId       String
+  conversationId  String?
+
+  // What the rules engine / ML predicted
+  predictedDisposition  ClinicalDisposition
+  predictionSource      String   // "clinical_rules" | "ml_model" | "manual"
+  predictionConfidence  Float?
+  rulesFindings         Json?    // Serialized RuleFinding[] for audit
+
+  // What the nurse/oncologist corrected it to (ground truth)
+  correctedDisposition  ClinicalDisposition
+  correctedBy           String   // userId of correcting nurse/oncologist
+  correctionReason      String?
+
+  // De-identified feature snapshot (no PII) for ML training
+  featureSnapshot       Json     // extract_features() output
+
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient  Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([predictedDisposition])
+  @@index([correctedDisposition])
+  @@index([createdAt])
+
+  @@map("clinical_disposition_feedback")
 }
 
 // Configuração de seed

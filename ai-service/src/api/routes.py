@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
-from ..models.priority_model import priority_model, FEATURE_COLUMNS
+from ..models.priority_model import priority_model, FEATURE_COLUMNS, extract_features
 from ..models.schemas import (
     AgentProcessRequest,
     AgentProcessResponse,
@@ -248,6 +248,117 @@ async def prioritize_patients_bulk(request: BulkPriorityRequest):
 
 
 # ============================================
+# Rich risk prediction endpoint (Phase 3)
+# ============================================
+
+
+class RiskPredictRequest(BaseModel):
+    """Rich risk prediction from full clinical context."""
+    clinical_context: Dict
+    symptom_analysis: Dict
+    vitals: Optional[Dict] = None
+
+
+class RiskPredictResult(BaseModel):
+    disposition: str
+    disposition_label: str
+    confidence: float
+    probabilities: Dict[str, float]
+    source: str
+    mascc_score: Optional[int] = None
+    cisne_score: Optional[int] = None
+    febrile_neutropenia_risk: Optional[str] = None
+    clinical_rules_findings: List[Dict] = []
+
+
+_DISPOSITION_LABELS = {
+    "REMOTE_NURSING": "Enfermagem remota",
+    "SCHEDULED_CONSULT": "Consulta programada",
+    "ADVANCE_CONSULT": "Antecipar consulta",
+    "ER_DAYS": "PS nos próximos dias",
+    "ER_IMMEDIATE": "PS imediatamente",
+}
+
+
+@router.post("/risk/predict", response_model=RiskPredictResult)
+async def predict_risk(request: RiskPredictRequest):
+    """
+    Full clinical risk prediction using 4-layer architecture:
+      Layer 1: Clinical rules (deterministic)
+      Layer 2: Validated scores (MASCC/CISNE)
+      Layer 3: ML ordinal classifier
+    Returns the highest-priority recommendation.
+    """
+    from ..agent.clinical_rules import clinical_rules_engine
+    from ..agent.clinical_scores import clinical_scores
+
+    try:
+        # Layer 1+2: Rules engine (already incorporates MASCC/CISNE)
+        rules_result = clinical_rules_engine.evaluate(
+            symptom_analysis=request.symptom_analysis,
+            clinical_context=request.clinical_context,
+            structured_vitals=request.vitals,
+        )
+
+        # Layer 2: Explicit MASCC/CISNE for response enrichment
+        has_fever = bool(
+            (request.vitals or {}).get("temperature", 0) >= 38.0
+            or any(
+                s.get("name", "").lower() in {"febre", "febre_neutropenica"}
+                for s in request.symptom_analysis.get("detectedSymptoms", [])
+            )
+        )
+        scores_result = clinical_scores.evaluate_febrile_neutropenia_risk(
+            clinical_context=request.clinical_context,
+            symptom_analysis=request.symptom_analysis,
+            has_fever=has_fever,
+            vitals=request.vitals,
+        )
+
+        mascc_score = scores_result.mascc.score if scores_result.mascc else None
+        cisne_score = scores_result.cisne.score if scores_result.cisne else None
+
+        # Layer 3: ML model (only used for non-rule-firing cases for now)
+        ml_features = extract_features(
+            request.clinical_context,
+            request.symptom_analysis,
+            vitals=request.vitals,
+            mascc_score=mascc_score,
+            cisne_score=cisne_score,
+        )
+        ml_result = priority_model.predict_single(ml_features)
+
+        # Final disposition: rules take precedence, ML informs ambiguous cases
+        from ..agent.clinical_rules import REMOTE_NURSING, _SEVERITY_ORDER
+        final_disposition = rules_result.disposition
+        source = "clinical_rules"
+
+        if final_disposition == REMOTE_NURSING and ml_result["source"] != "fallback_rules":
+            # If rules say remote nursing but ML is more concerned, take ML
+            ml_sev = _SEVERITY_ORDER.get(ml_result["disposition"], 0)
+            if ml_sev > 0:
+                final_disposition = ml_result["disposition"]
+                source = "ml_model"
+
+        return RiskPredictResult(
+            disposition=final_disposition,
+            disposition_label=_DISPOSITION_LABELS.get(final_disposition, final_disposition),
+            confidence=rules_result.confidence if source == "clinical_rules" else ml_result["confidence"],
+            probabilities=ml_result.get("probabilities", {}),
+            source=source,
+            mascc_score=mascc_score,
+            cisne_score=cisne_score,
+            febrile_neutropenia_risk=scores_result.overall_febrile_neutropenia_risk if has_fever else None,
+            clinical_rules_findings=[
+                {"rule_id": f.rule_id, "disposition": f.disposition, "reason": f.reason}
+                for f in rules_result.findings
+            ],
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Risk prediction failed: {str(e)}")
+
+
+# ============================================
 # Legacy agent message endpoint
 # ============================================
 
@@ -299,6 +410,9 @@ async def process_message(request: AgentProcessRequest):
             response=result.get("response", ""),
             actions=result.get("actions", []),
             symptom_analysis=result.get("symptom_analysis"),
+            clinical_disposition=result.get("clinical_disposition"),
+            clinical_disposition_reason=result.get("clinical_disposition_reason"),
+            clinical_rules_findings=result.get("clinical_rules_findings", []),
             new_state=result.get("new_state", {}),
             decisions=result.get("decisions", []),
         )
