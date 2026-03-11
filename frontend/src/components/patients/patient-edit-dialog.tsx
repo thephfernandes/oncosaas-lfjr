@@ -133,8 +133,8 @@ export function PatientEditDialog({
         email: patient.email ?? '',
         currentStage: (patient.currentStage as PatientQuickEditFormData['currentStage']) ?? 'SCREENING',
         cancerType:
-          getCancerTypeKey(getPatientCancerType(patient) ?? undefined) ??
-          undefined,
+          (getCancerTypeKey(getPatientCancerType(patient) ?? undefined) ??
+          undefined) as PatientQuickEditFormData['cancerType'],
       });
     }
   }, [patient, open, form]);
@@ -148,10 +148,7 @@ export function PatientEditDialog({
       birthDate: data.birthDate,
       email: data.email || undefined,
       currentStage: data.currentStage,
-      cancerType:
-        data.cancerType === CANCER_TYPE_NONE_VALUE || data.cancerType == null
-          ? undefined
-          : data.cancerType,
+      cancerType: data.cancerType == null ? undefined : data.cancerType,
     };
     try {
       await updateMutation.mutateAsync({ id: patient.id, data: payload });

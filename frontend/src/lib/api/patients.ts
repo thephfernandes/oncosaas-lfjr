@@ -327,7 +327,9 @@ export interface CreatePatientDto {
   currentSpecialty?: string;
 }
 
-export interface UpdatePatientDto extends Partial<CreatePatientDto> {}
+export interface UpdatePatientDto extends Partial<CreatePatientDto> {
+  currentMedications?: CurrentMedication[];
+}
 
 export interface NavigationStep {
   id: string;
@@ -417,6 +419,7 @@ export interface PatientDetail extends Patient {
   cancerDiagnoses: CancerDiagnosis[];
   complementaryExams?: ComplementaryExam[];
   navigationSteps: NavigationStep[];
+  currentMedications?: CurrentMedication[];
   alerts: Array<{
     id: string;
     type: string;

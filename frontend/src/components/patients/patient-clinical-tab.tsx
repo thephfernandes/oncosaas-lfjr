@@ -81,11 +81,7 @@ export function PatientClinicalTab({
     ? patient.familyHistory
     : [];
 
-  const currentMedications: CurrentMedication[] = Array.isArray(
-    patient.currentMedications
-  )
-    ? patient.currentMedications
-    : [];
+  const currentMedications: CurrentMedication[] = [];
 
   return (
     <div className="space-y-6">
