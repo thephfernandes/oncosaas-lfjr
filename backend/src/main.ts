@@ -11,6 +11,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 
 const logger = new Logger('Bootstrap');
 
@@ -72,15 +74,13 @@ async function bootstrap() {
     : [];
 
   const allowedOrigins = [
-          'http://localhost:3000',
-          'https://localhost:3000',
-          'http://frontend:3000',
-          'https://frontend:3000',
-          'http://ec2-54-94-107-18.sa-east-1.compute.amazonaws.com',
-          'https://onconav.com.br',
-          frontendUrl,
-          ...extraOrigins,
-        ];
+    'http://localhost:3000',
+    'https://localhost:3000',
+    'http://frontend:3000',
+    'https://frontend:3000',
+    frontendUrl,
+    ...extraOrigins,
+  ];
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -95,6 +95,9 @@ async function bootstrap() {
     },
     credentials: true,
   });
+
+  // Global exception filters (order matters: Prisma first, HTTP second)
+  app.useGlobalFilters(new PrismaExceptionFilter(), new HttpExceptionFilter());
 
   // Global validation pipe
   app.useGlobalPipes(

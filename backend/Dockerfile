@@ -24,7 +24,9 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package*.json ./
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
-RUN chmod +x ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh && chown -R node:node /app
+
+USER node
 
 EXPOSE 3002
 

@@ -36,7 +36,11 @@ jobs:
         run: npm run type-check
 
       - name: Test
-        run: npm test -- --passWithNoTests --watchAll=false
+        run: npm test -- --watchAll=false
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
 
       - name: Build
         run: npm run build
@@ -87,7 +91,11 @@ jobs:
         run: npm run type-check
 
       - name: Test (unit)
-        run: npm test -- --passWithNoTests --forceExit
+        run: npm test -- --forceExit
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
 
       - name: Build
         run: npm run build
@@ -116,6 +124,10 @@ jobs:
 
       - name: Lint
         run: pip install ruff && ruff check .
+
+      - name: Security audit
+        run: pip install pip-audit && pip-audit -r requirements.txt
+        continue-on-error: true
 
       - name: Test
         run: pytest tests/ -v --tb=short
