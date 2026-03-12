@@ -34,6 +34,19 @@ def _get_index_dir() -> Path:
 _INDEX_DIR = _get_index_dir()
 
 _MODEL_NAME = os.getenv("RAG_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+
+
+class _FastEmbedWrapper:
+    """Wraps fastembed.TextEmbedding to expose the same .encode() interface
+    used by sentence-transformers, so the rest of the RAG code is unchanged."""
+
+    def __init__(self, model):
+        self._model = model
+
+    def encode(self, texts, normalize_embeddings=True, show_progress_bar=False):
+        # fastembed yields per-document numpy arrays; stack into a 2-D array
+        embeddings = list(self._model.embed(texts))
+        return np.array(embeddings, dtype=np.float32)
 _TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 _SCORE_THRESHOLD = float(os.getenv("RAG_SCORE_THRESHOLD", "0.30"))
 
@@ -169,15 +182,15 @@ class OncologyKnowledgeRAG:
 
     def _load_embedding_model(self):
         try:
-            from sentence_transformers import SentenceTransformer
+            from fastembed import TextEmbedding
 
-            model = SentenceTransformer(_MODEL_NAME)
+            model = TextEmbedding(_MODEL_NAME)
             logger.info(f"Embedding model loaded: {_MODEL_NAME}")
-            return model
+            return _FastEmbedWrapper(model)
         except ImportError:
             logger.error(
-                "sentence-transformers not installed. "
-                "Install with: pip install sentence-transformers"
+                "fastembed not installed. "
+                "Install with: pip install fastembed"
             )
             return None
         except Exception as exc:
