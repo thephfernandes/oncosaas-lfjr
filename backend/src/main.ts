@@ -71,12 +71,13 @@ async function bootstrap() {
         .filter(Boolean)
     : [];
 
-  const allowedOrigins =
-    process.env.NODE_ENV === 'production'
-      ? [frontendUrl, ...extraOrigins]
-      : [
+  const allowedOrigins = [
           'http://localhost:3000',
           'https://localhost:3000',
+          'http://frontend:3000',
+          'https://frontend:3000',
+          'http://ec2-54-94-107-18.sa-east-1.compute.amazonaws.com',
+          'https://onconav.com.br',
           frontendUrl,
           ...extraOrigins,
         ];
@@ -90,7 +91,7 @@ async function bootstrap() {
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`${origin} blocked by CORS`));
     },
     credentials: true,
   });
