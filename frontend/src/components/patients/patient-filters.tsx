@@ -104,7 +104,6 @@ export function PatientFilters({
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
             <SelectItem value="SCREENING">Rastreio</SelectItem>
-            <SelectItem value="NAVIGATION">Navegação</SelectItem>
             <SelectItem value="DIAGNOSIS">Diagnóstico</SelectItem>
             <SelectItem value="TREATMENT">Tratamento</SelectItem>
             <SelectItem value="FOLLOW_UP">Seguimento</SelectItem>

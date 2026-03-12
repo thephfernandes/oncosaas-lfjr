@@ -17,7 +17,6 @@ interface ExecutiveViewProps {
 
 const JOURNEY_STAGE_LABELS: Record<string, string> = {
   SCREENING: 'Rastreio',
-  NAVIGATION: 'Navegação',
   DIAGNOSIS: 'Diagnóstico',
   TREATMENT: 'Tratamento',
   FOLLOW_UP: 'Seguimento',
@@ -45,7 +44,6 @@ export function ExecutiveView({ metrics, statistics }: ExecutiveViewProps) {
     // TODO: Calcular tempo real quando tivermos dados de transição entre fases
     const estimatedTimePerStage: Record<string, number> = {
       SCREENING: 30, // dias
-      NAVIGATION: 15,
       DIAGNOSIS: 45,
       TREATMENT: 180,
       FOLLOW_UP: 90,

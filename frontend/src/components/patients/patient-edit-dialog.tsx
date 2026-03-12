@@ -44,7 +44,6 @@ const patientQuickEditSchema = z.object({
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   currentStage: z.enum([
     'SCREENING',
-    'NAVIGATION',
     'DIAGNOSIS',
     'TREATMENT',
     'FOLLOW_UP',
@@ -68,7 +67,6 @@ type PatientQuickEditFormData = z.infer<typeof patientQuickEditSchema>;
 
 const CURRENT_STAGE_OPTIONS: { value: PatientQuickEditFormData['currentStage']; label: string }[] = [
   { value: 'SCREENING', label: 'Em Rastreio' },
-  { value: 'NAVIGATION', label: 'Navegação' },
   { value: 'DIAGNOSIS', label: 'Diagnóstico' },
   { value: 'TREATMENT', label: 'Tratamento' },
   { value: 'FOLLOW_UP', label: 'Seguimento' },

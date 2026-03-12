@@ -47,8 +47,15 @@ export interface AlertCount {
 }
 
 export const alertsApi = {
-  async getAll(status?: Alert['status']): Promise<Alert[]> {
-    const url = status ? `/alerts?status=${status}` : '/alerts';
+  async getAll(
+    status?: Alert['status'],
+    patientId?: string | null
+  ): Promise<Alert[]> {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (patientId) params.set('patientId', patientId);
+    const query = params.toString();
+    const url = query ? `/alerts?${query}` : '/alerts';
     return apiClient.get<Alert[]>(url);
   },
 

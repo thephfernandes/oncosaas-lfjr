@@ -46,6 +46,7 @@ from ..agent.context_builder import context_builder
 from ..agent.symptom_analyzer import symptom_analyzer
 from ..agent.questionnaire_engine import questionnaire_engine
 from ..agent.protocol_engine import protocol_engine
+from ..agent.tracer import tracer
 
 router = APIRouter()
 
@@ -1459,3 +1460,28 @@ async def health():
             "protocol_engine",
         ],
     }
+
+
+# ============================================
+# Observability
+# ============================================
+
+
+@router.get("/observability/traces")
+async def get_traces(limit: int = 50):
+    """Return the most recent agent execution traces (last N, newest first)."""
+    limit = max(1, min(limit, 500))
+    return {"traces": tracer.get_traces(limit=limit)}
+
+
+@router.get("/observability/stats")
+async def get_stats():
+    """Return aggregate statistics over all stored traces."""
+    return tracer.get_stats()
+
+
+@router.delete("/observability/traces")
+async def clear_traces():
+    """Clear all stored traces (useful for resetting during testing)."""
+    tracer._traces.clear()
+    return {"cleared": True}

@@ -70,8 +70,11 @@ export const createPatientSchema = z
         .optional()
     ),
     currentStage: z
-      .enum(['SCREENING', 'NAVIGATION', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'])
+      .enum(['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'])
       .default('SCREENING'),
+
+    // Tratamento atual (obrigatório em seguimento)
+    currentTreatment: z.string().optional(),
 
     // Comorbidades e Fatores de Risco
     comorbidities: z.array(comorbiditySchema).optional(),
@@ -86,16 +89,35 @@ export const createPatientSchema = z
   })
   .refine(
     (data) => {
-      // Se não está em SCREENING, dataDiagnostico é obrigatória
-      if (data.currentStage !== 'SCREENING' && !data.diagnosisDate) {
+      // Em tratamento, seguimento ou paliativo: diagnóstico obrigatório (tipo, estágio TNM, data, ECOG)
+      const needsDiagnosis =
+        data.currentStage === 'TREATMENT' || data.currentStage === 'FOLLOW_UP';
+      if (!needsDiagnosis) return true;
+      if (!data.cancerType?.trim()) return false;
+      if (!data.diagnosisDate?.trim()) return false;
+      if (!data.stage?.trim()) return false;
+      if (data.performanceStatus === undefined || data.performanceStatus === null)
         return false;
-      }
       return true;
     },
     {
       message:
-        'Data de diagnóstico é obrigatória quando o paciente não está em rastreio',
-      path: ['diagnosisDate'],
+        'Para pacientes em Tratamento ou Seguimento, preencha Tipo de Câncer, Estágio TNM, Data do Diagnóstico e Performance Status (ECOG).',
+      path: ['cancerType'],
+    }
+  )
+  .refine(
+    (data) => {
+      // Em tratamento ou seguimento: tratamento obrigatório (em tratamento pode ser "A definir")
+      const needsTreatment =
+        data.currentStage === 'TREATMENT' || data.currentStage === 'FOLLOW_UP';
+      if (!needsTreatment) return true;
+      return !!data.currentTreatment?.trim();
+    },
+    {
+      message:
+        'Para pacientes em Tratamento ou Seguimento, informe o tratamento (ou "A definir").',
+      path: ['currentTreatment'],
     }
   );
 

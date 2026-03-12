@@ -1,5 +1,8 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// Em Prisma 6.x a URL do banco é obrigatória aqui. Em Prisma 7+ ela fica em prisma.config.ts.
+// Se o IDE mostrar "url is no longer supported", é validação v7; o CLI 6.x exige url aqui.
 
 generator client {
   provider = "prisma-client-js"
@@ -132,7 +135,6 @@ model Patient {
 
 enum JourneyStage {
   SCREENING // Rastreio
-  NAVIGATION // Navegação entre especialidades
   DIAGNOSIS // Diagnóstico
   TREATMENT // Tratamento
   FOLLOW_UP // Seguimento
@@ -819,6 +821,7 @@ enum AlertType {
   PALLIATIVE_MEDICATION_ADJUSTMENT // Necessidade de ajuste de medicação em paciente paliativo
   PALLIATIVE_FAMILY_SUPPORT // Necessidade de suporte familiar em paciente paliativo
   PALLIATIVE_PSYCHOSOCIAL // Necessidade de avaliação psicossocial em paciente paliativo
+  QUESTIONNAIRE_ALERT // Alerta gerado por score alto em questionário (ESAS, PRO-CTCAE)
 }
 
 enum AlertSeverity {
@@ -901,8 +904,8 @@ model Questionnaire {
   id       String @id @default(uuid())
   tenantId String
 
-  // Identificação
-  code        String  @unique // Código único (ex: "EORTC-QLQ-C30", "PRO-CTCAE")
+  // Identificação (code único por tenant)
+  code        String // Código do questionário (ex: "ESAS", "PRO-CTCAE")
   name        String
   description String?
 
@@ -920,6 +923,7 @@ model Questionnaire {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([tenantId, code])
   @@index([tenantId])
   @@index([code])
   @@map("questionnaires")

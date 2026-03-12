@@ -14,8 +14,18 @@ import { PatientListConnected } from '@/components/dashboard/patient-list-connec
 import { AlertsPanel } from '@/components/dashboard/alerts-panel';
 import { DecisionLogPanel } from '@/components/chat';
 import { ConversationView } from '@/components/dashboard/conversation-view';
-import { PatientDetails } from '@/components/dashboard/patient-details';
+import {
+  PatientDetails,
+  PatientPrioritySection,
+} from '@/components/dashboard/patient-details';
 import { AlertDetails } from '@/components/dashboard/alert-details';
+import { OncologyNavigationPanel } from '@/components/dashboard/oncology-navigation-panel';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { ResizablePanel } from '@/components/dashboard/resizable-panel';
 import { usePatient, usePatients } from '@/hooks/usePatients';
 import {
@@ -28,7 +38,11 @@ import { usePendingDecisions } from '@/hooks/useConversations';
 import { useReadPatients } from '@/hooks/useReadPatients';
 import { conversationsApi } from '@/lib/api/conversations';
 import { useMessagesSocket } from '@/hooks/useMessagesSocket';
-import { useAlert, useCriticalAlertsCount } from '@/hooks/useAlerts';
+import {
+  useAlert,
+  useAlerts,
+  useCriticalAlertsCount,
+} from '@/hooks/useAlerts';
 import { Button } from '@/components/ui/button';
 import { Bell, X } from 'lucide-react';
 import { Alert } from '@/lib/api/alerts';
@@ -138,6 +152,10 @@ export default function ChatPage() {
   const { data: alertDetails, isLoading: isLoadingAlert } = useAlert(
     selectedAlert?.id || ''
   );
+
+  // Alertas do paciente selecionado (para a secção Alerta no painel direito)
+  const { data: patientAlerts = [], isLoading: isLoadingPatientAlerts } =
+    useAlerts(undefined, selectedPatient);
 
   // Usar alertDetails se disponível, senão usar selectedAlert (dados básicos)
   const displayAlert = alertDetails || selectedAlert;
@@ -338,12 +356,12 @@ export default function ChatPage() {
           >
             <div className="h-full flex flex-col bg-white border-r">
               {/* Header fixo com tabs */}
-              <div className="p-4 border-b flex-shrink-0">
-                {/* Tabs para alternar entre Pacientes e Alertas */}
-                <div className="flex gap-2 mb-4">
+              <div className="p-4 border-b flex-shrink-0 overflow-visible">
+                {/* Tabs para alternar entre Pacientes, Alertas e Decisões pendentes */}
+                <div className="flex gap-1.5 mb-4 min-w-0 overflow-visible">
                   <button
                     onClick={() => setActiveTab('patients')}
-                    className={`relative px-4 py-2 rounded-md font-semibold transition-colors ${
+                    className={`relative overflow-visible flex-shrink-0 px-2 py-1.5 rounded-md text-sm font-semibold transition-colors whitespace-nowrap ${
                       activeTab === 'patients'
                         ? 'bg-indigo-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -351,7 +369,7 @@ export default function ChatPage() {
                   >
                     Pacientes
                     {unreadPatientIdsSet && unreadPatientIdsSet.size > 0 ? (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none shadow-sm">
                         {unreadPatientIdsSet.size > 99
                           ? '99+'
                           : unreadPatientIdsSet.size}
@@ -360,7 +378,7 @@ export default function ChatPage() {
                   </button>
                   <button
                     onClick={() => setActiveTab('alerts')}
-                    className={`relative px-4 py-2 rounded-md font-semibold transition-colors ${
+                    className={`relative overflow-visible flex-shrink-0 px-2 py-1.5 rounded-md text-sm font-semibold transition-colors whitespace-nowrap ${
                       activeTab === 'alerts'
                         ? 'bg-indigo-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -368,7 +386,7 @@ export default function ChatPage() {
                   >
                     Alertas
                     {criticalAlertsCount && criticalAlertsCount.count > 0 ? (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none shadow-sm">
                         {criticalAlertsCount.count > 99
                           ? '99+'
                           : criticalAlertsCount.count}
@@ -377,15 +395,16 @@ export default function ChatPage() {
                   </button>
                   <button
                     onClick={() => setActiveTab('decisions')}
-                    className={`relative px-4 py-2 rounded-md font-semibold transition-colors ${
+                    title="Decisões pendentes"
+                    className={`relative min-w-0 flex-shrink overflow-visible px-2 py-1.5 rounded-md text-sm font-semibold transition-colors ${
                       activeTab === 'decisions'
                         ? 'bg-indigo-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Decisões pendentes
+                    <span className="truncate block">Decisões pendentes</span>
                     {displayablePendingCount > 0 ? (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white leading-none">
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white leading-none shadow-sm">
                         {displayablePendingCount > 99
                           ? '99+'
                           : displayablePendingCount}
@@ -690,7 +709,7 @@ export default function ChatPage() {
             )}
           </div>
 
-          {/* Sidebar Direita - Detalhes do Paciente e Alerta */}
+          {/* Sidebar Direita - Secções retráteis: Detalhes → Priorização → Alerta → Etapas da fase */}
           <ResizablePanel
             defaultWidth={360}
             minWidth={280}
@@ -698,23 +717,160 @@ export default function ChatPage() {
             storageKey="chat-right-panel-width"
             side="right"
           >
-            <div className="h-full overflow-y-auto flex flex-col">
-              {/* Detalhes do Paciente */}
-              <div className="border-b">
-                <PatientDetails
-                  patient={selectedPatientData || null}
-                  isLoading={isLoadingPatient}
-                />
-              </div>
+            <div className="h-full overflow-y-auto flex flex-col bg-white">
+              <Accordion
+                type="multiple"
+                defaultValue={[
+                  'patient',
+                  'priority',
+                  'alert',
+                  'steps',
+                ]}
+                className="w-full"
+              >
+                {/* 1. Detalhes do Paciente (sem priorização nem etapas aqui) */}
+                <AccordionItem value="patient" className="border-b px-4">
+                  <AccordionTrigger className="py-3 hover:no-underline">
+                    <span className="font-semibold text-gray-900">
+                      Detalhes do Paciente
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 pt-0">
+                    <PatientDetails
+                      patient={selectedPatientData || null}
+                      isLoading={isLoadingPatient}
+                      hidePrioritySection
+                      hideNavigationPanel
+                    />
+                  </AccordionContent>
+                </AccordionItem>
 
-              {/* Detalhes do Alerta */}
-              <div className="flex-1">
-                <AlertDetails
-                  alert={displayAlert}
-                  isLoading={isLoadingAlert && !!selectedAlert}
-                  onClose={() => setSelectedAlert(null)}
-                />
-              </div>
+                {/* 2. Score de Priorização */}
+                <AccordionItem value="priority" className="border-b px-4">
+                  <AccordionTrigger className="py-3 hover:no-underline">
+                    <span className="font-semibold text-gray-900">
+                      Priorização
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 pt-0">
+                    {selectedPatientData ? (
+                      <PatientPrioritySection
+                        patient={selectedPatientData}
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-500 py-2">
+                        Selecione um paciente para ver o score de priorização.
+                      </p>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* 3. Alerta (após priorização, antes das etapas) */}
+                <AccordionItem value="alert" className="border-b px-4">
+                  <AccordionTrigger className="py-3 hover:no-underline">
+                    <span className="font-semibold text-gray-900">
+                      Alerta
+                      {selectedPatient &&
+                        patientAlerts.length > 0 &&
+                        ` (${patientAlerts.length})`}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 pt-0">
+                    {!selectedPatient ? (
+                      <p className="text-sm text-gray-500 py-2">
+                        Selecione um paciente para ver os alertas.
+                      </p>
+                    ) : isLoadingPatientAlerts ? (
+                      <div className="space-y-2 py-2">
+                        <div className="h-4 bg-gray-100 rounded animate-pulse w-3/4" />
+                        <div className="h-4 bg-gray-100 rounded animate-pulse w-1/2" />
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {patientAlerts.length > 0 ? (
+                          <>
+                            <div className="space-y-1.5">
+                              <p className="text-xs font-semibold text-gray-600">
+                                Alertas do paciente
+                              </p>
+                              {patientAlerts.map((alert) => (
+                                <button
+                                  key={alert.id}
+                                  type="button"
+                                  onClick={() => setSelectedAlert(alert)}
+                                  className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                                    selectedAlert?.id === alert.id
+                                      ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
+                                      : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  <span className="font-medium text-gray-900 block truncate">
+                                    {alert.type?.replace(/_/g, ' ')}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {alert.severity} ·{' '}
+                                    {new Date(alert.createdAt).toLocaleDateString(
+                                      'pt-BR',
+                                      {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      }
+                                    )}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="border-t pt-3">
+                              <AlertDetails
+                                alert={displayAlert}
+                                isLoading={isLoadingAlert && !!selectedAlert}
+                                onClose={() => setSelectedAlert(null)}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <AlertDetails
+                            alert={displayAlert}
+                            isLoading={isLoadingAlert && !!selectedAlert}
+                            onClose={() => setSelectedAlert(null)}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* 4. Etapas da fase */}
+                <AccordionItem value="steps" className="border-b px-4">
+                  <AccordionTrigger className="py-3 hover:no-underline">
+                    <span className="font-semibold text-gray-900">
+                      Etapas da fase
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 pt-0">
+                    {selectedPatientData &&
+                    (selectedPatientData.cancerType ||
+                      (selectedPatientData.cancerDiagnoses &&
+                        selectedPatientData.cancerDiagnoses.length > 0)) ? (
+                      <OncologyNavigationPanel
+                        patientId={selectedPatientData.id}
+                        cancerType={
+                          selectedPatientData.cancerDiagnoses?.length
+                            ? selectedPatientData.cancerDiagnoses[0].cancerType.toLowerCase()
+                            : selectedPatientData.cancerType?.toLowerCase() ?? null
+                        }
+                        currentStage={selectedPatientData.currentStage}
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-500 py-2">
+                        Nenhum tipo de câncer associado para exibir etapas.
+                      </p>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </ResizablePanel>
         </div>

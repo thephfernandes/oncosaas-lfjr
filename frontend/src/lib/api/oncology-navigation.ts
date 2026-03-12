@@ -8,7 +8,6 @@ export interface NavigationStep {
   cancerType: string;
   journeyStage:
     | 'SCREENING'
-    | 'NAVIGATION'
     | 'DIAGNOSIS'
     | 'TREATMENT'
     | 'FOLLOW_UP';
@@ -43,7 +42,6 @@ export interface CreateNavigationStepDto {
   cancerType: string;
   journeyStage:
     | 'SCREENING'
-    | 'NAVIGATION'
     | 'DIAGNOSIS'
     | 'TREATMENT'
     | 'FOLLOW_UP';
@@ -95,7 +93,6 @@ export const oncologyNavigationApi = {
     patientId: string,
     journeyStage:
       | 'SCREENING'
-      | 'NAVIGATION'
       | 'DIAGNOSIS'
       | 'TREATMENT'
       | 'FOLLOW_UP'
@@ -113,7 +110,6 @@ export const oncologyNavigationApi = {
     cancerType: string,
     currentStage:
       | 'SCREENING'
-      | 'NAVIGATION'
       | 'DIAGNOSIS'
       | 'TREATMENT'
       | 'FOLLOW_UP'

@@ -83,7 +83,6 @@ const JOURNEY_STAGE_LABELS: Record<string, string> = {
   DIAGNOSIS: 'Diagnóstico',
   TREATMENT: 'Tratamento',
   FOLLOW_UP: 'Seguimento',
-  NAVIGATION: 'Navegação',
 };
 
 const JOURNEY_STAGE_ORDER: string[] = [
@@ -145,7 +144,7 @@ export function PatientNavigationTab({
 
     steps.forEach((step) => {
       const type = (step.cancerType || 'other').toLowerCase();
-      const stage = (step.journeyStage || 'NAVIGATION').toUpperCase();
+      const stage = (step.journeyStage || 'SCREENING').toUpperCase();
       if (!byType.has(type)) {
         byType.set(type, new Map());
       }
@@ -515,7 +514,7 @@ export function PatientNavigationTab({
         onOpenChange={(open) => !open && setCreateStage(null)}
         patientId={patient.id}
         cancerType={createStage?.cancerType ?? cancerType}
-        journeyStage={createStage?.journeyStage ?? 'NAVIGATION'}
+        journeyStage={createStage?.journeyStage ?? 'SCREENING'}
         diagnosisId={diagnosisId}
       />
 

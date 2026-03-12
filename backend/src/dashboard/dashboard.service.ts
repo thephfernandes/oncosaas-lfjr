@@ -822,7 +822,6 @@ export class DashboardService {
 
     const stageCounts = {
       SCREENING: 0,
-      NAVIGATION: 0,
       DIAGNOSIS: 0,
       TREATMENT: 0,
       FOLLOW_UP: 0,
@@ -869,7 +868,6 @@ export class DashboardService {
 
     const stageLabels: Record<string, string> = {
       SCREENING: 'Rastreio',
-      NAVIGATION: 'Navegação',
       DIAGNOSIS: 'Diagnóstico',
       TREATMENT: 'Tratamento',
       FOLLOW_UP: 'Seguimento',
@@ -884,7 +882,6 @@ export class DashboardService {
     const stageMetrics: StageMetrics[] = [];
     const averageTimePerStage: Record<string, number | null> = {
       SCREENING: null,
-      NAVIGATION: null,
       DIAGNOSIS: null,
       TREATMENT: null,
       FOLLOW_UP: null,
@@ -996,7 +993,6 @@ export class DashboardService {
     // Bottleneck = fase com >20% dos pacientes OU tempo médio >50% acima do esperado
     const expectedTimes: Record<string, number> = {
       SCREENING: 30,
-      NAVIGATION: 15,
       DIAGNOSIS: 45,
       TREATMENT: 180,
       FOLLOW_UP: 90,
@@ -1051,7 +1047,6 @@ export class DashboardService {
       bottlenecks: bottlenecks.slice(0, 3), // Top 3 bottlenecks
       averageTimePerStage: {
         SCREENING: averageTimePerStage.SCREENING,
-        NAVIGATION: averageTimePerStage.NAVIGATION,
         DIAGNOSIS: averageTimePerStage.DIAGNOSIS,
         TREATMENT: averageTimePerStage.TREATMENT,
         FOLLOW_UP: averageTimePerStage.FOLLOW_UP,

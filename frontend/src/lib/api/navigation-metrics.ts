@@ -25,7 +25,6 @@ export interface NavigationMetrics {
   criticalOverdueStepsCount: number;
   patientsByStage: {
     SCREENING: number;
-    NAVIGATION: number;
     DIAGNOSIS: number;
     TREATMENT: number;
     FOLLOW_UP: number;
@@ -37,7 +36,6 @@ export interface NavigationMetrics {
   bottlenecks: Bottleneck[];
   averageTimePerStage: {
     SCREENING: number | null;
-    NAVIGATION: number | null;
     DIAGNOSIS: number | null;
     TREATMENT: number | null;
     FOLLOW_UP: number | null;

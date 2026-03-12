@@ -31,7 +31,6 @@ import { PatientWithCriticalStep } from '@/lib/api/patients-critical-steps';
 
 const JOURNEY_STAGE_LABELS: Record<string, string> = {
   SCREENING: 'Rastreio',
-  NAVIGATION: 'Navegação',
   DIAGNOSIS: 'Diagnóstico',
   TREATMENT: 'Tratamento',
   FOLLOW_UP: 'Seguimento',

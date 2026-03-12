@@ -211,7 +211,7 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
       })();
 
       // Normalizar currentStage: sempre um valor válido para o Select (default SCREENING)
-      const STAGES = ['SCREENING', 'NAVIGATION', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'] as const;
+      const STAGES = ['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'] as const;
       const currentStageRaw = patient.currentStage?.toString?.()?.trim?.()?.toUpperCase?.() ?? '';
       const currentStageNormalized = (STAGES as readonly string[]).includes(currentStageRaw)
         ? (currentStageRaw as CreatePatientFormData['currentStage'])
@@ -725,7 +725,6 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SCREENING">Rastreio</SelectItem>
-                    <SelectItem value="NAVIGATION">Navegação</SelectItem>
                     <SelectItem value="DIAGNOSIS">Diagnóstico</SelectItem>
                     <SelectItem value="TREATMENT">Tratamento</SelectItem>
                     <SelectItem value="FOLLOW_UP">Seguimento</SelectItem>

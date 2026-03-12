@@ -32,7 +32,6 @@ import { CustomTooltip } from '@/components/dashboard/shared/custom-tooltip';
 
 const JOURNEY_STAGE_LABELS: Record<string, string> = {
   SCREENING: 'Rastreio',
-  NAVIGATION: 'Navegação',
   DIAGNOSIS: 'Diagnóstico',
   TREATMENT: 'Tratamento',
   FOLLOW_UP: 'Seguimento',

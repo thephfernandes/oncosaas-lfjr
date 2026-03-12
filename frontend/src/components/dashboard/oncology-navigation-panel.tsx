@@ -39,7 +39,6 @@ interface OncologyNavigationPanelProps {
 
 const JOURNEY_STAGE_LABELS: Record<string, string> = {
   SCREENING: '🔍 Rastreio',
-  NAVIGATION: '🧭 Navegação',
   DIAGNOSIS: '📋 Diagnóstico',
   TREATMENT: '💊 Tratamento',
   FOLLOW_UP: '📅 Seguimento',
@@ -47,15 +46,14 @@ const JOURNEY_STAGE_LABELS: Record<string, string> = {
 
 const JOURNEY_STAGE_LABELS_SHORT: Record<string, string> = {
   SCREENING: 'Rastreio',
-  NAVIGATION: 'Navegação',
   DIAGNOSIS: 'Diagnóstico',
   TREATMENT: 'Tratamento',
   FOLLOW_UP: 'Seguimento',
 };
 
 const STAGE_ORDER: Array<
-  'SCREENING' | 'NAVIGATION' | 'DIAGNOSIS' | 'TREATMENT' | 'FOLLOW_UP'
-> = ['SCREENING', 'NAVIGATION', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'];
+  'SCREENING' | 'DIAGNOSIS' | 'TREATMENT' | 'FOLLOW_UP'
+> = ['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'];
 
 export function OncologyNavigationPanel({
   patientId,

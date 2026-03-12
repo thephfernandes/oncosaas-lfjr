@@ -1354,4 +1354,45 @@ export class AgentService {
       used_llm: false,
     };
   }
+
+  // ==========================================
+  // OBSERVABILITY PROXY
+  // ==========================================
+
+  private getAiServiceUrl(): string {
+    return this.configService.get<string>('AI_SERVICE_URL') || 'http://localhost:8001';
+  }
+
+  async getObservabilityTraces(limit = 50): Promise<any> {
+    try {
+      const url = `${this.getAiServiceUrl()}/api/v1/observability/traces?limit=${limit}`;
+      const response = await fetch(url);
+      return response.json();
+    } catch (error) {
+      this.logger.error(`Failed to fetch observability traces: ${error.message}`);
+      return { traces: [] };
+    }
+  }
+
+  async getObservabilityStats(): Promise<any> {
+    try {
+      const url = `${this.getAiServiceUrl()}/api/v1/observability/stats`;
+      const response = await fetch(url);
+      return response.json();
+    } catch (error) {
+      this.logger.error(`Failed to fetch observability stats: ${error.message}`);
+      return { total_traces: 0 };
+    }
+  }
+
+  async clearObservabilityTraces(): Promise<any> {
+    try {
+      const url = `${this.getAiServiceUrl()}/api/v1/observability/traces`;
+      const response = await fetch(url, { method: 'DELETE' });
+      return response.json();
+    } catch (error) {
+      this.logger.error(`Failed to clear observability traces: ${error.message}`);
+      return { cleared: false };
+    }
+  }
 }

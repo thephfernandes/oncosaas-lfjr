@@ -45,7 +45,6 @@ const COLORS = {
 
 const JOURNEY_STAGE_LABELS: Record<string, string> = {
   SCREENING: 'Rastreio',
-  NAVIGATION: 'Navegação',
   DIAGNOSIS: 'Diagnóstico',
   TREATMENT: 'Tratamento',
   FOLLOW_UP: 'Seguimento',
@@ -183,7 +182,6 @@ export function MetricsCharts({
     // Reverter label para valor original
     const stageMap: Record<string, string> = {
       Rastreio: 'SCREENING',
-      Navegação: 'NAVIGATION',
       Diagnóstico: 'DIAGNOSIS',
       Tratamento: 'TREATMENT',
       Seguimento: 'FOLLOW_UP',

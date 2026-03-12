@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Post,
   Patch,
@@ -191,5 +192,24 @@ export class AgentController {
     @Request() req: any,
   ) {
     return this.agentService.getPatientSummary(patientId, req.user.tenantId);
+  }
+
+  // ==========================================
+  // OBSERVABILITY PROXY
+  // ==========================================
+
+  @Get('observability/traces')
+  async getObservabilityTraces(@Query('limit') limit?: string) {
+    return this.agentService.getObservabilityTraces(limit ? parseInt(limit) : 50);
+  }
+
+  @Get('observability/stats')
+  async getObservabilityStats() {
+    return this.agentService.getObservabilityStats();
+  }
+
+  @Delete('observability/traces')
+  async clearObservabilityTraces() {
+    return this.agentService.clearObservabilityTraces();
   }
 }

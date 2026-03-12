@@ -319,11 +319,12 @@ export interface CreatePatientDto {
   gender: 'male' | 'female' | 'other';
   phone: string;
   email?: string;
-  cancerType: string;
-  stage: string;
+  cancerType?: string;
+  stage?: string;
   diagnosisDate?: string;
   performanceStatus?: number;
   currentStage: string;
+  currentTreatment?: string;
   currentSpecialty?: string;
 }
 

@@ -79,7 +79,6 @@ const JOURNEY_STAGE_ORDER = [
 
 const JOURNEY_STAGE_LABELS: Record<string, string> = {
   SCREENING: '🔍 Rastreio',
-  NAVIGATION: '🧭 Navegação',
   DIAGNOSIS: '📋 Diagnóstico',
   TREATMENT: '💊 Tratamento',
   FOLLOW_UP: '📅 Seguimento',
@@ -415,7 +414,6 @@ function PatientNavigationCard({
 
     const grouped: Record<string, NavigationStep[]> = {
       SCREENING: [],
-      NAVIGATION: [],
       DIAGNOSIS: [],
       TREATMENT: [],
       FOLLOW_UP: [],
@@ -576,7 +574,7 @@ function PatientNavigationCard({
             onOpenChange={(open) => !open && setCreateStage(null)}
             patientId={patient.id ?? ''}
             cancerType={cancerType}
-            journeyStage={createStage ?? 'NAVIGATION'}
+            journeyStage={createStage ?? 'SCREENING'}
             diagnosisId={undefined}
             onSuccess={() => {
               queryClient.invalidateQueries({

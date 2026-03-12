@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,15 +15,7 @@ export function FamilyHistoryForm({
   value = [],
   onChange,
 }: FamilyHistoryFormProps) {
-  const [familyHistory, setFamilyHistory] = useState<FamilyHistory[]>(
-    value || []
-  );
-
-  // Sincronizar com value quando mudar externamente
-  useEffect(() => {
-    // Sempre atualizar quando value mudar, mesmo se for array vazio
-    setFamilyHistory(Array.isArray(value) ? value : []);
-  }, [value]);
+  const familyHistory = Array.isArray(value) ? value : [];
 
   const addFamilyMember = () => {
     const newMember: FamilyHistory = {
@@ -32,26 +23,21 @@ export function FamilyHistoryForm({
       cancerType: '',
     };
     const updated = [...familyHistory, newMember];
-    setFamilyHistory(updated);
     onChange(updated);
   };
 
   const updateFamilyMember = (
     index: number,
     field: keyof FamilyHistory,
-    value: any
+    val: string | number | undefined
   ) => {
     const updated = [...familyHistory];
-    updated[index] = { ...updated[index], [field]: value };
-    setFamilyHistory(updated);
-    // Enviar todos os históricos (incluindo parcialmente preenchidos)
-    // A filtragem de itens vazios será feita no submit do formulário
+    updated[index] = { ...updated[index], [field]: val };
     onChange(updated);
   };
 
   const removeFamilyMember = (index: number) => {
     const updated = familyHistory.filter((_, i) => i !== index);
-    setFamilyHistory(updated);
     onChange(updated);
   };
 

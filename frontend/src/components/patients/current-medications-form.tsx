@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,30 +53,21 @@ export function CurrentMedicationsForm({
   value = [],
   onChange,
 }: CurrentMedicationsFormProps) {
-  const [medications, setMedications] = useState<CreateMedicationDto[]>(
-    value?.length ? value : []
-  );
-
-  useEffect(() => {
-    setMedications(Array.isArray(value) ? value : []);
-  }, [value]);
+  const medications = Array.isArray(value) ? value : [];
 
   const addMedication = () => {
     const updated = [...medications, { name: '', category: 'OTHER' as MedicationCategory }];
-    setMedications(updated);
     onChange(updated);
   };
 
   const update = (index: number, field: keyof CreateMedicationDto, val: string) => {
     const updated = [...medications];
     updated[index] = { ...updated[index], [field]: val };
-    setMedications(updated);
     onChange(updated);
   };
 
   const remove = (index: number) => {
     const updated = medications.filter((_, i) => i !== index);
-    setMedications(updated);
     onChange(updated);
   };
 

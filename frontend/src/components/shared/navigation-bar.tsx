@@ -11,6 +11,7 @@ import {
   Settings,
   Users,
   UserCircle,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
@@ -68,6 +69,12 @@ const adminNavItems: NavItem[] = [
   },
 ];
 
+const observabilityNavItem: NavItem = {
+  path: '/observability',
+  label: 'Observabilidade',
+  icon: Activity,
+};
+
 export function NavigationBar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -92,10 +99,19 @@ export function NavigationBar() {
   // Verificar se o usuário pode ver calculadora ROI (não permitido para NURSE)
   const canSeeROI = user?.role !== 'NURSE';
 
+  // Observabilidade: apenas para ADMIN, ONCOLOGIST e COORDINATOR
+  const canSeeObservability =
+    user?.role === 'ADMIN' ||
+    user?.role === 'ONCOLOGIST' ||
+    user?.role === 'COORDINATOR';
+
   // Montar lista de itens de navegação baseada nas permissões
   const navItems = [...baseNavItems];
   if (canSeeROI) {
     navItems.push(roiNavItem);
+  }
+  if (canSeeObservability) {
+    navItems.push(observabilityNavItem);
   }
 
   const isActive = (itemPath: string): boolean => {

@@ -13,6 +13,70 @@ export const CANCER_TYPE_LABELS: Record<string, string> = {
 /** Chaves válidas para o Select (valores em inglês) */
 export const CANCER_TYPE_KEYS = Object.keys(CANCER_TYPE_LABELS) as string[];
 
+/** Valor especial para "Tratamento a definir" (estágio Tratamento) */
+export const TREATMENT_OPTION_A_DEFINIR = 'A definir';
+
+/** Opções de tratamento por tipo de câncer (para Select no formulário de criação) */
+export const TREATMENT_OPTIONS_BY_CANCER_TYPE: Record<string, string[]> = {
+  breast: [
+    'Cirurgia',
+    'Quimioterapia',
+    'Radioterapia',
+    'Hormonoterapia',
+    'Terapia-alvo',
+    'Imunoterapia',
+  ],
+  lung: [
+    'Cirurgia',
+    'Quimioterapia',
+    'Radioterapia',
+    'Terapia-alvo',
+    'Imunoterapia',
+  ],
+  colorectal: [
+    'Cirurgia',
+    'Quimioterapia',
+    'Radioterapia',
+    'Terapia-alvo',
+    'Imunoterapia',
+  ],
+  prostate: [
+    'Cirurgia',
+    'Radioterapia',
+    'Hormonoterapia',
+    'Quimioterapia',
+  ],
+  kidney: ['Cirurgia', 'Terapia-alvo', 'Imunoterapia'],
+  bladder: ['Cirurgia', 'Quimioterapia', 'Radioterapia', 'Imunoterapia'],
+  testicular: ['Cirurgia', 'Quimioterapia', 'Radioterapia'],
+  other: [
+    'Cirurgia',
+    'Quimioterapia',
+    'Radioterapia',
+    'Hormonoterapia',
+    'Terapia-alvo',
+    'Imunoterapia',
+    'Cuidados paliativos',
+  ],
+};
+
+/**
+ * Retorna as opções de tratamento para o tipo de câncer (para uso no Select).
+ * Se estágio for Tratamento, inclui "A definir" como primeira opção.
+ */
+export function getTreatmentOptionsForCancerType(
+  cancerTypeKey: string | null | undefined,
+  includeADefinir: boolean
+): string[] {
+  const list =
+    TREATMENT_OPTIONS_BY_CANCER_TYPE[cancerTypeKey ?? ''] ??
+    TREATMENT_OPTIONS_BY_CANCER_TYPE.other;
+  if (includeADefinir) {
+    return [TREATMENT_OPTION_A_DEFINIR, ...list];
+  }
+  return [...list];
+}
+
 /**
  * Converte valor da API (pode ser key "lung" ou label "Câncer de Pulmão" / "Pulmão") para a key do Select.
  * O backend pode retornar cancerType como label em cancerDiagnoses.

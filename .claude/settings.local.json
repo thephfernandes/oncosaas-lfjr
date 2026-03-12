@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npx prisma:*)",
       "Bash(npm run:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl:*)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "Bash(curl.exe:*)",
+      "Bash(npx next:*)"
     ]
-  }
+  },
+  "prefersReducedMotion": false
 }
