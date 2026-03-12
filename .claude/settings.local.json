@@ -11,7 +11,11 @@
       "Bash(wc -l /Users/pedrofernandes/stuff/onco/OncoSaas/ai-service/src/**/*.py 2>/dev/null | tail -1)",
       "Bash(cd /Users/pedrofernandes/stuff/onco/OncoSaas/ai-service && docker build -t onconav-ai-service:optimized . 2>&1)",
       "Bash(docker images:*)",
-      "Bash(docker build:*)"
+      "Bash(docker build:*)",
+      "Bash(find /Users/pedrofernandes/stuff/onco/OncoSaas -name \"*.cert\" -o -name \"*.key\" -o -name \"*.pem\" -o -name \"*certbot*\" -o -name \"*letsencrypt*\" 2>/dev/null | head -20)",
+      "Bash(grep -r \"generate-certs\\\\|generate.*cert\" /Users/pedrofernandes/stuff/onco/OncoSaas --include=\"*.json\" --include=\"*.ts\" --include=\"*.js\" --exclude-dir=node_modules 2>/dev/null | head -20)",
+      "Bash(grep -r \"USE_HTTPS\\\\|NEXTAUTH_URL\\\\|FRONTEND_URL\" /Users/pedrofernandes/stuff/onco/OncoSaas --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --exclude-dir=node_modules 2>/dev/null | grep -v \".next\" | head -30)",
+      "Bash(grep -r \"Set-Cookie\\\\|set-cookie\\\\|Secure\\\\|HttpOnly\\\\|SameSite\\\\|sameSite\" /Users/pedrofernandes/stuff/onco/OncoSaas --include=\"*.ts\" --include=\"*.tsx\" --exclude-dir=node_modules 2>/dev/null | grep -v \".next\")"
     ]
   }
 }
