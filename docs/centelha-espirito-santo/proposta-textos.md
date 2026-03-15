@@ -48,7 +48,7 @@ A versão escolhida enfatiza mais o problema de saúde pública e acesso, alinha
 
 Plataforma SaaS multi-tenant integrando IA e WhatsApp Business API para transformar o cuidado oncológico. Três pilares: (1) Navegação Inteligente - dashboard rastreando pacientes em tempo real; (2) Priorização com IA - scoring automático (XGBoost) identificando casos críticos; (3) Agente de IA Conversacional - coleta dados via WhatsApp, detecta sintomas críticos e alerta equipe.
 
-Viabilidade técnica: Stack validado (Next.js, NestJS, Python FastAPI, PostgreSQL), integração HL7/FHIR, arquitetura multi-tenant escalável. Validação: 10+ entrevistas com oncologistas/enfermeiros confirmaram dores e necessidade da solução. Pilotos planejados com 3-5 hospitais (Q2 2024).
+Viabilidade técnica: Stack validado (Next.js, NestJS, Python FastAPI, PostgreSQL), integração HL7/FHIR, arquitetura multi-tenant escalável. Validação: 10+ entrevistas com oncologistas/enfermeiros confirmaram dores e necessidade da solução. Pilotos em planejamento com instituições pioneiras.
 
 Mercado: TAM USD 2,76 bi (2025) → USD 5,71 bi (2030). 359 instituições oncológicas habilitadas (CACONs/UNACONs). Clientes: hospitais, clínicas, operadoras, home care, CROs. Escalabilidade: arquitetura multi-tenant. Resultados esperados: redução de 30% em tempo de diagnóstico, 20-30% em readmissões, 70-80% em carga de triagem manual.
 
@@ -56,7 +56,7 @@ Mercado: TAM USD 2,76 bi (2025) → USD 5,71 bi (2030). 359 instituições oncol
 
 - ✅ Produto/serviço objetivo (Plataforma SaaS com 3 pilares)
 - ✅ Viabilidade técnica (Stack validado, tecnologias específicas)
-- ✅ Resultados de validação (10+ entrevistas, pilotos planejados)
+- ✅ Resultados de validação (10+ entrevistas, pilotos em planejamento)
 - ✅ Escalabilidade (arquitetura multi-tenant)
 - ✅ Potencial do negócio (TAM USD 2,76bi → 5,71bi)
 - ✅ Estimativa de mercados (359 instituições habilitadas)
@@ -167,8 +167,8 @@ A versão escolhida destaca os pontos principais de forma concisa e convincente,
 
 ## Próximos Passos
 
-1. Revisar textos no arquivo `versao-formulario.md`
-2. Copiar textos para o formulário do Centelha Espírito Santo
+1. **Fase 1:** Usar `preenchimento-fase1-centelha-es.md` e materiais de pitch
+2. **Fase 2:** Revisar e copiar textos de `preenchimento-fase2-centelha-es.md` para o formulário
 3. Verificar contagem de caracteres no próprio formulário
 4. Revisar formatação após colar
 5. Submeter proposta
@@ -177,9 +177,11 @@ A versão escolhida destaca os pontos principais de forma concisa e convincente,
 
 ## Referências
 
+- `versao-formulario.md` - Índice dos documentos de preenchimento (Fase 1 e Fase 2)
+- `preenchimento-fase1-centelha-es.md` - Textos e checklist da Primeira Fase
+- `preenchimento-fase2-centelha-es.md` - Textos prontos para copiar/colar na Segunda Fase
 - `oportunidade.md` - Versões alternativas e análise detalhada
 - `solucao.md` - Versões alternativas e análise detalhada
 - `diferenciais.md` - Versões alternativas e análise detalhada
 - `impacto-socioambiental.md` - Versões alternativas e análise detalhada
 - `equipe.md` - Versões alternativas e análise detalhada
-- `versao-formulario.md` - Textos prontos para copiar/colar

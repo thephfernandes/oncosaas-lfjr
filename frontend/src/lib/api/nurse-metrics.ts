@@ -4,7 +4,6 @@ export interface NurseMetrics {
   alertsResolvedToday: number;
   averageResponseTimeMinutes: number | null;
   patientsAttendedToday: number;
-  agentResponseRate: number;
   topReportedSymptoms: Array<{
     symptom: string;
     count: number;

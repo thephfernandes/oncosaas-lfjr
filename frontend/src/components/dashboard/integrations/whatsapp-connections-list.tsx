@@ -9,6 +9,7 @@ interface WhatsAppConnectionsListProps {
   onDelete: (id: string) => void;
   onTest: (id: string) => void;
   onSetDefault: (id: string) => void;
+  onRunMetaTests?: (id: string) => void;
 }
 
 export function WhatsAppConnectionsList({
@@ -16,8 +17,12 @@ export function WhatsAppConnectionsList({
   onDelete,
   onTest,
   onSetDefault,
+  onRunMetaTests,
 }: WhatsAppConnectionsListProps) {
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [runningMetaTestsId, setRunningMetaTestsId] = useState<string | null>(
+    null
+  );
 
   const handleTest = async (id: string) => {
     setTestingId(id);
@@ -25,6 +30,16 @@ export function WhatsAppConnectionsList({
       await onTest(id);
     } finally {
       setTestingId(null);
+    }
+  };
+
+  const handleRunMetaTests = async (id: string) => {
+    if (!onRunMetaTests) return;
+    setRunningMetaTestsId(id);
+    try {
+      await onRunMetaTests(id);
+    } finally {
+      setRunningMetaTestsId(null);
     }
   };
 
@@ -50,7 +65,9 @@ export function WhatsAppConnectionsList({
           onDelete={onDelete}
           onTest={handleTest}
           onSetDefault={onSetDefault}
+          onRunMetaTests={onRunMetaTests ? handleRunMetaTests : undefined}
           isTesting={testingId === connection.id}
+          isRunningMetaTests={runningMetaTestsId === connection.id}
         />
       ))}
     </div>

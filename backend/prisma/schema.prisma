@@ -101,6 +101,9 @@ model Patient {
   status          PatientStatus @default(ACTIVE)
   lastInteraction DateTime? // Última interação com agente
 
+  // Configuração de alerta de inatividade (dias sem interação para disparar alerta NO_RESPONSE; null = padrão global 7)
+  maxDaysWithoutInteractionAlert Int?
+
   // Relacionamentos
   tenant                 Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   messages               Message[]

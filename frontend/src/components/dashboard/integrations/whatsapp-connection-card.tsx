@@ -12,6 +12,7 @@ import {
   Trash2,
   Play,
   Star,
+  FlaskConical,
 } from 'lucide-react';
 
 interface WhatsAppConnectionCardProps {
@@ -19,7 +20,9 @@ interface WhatsAppConnectionCardProps {
   onDelete: (id: string) => void;
   onTest: (id: string) => void;
   onSetDefault: (id: string) => void;
+  onRunMetaTests?: (id: string) => void;
   isTesting?: boolean;
+  isRunningMetaTests?: boolean;
 }
 
 export function WhatsAppConnectionCard({
@@ -27,7 +30,9 @@ export function WhatsAppConnectionCard({
   onDelete,
   onTest,
   onSetDefault,
+  onRunMetaTests,
   isTesting = false,
+  isRunningMetaTests = false,
 }: WhatsAppConnectionCardProps) {
   const getStatusBadge = () => {
     switch (connection.status) {
@@ -130,6 +135,18 @@ export function WhatsAppConnectionCard({
             <Play className="h-4 w-4 mr-1" />
             {isTesting ? 'Testando...' : 'Testar'}
           </Button>
+          {connection.authMethod === 'OAUTH' && onRunMetaTests && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onRunMetaTests(connection.id)}
+              disabled={isRunningMetaTests || connection.status !== 'CONNECTED'}
+              title="Executar chamadas de API para completar testes do Meta App Review"
+            >
+              <FlaskConical className="h-4 w-4 mr-1" />
+              {isRunningMetaTests ? 'Executando...' : 'Testes App Review'}
+            </Button>
+          )}
           {!connection.isDefault && (
             <Button
               variant="outline"

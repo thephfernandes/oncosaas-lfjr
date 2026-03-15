@@ -3,13 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { type CreateMedicationDto, type MedicationCategory } from '@/lib/api/patients';
@@ -110,21 +104,13 @@ export function CurrentMedicationsForm({
                     </div>
                     <div>
                       <Label className="text-xs">Categoria clínica *</Label>
-                      <Select
+                      <SearchableSelect
+                        options={CATEGORY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
                         value={med.category ?? 'OTHER'}
-                        onValueChange={(v) => update(index, 'category', v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORY_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => update(index, 'category', v)}
+                        placeholder="Buscar categoria..."
+                        aria-label="Categoria clínica do medicamento"
+                      />
                     </div>
                   </div>
 

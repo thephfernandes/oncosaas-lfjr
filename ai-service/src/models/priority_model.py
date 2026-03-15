@@ -239,7 +239,14 @@ class OncologyPriorityModel:
     def load(self, filepath: str):
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Model not found: {filepath}")
-        self.model = joblib.load(filepath)
+        loaded = joblib.load(filepath)
+        # Validate compatibility: must be LGBMClassifier with correct feature count
+        if not isinstance(loaded, LGBMClassifier):
+            raise ValueError(
+                f"Incompatible model type: {type(loaded).__name__}. "
+                f"Expected LGBMClassifier. Delete {filepath} and restart to retrain."
+            )
+        self.model = loaded
         self.is_trained = True
         logger.info(f"Model loaded from {filepath}")
 

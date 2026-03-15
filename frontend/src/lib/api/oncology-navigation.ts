@@ -81,9 +81,10 @@ export const oncologyNavigationApi = {
    * Obtém todas as etapas de navegação de um paciente
    */
   getPatientSteps: async (patientId: string): Promise<NavigationStep[]> => {
-    return apiClient.get<NavigationStep[]>(
+    const data = await apiClient.get<NavigationStep[] | null>(
       `/oncology-navigation/patients/${patientId}/steps`
     );
+    return data ?? [];
   },
 
   /**
@@ -97,9 +98,10 @@ export const oncologyNavigationApi = {
       | 'TREATMENT'
       | 'FOLLOW_UP'
   ): Promise<NavigationStep[]> => {
-    return apiClient.get<NavigationStep[]>(
+    const data = await apiClient.get<NavigationStep[] | null>(
       `/oncology-navigation/patients/${patientId}/steps/${journeyStage}`
     );
+    return data ?? [];
   },
 
   /**

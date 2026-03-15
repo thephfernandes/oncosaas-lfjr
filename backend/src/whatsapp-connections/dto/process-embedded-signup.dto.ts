@@ -1,7 +1,12 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class ProcessEmbeddedSignupDto {
   @IsString()
   @IsNotEmpty()
-  code: string; // Código trocável retornado pelo Embedded Signup
+  code: string;
+
+  /** URL exata da página (origin + pathname). Usada na troca de código com a Meta. */
+  @IsString()
+  @IsOptional()
+  redirect_uri?: string;
 }

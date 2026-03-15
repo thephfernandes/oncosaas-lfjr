@@ -5,23 +5,17 @@ import {
   DashboardStatisticsDto,
   AlertStatisticsPoint,
 } from './dto/dashboard-statistics.dto';
-import {
-  NavigationMetricsDto,
-  StageMetrics,
-  Bottleneck,
-} from './dto/navigation-metrics.dto';
+import { NavigationMetricsDto } from './dto/navigation-metrics.dto';
 import { PatientWithCriticalStepDto } from './dto/patients-with-critical-steps.dto';
-import {
-  CriticalTimelinesDto,
-  CriticalTimelineMetric,
-  CriticalTimelineBenchmark,
-} from './dto/critical-timelines.dto';
+import { PendingAlertDto } from './dto/pending-alert.dto';
+
 import {
   PriorityCategory,
   PatientStatus,
   JourneyStage,
   AlertSeverity,
   AlertStatus,
+  Patient,
 } from '@prisma/client';
 
 @Injectable()
@@ -87,19 +81,6 @@ export class DashboardService {
       },
     });
 
-    // Alertas resolvidos hoje
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const resolvedTodayCount = await this.prisma.alert.count({
-      where: {
-        tenantId,
-        status: 'RESOLVED',
-        resolvedAt: {
-          gte: todayStart,
-        },
-      },
-    });
-
     // Tempo médio de resposta a alertas (em minutos)
     const resolvedAlerts = await this.prisma.alert.findMany({
       where: {
@@ -118,15 +99,17 @@ export class DashboardService {
     if (resolvedAlerts.length > 0) {
       const totalMinutes = resolvedAlerts.reduce((sum, alert) => {
         if (alert.createdAt && alert.resolvedAt) {
-          const diffMs =
+          const diffMs = Math.max(
+            0,
             new Date(alert.resolvedAt).getTime() -
-            new Date(alert.createdAt).getTime();
-          return sum + Math.round(diffMs / (1000 * 60)); // Converter para minutos
+              new Date(alert.createdAt).getTime(),
+          );
+          return sum + Math.round(diffMs / (1000 * 60));
         }
         return sum;
       }, 0);
       averageResponseTimeMinutes = Math.round(
-        totalMinutes / resolvedAlerts.length
+        totalMinutes / resolvedAlerts.length,
       );
     }
 
@@ -157,74 +140,6 @@ export class DashboardService {
           ?._count || 0,
     };
 
-    // Distribuição por tipo de câncer
-    const cancerTypeDistribution = await this.prisma.patient.groupBy({
-      by: ['cancerType'],
-      where: {
-        tenantId,
-        cancerType: { not: null },
-        status: {
-          in: ['ACTIVE', 'IN_TREATMENT', 'FOLLOW_UP'],
-        },
-      },
-      _count: true,
-    });
-
-    const cancerTypeDist = cancerTypeDistribution
-      .map((item) => ({
-        cancerType: item.cancerType || 'Não informado',
-        count: item._count,
-        percentage:
-          totalActivePatients > 0
-            ? Math.round((item._count / totalActivePatients) * 100 * 10) / 10
-            : 0,
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10); // Top 10
-
-    // Distribuição por Jornada
-    const journeyStageDistribution = await this.prisma.patient.groupBy({
-      by: ['currentStage'],
-      where: {
-        tenantId,
-        status: {
-          in: ['ACTIVE', 'IN_TREATMENT', 'FOLLOW_UP'],
-        },
-      },
-      _count: true,
-    });
-
-    const journeyDist = journeyStageDistribution.map((item) => ({
-      stage: item.currentStage,
-      count: item._count,
-      percentage:
-        totalActivePatients > 0
-          ? Math.round((item._count / totalActivePatients) * 100 * 10) / 10
-          : 0,
-    }));
-
-    // Distribuição por status
-    const statusDistribution = await this.prisma.patient.groupBy({
-      by: ['status'],
-      where: {
-        tenantId,
-      },
-      _count: true,
-    });
-
-    const totalPatients = statusDistribution.reduce(
-      (sum, i) => sum + i._count,
-      0
-    );
-    const statusDist = statusDistribution.map((item) => ({
-      status: item.status,
-      count: item._count,
-      percentage:
-        totalPatients > 0
-          ? Math.round((item._count / totalPatients) * 100 * 10) / 10
-          : 0,
-    }));
-
     // Contar etapas de navegação atrasadas (OVERDUE)
     const now = new Date();
     const overdueStepsCount = await this.prisma.navigationStep.count({
@@ -253,18 +168,29 @@ export class DashboardService {
 
     let averageTimeToTreatmentDays: number | null = null;
     if (patientsWithTreatment.length > 0) {
-      const totalDays = patientsWithTreatment.reduce((sum, journey) => {
-        if (journey.diagnosisDate && journey.treatmentStartDate) {
-          const diffMs =
-            new Date(journey.treatmentStartDate).getTime() -
-            new Date(journey.diagnosisDate).getTime();
-          return sum + Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        }
-        return sum;
-      }, 0);
-      averageTimeToTreatmentDays = Math.round(
-        totalDays / patientsWithTreatment.length
-      );
+      const validTreatmentTimes = patientsWithTreatment
+        .map((journey) => {
+          if (journey.diagnosisDate && journey.treatmentStartDate) {
+            const diffMs = Math.max(
+              0,
+              new Date(journey.treatmentStartDate).getTime() -
+                new Date(journey.diagnosisDate).getTime(),
+            );
+            return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          }
+          return null;
+        })
+        .filter((d): d is number => d !== null && d >= 0);
+
+      if (validTreatmentTimes.length > 0) {
+        const totalDays = validTreatmentTimes.reduce(
+          (sum, days) => sum + days,
+          0,
+        );
+        averageTimeToTreatmentDays = Math.round(
+          totalDays / validTreatmentTimes.length,
+        );
+      }
     }
 
     // 2. Time-to-Diagnosis: Tempo médio desde primeira etapa DIAGNOSIS até diagnóstico confirmado
@@ -318,33 +244,7 @@ export class DashboardService {
       );
     }
 
-    // 3. Estadiamento Completo: % de pacientes com estadiamento completo antes de tratamento
-    const patientsWithStaging = await this.prisma.patientJourney.findMany({
-      where: {
-        tenantId,
-        treatmentStartDate: { not: null },
-      },
-      select: {
-        stagingDate: true,
-        treatmentStartDate: true,
-      },
-    });
-
-    const patientsWithCompleteStaging = patientsWithStaging.filter(
-      (journey) =>
-        journey.stagingDate &&
-        journey.treatmentStartDate &&
-        new Date(journey.stagingDate) <= new Date(journey.treatmentStartDate)
-    ).length;
-
-    const stagingCompletePercentage =
-      patientsWithStaging.length > 0
-        ? Math.round(
-            (patientsWithCompleteStaging / patientsWithStaging.length) * 100
-          )
-        : 0;
-
-    // 4. Biomarcadores Pendentes: Pacientes aguardando resultados de biomarcadores críticos
+    // 3. Biomarcadores Pendentes: Pacientes aguardando resultados de biomarcadores críticos
     // Biomarcadores críticos: HER2, EGFR, PD-L1, MSI-H, KRAS, BRAF, ALK
     const biomarkerStepKeys = [
       'her2_test',
@@ -382,7 +282,7 @@ export class DashboardService {
 
     const pendingBiomarkersCount = pendingBiomarkerSteps.length;
 
-    // 5. Taxa de Adesão ao Tratamento: % de pacientes que completam ciclos conforme planejado.
+    // 4. Taxa de Adesão ao Tratamento: % de pacientes que completam ciclos conforme planejado.
     // Considera apenas pacientes que já atingiram 80% dos ciclos (avaliamos aderência);
     // pacientes no início (ex: ciclo 1/12) não entram no denominador.
     const patientsInTreatment = await this.prisma.patientJourney.findMany({
@@ -428,19 +328,14 @@ export class DashboardService {
       mediumAlertsCount,
       lowAlertsCount,
       unassumedMessagesCount,
-      resolvedTodayCount,
       averageResponseTimeMinutes,
       overdueStepsCount,
-      // Métricas Clínicas Críticas
+      // Métricas Clínicas
       averageTimeToTreatmentDays,
       averageTimeToDiagnosisDays,
-      stagingCompletePercentage,
       pendingBiomarkersCount,
       treatmentAdherencePercentage,
       priorityDistribution: priorityDist,
-      cancerTypeDistribution: cancerTypeDist,
-      journeyStageDistribution: journeyDist,
-      statusDistribution: statusDist,
     };
   }
 
@@ -579,9 +474,11 @@ export class DashboardService {
     resolvedAlerts.forEach((alert) => {
       if (alert.createdAt && alert.resolvedAt) {
         const dateKey = new Date(alert.resolvedAt).toISOString().split('T')[0];
-        const diffMs =
+        const diffMs = Math.max(
+          0,
           new Date(alert.resolvedAt).getTime() -
-          new Date(alert.createdAt).getTime();
+            new Date(alert.createdAt).getTime(),
+        );
         const minutes = Math.round(diffMs / (1000 * 60));
 
         if (!responseTimeByDate.has(dateKey)) {
@@ -623,28 +520,33 @@ export class DashboardService {
     };
   }
 
-  async getNurseMetrics(tenantId: string, userId: string) {
+  async getNurseMetrics(tenantId: string, userId: string | null) {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    // Alertas resolvidos hoje pelo enfermeiro
+    // Filtro por usuário: quando userId é passado (enfermeiro logado), filtra
+    // por ele; caso contrário (gestão), mostra dados agregados de toda a equipe.
+    const userFilter = userId ? { resolvedBy: userId } : {};
+    const interventionUserFilter = userId ? { userId } : {};
+
+    // Alertas resolvidos hoje (pelo enfermeiro ou por toda a equipe)
     const alertsResolvedToday = await this.prisma.alert.count({
       where: {
         tenantId,
         status: 'RESOLVED',
-        resolvedBy: userId,
+        ...userFilter,
         resolvedAt: {
           gte: todayStart,
         },
       },
     });
 
-    // Tempo médio de resposta do enfermeiro (em minutos)
+    // Tempo médio de resposta (em minutos)
     const resolvedAlerts = await this.prisma.alert.findMany({
       where: {
         tenantId,
         status: 'RESOLVED',
-        resolvedBy: userId,
+        ...userFilter,
         resolvedAt: { not: null },
       },
       select: {
@@ -657,25 +559,26 @@ export class DashboardService {
     if (resolvedAlerts.length > 0) {
       const totalMinutes = resolvedAlerts.reduce((sum, alert) => {
         if (alert.createdAt && alert.resolvedAt) {
-          const diffMs =
+          const diffMs = Math.max(
+            0,
             new Date(alert.resolvedAt).getTime() -
-            new Date(alert.createdAt).getTime();
+              new Date(alert.createdAt).getTime(),
+          );
           return sum + Math.round(diffMs / (1000 * 60));
         }
         return sum;
       }, 0);
       averageResponseTimeMinutes = Math.round(
-        totalMinutes / resolvedAlerts.length
+        totalMinutes / resolvedAlerts.length,
       );
     }
 
-    // Pacientes atendidos hoje (com intervenções do enfermeiro)
-    // Usar groupBy para contar pacientes únicos
+    // Pacientes atendidos hoje (intervenções do enfermeiro ou de toda a equipe)
     const uniquePatients = await this.prisma.intervention.groupBy({
       by: ['patientId'],
       where: {
         tenantId,
-        userId,
+        ...interventionUserFilter,
         createdAt: {
           gte: todayStart,
         },
@@ -683,41 +586,10 @@ export class DashboardService {
     });
     const patientsAttendedToday = uniquePatients.length;
 
-    // Taxa de resposta ao agente (últimos 30 dias)
+    // Sintomas mais reportados (últimos 30 dias)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     thirtyDaysAgo.setHours(0, 0, 0, 0);
-
-    // Total de mensagens recebidas do paciente (INBOUND) nos últimos 30 dias
-    const totalInboundMessages = await this.prisma.message.count({
-      where: {
-        tenantId,
-        direction: 'INBOUND',
-        createdAt: {
-          gte: thirtyDaysAgo,
-        },
-      },
-    });
-
-    // Total de mensagens respondidas pelo enfermeiro (OUTBOUND assumidas) nos últimos 30 dias
-    const respondedMessages = await this.prisma.message.count({
-      where: {
-        tenantId,
-        direction: 'OUTBOUND',
-        processedBy: 'NURSING',
-        assumedBy: userId,
-        createdAt: {
-          gte: thirtyDaysAgo,
-        },
-      },
-    });
-
-    const agentResponseRate =
-      totalInboundMessages > 0
-        ? Math.round((respondedMessages / totalInboundMessages) * 100)
-        : 0;
-
-    // Sintomas mais reportados (últimos 30 dias)
     const messagesWithSymptoms = await this.prisma.message.findMany({
       where: {
         tenantId,
@@ -743,13 +615,14 @@ export class DashboardService {
     });
 
     // Converter para array e ordenar
+    const totalSymptomMessages = messagesWithSymptoms.length;
     const topReportedSymptoms = Array.from(symptomCounts.entries())
       .map(([symptom, count]) => ({
         symptom,
         count,
         percentage:
-          totalInboundMessages > 0
-            ? Math.round((count / totalInboundMessages) * 100 * 10) / 10
+          totalSymptomMessages > 0
+            ? Math.round((count / totalSymptomMessages) * 100 * 10) / 10
             : 0,
       }))
       .sort((a, b) => b.count - a.count)
@@ -759,7 +632,6 @@ export class DashboardService {
       alertsResolvedToday,
       averageResponseTimeMinutes,
       patientsAttendedToday,
-      agentResponseRate,
       topReportedSymptoms,
     };
   }
@@ -864,193 +736,12 @@ export class DashboardService {
     const overallCompletionRate =
       totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
 
-    // ========== MÉTRICAS AVANÇADAS DE NAVEGAÇÃO ==========
-
-    const stageLabels: Record<string, string> = {
-      SCREENING: 'Rastreio',
-      DIAGNOSIS: 'Diagnóstico',
-      TREATMENT: 'Tratamento',
-      FOLLOW_UP: 'Seguimento',
-    };
-
-    const totalActivePatients = Object.values(stageCounts).reduce(
-      (sum, count) => sum + count,
-      0
-    );
-
-    // Calcular métricas detalhadas por fase
-    const stageMetrics: StageMetrics[] = [];
-    const averageTimePerStage: Record<string, number | null> = {
-      SCREENING: null,
-      DIAGNOSIS: null,
-      TREATMENT: null,
-      FOLLOW_UP: null,
-    };
-
-    for (const stage of Object.keys(stageCounts) as JourneyStage[]) {
-      // Buscar etapas desta fase
-      const stageSteps = await this.prisma.navigationStep.findMany({
-        where: {
-          tenantId,
-          journeyStage: stage,
-        },
-        select: {
-          isCompleted: true,
-          status: true,
-          createdAt: true,
-          completedAt: true,
-          dueDate: true,
-        },
-      });
-
-      const totalStageSteps = stageSteps.length;
-      const completedStageSteps = stageSteps.filter(
-        (s) => s.isCompleted
-      ).length;
-      const pendingStageSteps = stageSteps.filter(
-        (s) => !s.isCompleted && s.status !== 'OVERDUE'
-      ).length;
-      const overdueStageSteps = stageSteps.filter(
-        (s) => s.status === 'OVERDUE'
-      ).length;
-
-      const completionRate =
-        totalStageSteps > 0
-          ? Math.round((completedStageSteps / totalStageSteps) * 100)
-          : 0;
-
-      // Calcular tempo médio nesta fase
-      // Tempo médio = média do tempo entre criação da primeira etapa e conclusão da última etapa da fase
-      const patientsInStage = await this.prisma.patient.findMany({
-        where: {
-          tenantId,
-          currentStage: stage,
-          status: {
-            in: ['ACTIVE', 'IN_TREATMENT', 'FOLLOW_UP'],
-          },
-        },
-        include: {
-          navigationSteps: {
-            where: {
-              journeyStage: stage,
-            },
-            orderBy: {
-              createdAt: 'asc',
-            },
-          },
-        },
-      });
-
-      let averageTimeDays: number | null = null;
-      const validTimes: number[] = [];
-
-      for (const patient of patientsInStage) {
-        if (patient.navigationSteps.length === 0) {
-          continue;
-        }
-
-        const firstStep = patient.navigationSteps[0];
-        const lastCompletedStep = patient.navigationSteps
-          .filter((s) => s.isCompleted && s.completedAt)
-          .sort(
-            (a, b) =>
-              new Date(b.completedAt).getTime() -
-              new Date(a.completedAt).getTime()
-          )[0];
-
-        if (lastCompletedStep && lastCompletedStep.completedAt) {
-          const diffMs =
-            new Date(lastCompletedStep.completedAt).getTime() -
-            new Date(firstStep.createdAt).getTime();
-          const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-          if (days >= 0) {
-            validTimes.push(days);
-          }
-        }
-      }
-
-      if (validTimes.length > 0) {
-        averageTimeDays = Math.round(
-          validTimes.reduce((sum, days) => sum + days, 0) / validTimes.length
-        );
-      }
-
-      averageTimePerStage[stage] = averageTimeDays;
-
-      stageMetrics.push({
-        stage,
-        patientsCount: stageCounts[stage],
-        completionRate,
-        averageTimeDays,
-        totalSteps: totalStageSteps,
-        completedSteps: completedStageSteps,
-        pendingSteps: pendingStageSteps,
-        overdueSteps: overdueStageSteps,
-      });
-    }
-
-    // Identificar bottlenecks
-    // Bottleneck = fase com >20% dos pacientes OU tempo médio >50% acima do esperado
-    const expectedTimes: Record<string, number> = {
-      SCREENING: 30,
-      DIAGNOSIS: 45,
-      TREATMENT: 180,
-      FOLLOW_UP: 90,
-    };
-
-    const bottlenecks: Bottleneck[] = [];
-
-    for (const metric of stageMetrics) {
-      const percentage =
-        totalActivePatients > 0
-          ? Math.round((metric.patientsCount / totalActivePatients) * 100)
-          : 0;
-
-      let reason = '';
-      const expectedTime = expectedTimes[metric.stage] || 0;
-
-      if (percentage > 20) {
-        reason = `Alta concentração de pacientes (${percentage}% do total)`;
-      } else if (
-        metric.averageTimeDays !== null &&
-        expectedTime > 0 &&
-        metric.averageTimeDays > expectedTime * 1.5
-      ) {
-        reason = `Tempo médio acima do esperado (${metric.averageTimeDays} dias vs ${expectedTime} dias esperados)`;
-      } else if (metric.overdueSteps > metric.completedSteps) {
-        reason = `Muitas etapas atrasadas (${metric.overdueSteps} atrasadas vs ${metric.completedSteps} concluídas)`;
-      }
-
-      if (reason) {
-        bottlenecks.push({
-          stage: metric.stage,
-          stageLabel: stageLabels[metric.stage] || metric.stage,
-          patientsCount: metric.patientsCount,
-          percentage,
-          averageTimeDays: metric.averageTimeDays,
-          reason,
-        });
-      }
-    }
-
-    // Ordenar bottlenecks por severidade (maior porcentagem primeiro)
-    bottlenecks.sort((a, b) => b.percentage - a.percentage);
-
     return {
       overdueStepsCount,
       criticalOverdueStepsCount,
       patientsByStage: stageCounts,
       stepsDueSoonCount: stepsDueSoon,
       overallCompletionRate,
-      // Métricas Avançadas
-      stageMetrics,
-      bottlenecks: bottlenecks.slice(0, 3), // Top 3 bottlenecks
-      averageTimePerStage: {
-        SCREENING: averageTimePerStage.SCREENING,
-        DIAGNOSIS: averageTimePerStage.DIAGNOSIS,
-        TREATMENT: averageTimePerStage.TREATMENT,
-        FOLLOW_UP: averageTimePerStage.FOLLOW_UP,
-      },
     };
   }
 
@@ -1063,13 +754,43 @@ export class DashboardService {
       journeyStage?: JourneyStage;
       cancerType?: string;
       maxResults?: number;
+      /** Quando true, retorna apenas etapas já atrasadas (OVERDUE ou dueDate < now). */
+      overdueOnly?: boolean;
     }
   ): Promise<PatientWithCriticalStepDto[]> {
     const now = new Date();
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-    // Buscar etapas críticas (OVERDUE obrigatórias ou próximas do prazo)
+    const overdueOnly = filters?.overdueOnly === true;
+    const pendingOrInProgress: ('PENDING' | 'IN_PROGRESS')[] = [
+      'PENDING',
+      'IN_PROGRESS',
+    ];
+    const orConditions = overdueOnly
+      ? [
+          { status: 'OVERDUE' as const },
+          {
+            status: { in: pendingOrInProgress },
+            dueDate: { lte: now },
+          },
+        ]
+      : [
+          { status: 'OVERDUE' as const },
+          {
+            status: { in: pendingOrInProgress },
+            dueDate: { lte: now },
+          },
+          {
+            status: { in: pendingOrInProgress },
+            dueDate: {
+              gte: now,
+              lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ];
+
+    // Buscar etapas críticas (atrasadas ou, se !overdueOnly, próximas do prazo)
     const criticalSteps = await this.prisma.navigationStep.findMany({
       where: {
         tenantId,
@@ -1081,28 +802,7 @@ export class DashboardService {
             cancerType: filters.cancerType,
           },
         }),
-        OR: [
-          {
-            status: 'OVERDUE',
-          },
-          {
-            status: {
-              in: ['PENDING', 'IN_PROGRESS'],
-            },
-            dueDate: {
-              lte: now,
-            },
-          },
-          {
-            status: {
-              in: ['PENDING', 'IN_PROGRESS'],
-            },
-            dueDate: {
-              gte: now,
-              lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // Próximos 7 dias
-            },
-          },
-        ],
+        OR: orConditions,
       },
       include: {
         patient: {
@@ -1131,8 +831,20 @@ export class DashboardService {
     // Agrupar por paciente e pegar a etapa mais crítica de cada um
     const patientMap = new Map<string, PatientWithCriticalStepDto>();
 
+    type StepWithPatient = (typeof criticalSteps)[number] & {
+      patient: {
+        id: string;
+        name: string;
+        birthDate: Date | null;
+        cancerType: string | null;
+        currentStage: string;
+        priorityScore: number | null;
+        priorityCategory: string | null;
+      };
+    };
+
     for (const step of criticalSteps) {
-      const patient = step.patient;
+      const patient = (step as StepWithPatient).patient;
       const patientId = patient.id;
 
       // Calcular dias de atraso
@@ -1269,545 +981,163 @@ export class DashboardService {
   }
 
   /**
-   * Calcula prazos críticos por tipo de câncer com comparação com benchmarks (NCCN/ESMO)
+   * Lista alertas pendentes para drill-down do indicador "Alertas Pendentes".
+   * Retorna os alertas (não os pacientes) com dados do paciente para exibição.
    */
-  async getCriticalTimelines(tenantId: string): Promise<CriticalTimelinesDto> {
-    try {
-      this.logger.debug(
-        `Iniciando cálculo de prazos críticos para tenantId: ${tenantId}`
-      );
-      // Benchmarks baseados em guidelines (NCCN, ESMO, INCA)
-      const benchmarks: Record<string, CriticalTimelineBenchmark[]> = {
-        colorectal: [
-          {
-            cancerType: 'colorectal',
-            metric: 'time_to_diagnosis',
-            idealDays: 60,
-            acceptableDays: 90,
-            criticalDays: 120,
+  async getPendingAlerts(
+    tenantId: string,
+    maxResults: number = 100
+  ): Promise<PendingAlertDto[]> {
+    const take = Math.min(Math.max(1, maxResults), 200);
+    const alerts = await this.prisma.alert.findMany({
+      where: {
+        tenantId,
+        status: { not: 'RESOLVED' },
+      },
+      orderBy: [
+        { severity: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      include: {
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
           },
-          {
-            cancerType: 'colorectal',
-            metric: 'time_to_treatment',
-            idealDays: 30,
-            acceptableDays: 60,
-            criticalDays: 90,
-          },
-          {
-            cancerType: 'colorectal',
-            metric: 'biopsy_to_pathology',
-            idealDays: 14,
-            acceptableDays: 21,
-            criticalDays: 30,
-          },
-          {
-            cancerType: 'colorectal',
-            metric: 'diagnosis_to_surgery',
-            idealDays: 42,
-            acceptableDays: 60,
-            criticalDays: 90,
-          },
-          {
-            cancerType: 'colorectal',
-            metric: 'surgery_to_adjuvant_chemotherapy',
-            idealDays: 56, // 8 semanas
-            acceptableDays: 84, // 12 semanas
-            criticalDays: 112, // 16 semanas
-          },
-        ],
-        breast: [
-          {
-            cancerType: 'breast',
-            metric: 'time_to_diagnosis',
-            idealDays: 60,
-            acceptableDays: 90,
-            criticalDays: 120,
-          },
-          {
-            cancerType: 'breast',
-            metric: 'time_to_treatment',
-            idealDays: 30,
-            acceptableDays: 60,
-            criticalDays: 90,
-          },
-          {
-            cancerType: 'breast',
-            metric: 'biopsy_to_pathology',
-            idealDays: 14,
-            acceptableDays: 21,
-            criticalDays: 30,
-          },
-          {
-            cancerType: 'breast',
-            metric: 'diagnosis_to_surgery',
-            idealDays: 42,
-            acceptableDays: 60,
-            criticalDays: 90,
-          },
-          {
-            cancerType: 'breast',
-            metric: 'surgery_to_adjuvant_chemotherapy',
-            idealDays: 56,
-            acceptableDays: 84,
-            criticalDays: 112,
-          },
-        ],
-        lung: [
-          {
-            cancerType: 'lung',
-            metric: 'time_to_diagnosis',
-            idealDays: 60,
-            acceptableDays: 90,
-            criticalDays: 120,
-          },
-          {
-            cancerType: 'lung',
-            metric: 'time_to_treatment',
-            idealDays: 30,
-            acceptableDays: 60,
-            criticalDays: 90,
-          },
-          {
-            cancerType: 'lung',
-            metric: 'biopsy_to_pathology',
-            idealDays: 14,
-            acceptableDays: 21,
-            criticalDays: 30,
-          },
-        ],
-        prostate: [
-          {
-            cancerType: 'prostate',
-            metric: 'time_to_diagnosis',
-            idealDays: 60,
-            acceptableDays: 90,
-            criticalDays: 120,
-          },
-          {
-            cancerType: 'prostate',
-            metric: 'time_to_treatment',
-            idealDays: 30,
-            acceptableDays: 60,
-            criticalDays: 90,
-          },
-        ],
-      };
-
-      const metricLabels: Record<string, string> = {
-        time_to_diagnosis: 'Tempo até Diagnóstico',
-        time_to_treatment: 'Tempo até Tratamento',
-        biopsy_to_pathology: 'Biópsia → Laudo Patológico',
-        diagnosis_to_surgery: 'Diagnóstico → Cirurgia',
-        surgery_to_adjuvant_chemotherapy: 'Cirurgia → Quimioterapia Adjuvante',
-      };
-
-      const metrics: CriticalTimelineMetric[] = [];
-
-      // Para cada tipo de câncer
-      for (const [cancerType, cancerBenchmarks] of Object.entries(benchmarks)) {
-        // Para cada métrica do tipo de câncer
-        for (const benchmark of cancerBenchmarks) {
-          let currentAverageDays: number | null = null;
-          let patientsCount = 0;
-          let patientsAtRisk = 0;
-
-          // Calcular média atual baseada na métrica
-          try {
-            switch (benchmark.metric) {
-              case 'time_to_diagnosis': {
-                // Tempo desde primeira etapa DIAGNOSIS até diagnóstico confirmado
-                const whereClause: any = {
-                  tenantId,
-                  journey: {
-                    diagnosisConfirmed: true,
-                    diagnosisDate: { not: null },
-                  },
-                };
-                if (cancerType) {
-                  whereClause.cancerType = {
-                    equals: cancerType,
-                    mode: 'insensitive',
-                  };
-                }
-                const patients = await this.prisma.patient.findMany({
-                  where: whereClause,
-                  include: {
-                    navigationSteps: {
-                      where: {
-                        journeyStage: 'DIAGNOSIS',
-                      },
-                      orderBy: {
-                        createdAt: 'asc',
-                      },
-                      take: 1,
-                    },
-                    journey: {
-                      select: {
-                        diagnosisDate: true,
-                      },
-                    },
-                  },
-                });
-
-                const validTimes = patients
-                  .filter(
-                    (p) =>
-                      p.journey?.diagnosisDate && p.navigationSteps.length > 0
-                  )
-                  .map((p) => {
-                    const firstDiagnosisStep = p.navigationSteps[0];
-                    const diagnosisDate = p.journey.diagnosisDate;
-                    const diffMs =
-                      new Date(diagnosisDate).getTime() -
-                      new Date(firstDiagnosisStep.createdAt).getTime();
-                    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                  })
-                  .filter((days) => days >= 0);
-
-                if (validTimes.length > 0) {
-                  currentAverageDays = Math.round(
-                    validTimes.reduce((sum, days) => sum + days, 0) /
-                      validTimes.length
-                  );
-                  patientsCount = validTimes.length;
-                  patientsAtRisk = validTimes.filter(
-                    (days) => days > benchmark.criticalDays
-                  ).length;
-                }
-                break;
-              }
-
-              case 'time_to_treatment': {
-                // Tempo desde diagnóstico até início de tratamento
-                const whereClause: any = {
-                  tenantId,
-                  journey: {
-                    diagnosisDate: { not: null },
-                    treatmentStartDate: { not: null },
-                  },
-                };
-                if (cancerType) {
-                  whereClause.cancerType = {
-                    equals: cancerType,
-                    mode: 'insensitive',
-                  };
-                }
-                const patients = await this.prisma.patient.findMany({
-                  where: whereClause,
-                  include: {
-                    journey: {
-                      select: {
-                        diagnosisDate: true,
-                        treatmentStartDate: true,
-                      },
-                    },
-                  },
-                });
-
-                const validTimes = patients
-                  .filter(
-                    (p) =>
-                      p.journey?.diagnosisDate && p.journey?.treatmentStartDate
-                  )
-                  .map((p) => {
-                    const diffMs =
-                      new Date(p.journey.treatmentStartDate).getTime() -
-                      new Date(p.journey.diagnosisDate).getTime();
-                    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                  })
-                  .filter((days) => days >= 0);
-
-                if (validTimes.length > 0) {
-                  currentAverageDays = Math.round(
-                    validTimes.reduce((sum, days) => sum + days, 0) /
-                      validTimes.length
-                  );
-                  patientsCount = validTimes.length;
-                  patientsAtRisk = validTimes.filter(
-                    (days) => days > benchmark.criticalDays
-                  ).length;
-                }
-                break;
-              }
-
-              case 'biopsy_to_pathology': {
-                // Tempo desde biópsia até laudo patológico
-                const whereClause: any = {
-                  tenantId,
-                  stepKey: {
-                    in: [
-                      'biopsy',
-                      'colonoscopy',
-                      'breast_biopsy',
-                      'lung_biopsy',
-                    ],
-                  },
-                  isCompleted: true,
-                  completedAt: { not: null },
-                };
-                if (cancerType) {
-                  whereClause.cancerType = {
-                    equals: cancerType,
-                    mode: 'insensitive',
-                  };
-                }
-                const biopsySteps = await this.prisma.navigationStep.findMany({
-                  where: whereClause,
-                  include: {
-                    patient: {
-                      include: {
-                        navigationSteps: {
-                          where: {
-                            stepKey: {
-                              in: ['pathology_report', 'pathology_result'],
-                            },
-                            isCompleted: true,
-                            completedAt: { not: null },
-                          },
-                          orderBy: {
-                            completedAt: 'asc',
-                          },
-                          take: 1,
-                        },
-                      },
-                    },
-                  },
-                });
-
-                const validTimes = biopsySteps
-                  .filter(
-                    (step) =>
-                      step.completedAt &&
-                      step.patient.navigationSteps.length > 0
-                  )
-                  .map((step) => {
-                    const pathologyStep = step.patient.navigationSteps[0];
-                    const diffMs =
-                      new Date(pathologyStep.completedAt).getTime() -
-                      new Date(step.completedAt).getTime();
-                    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                  })
-                  .filter((days) => days >= 0);
-
-                if (validTimes.length > 0) {
-                  currentAverageDays = Math.round(
-                    validTimes.reduce((sum, days) => sum + days, 0) /
-                      validTimes.length
-                  );
-                  patientsCount = validTimes.length;
-                  patientsAtRisk = validTimes.filter(
-                    (days) => days > benchmark.criticalDays
-                  ).length;
-                }
-                break;
-              }
-
-              case 'diagnosis_to_surgery': {
-                // Tempo desde diagnóstico até cirurgia
-                const whereClause: any = {
-                  tenantId,
-                  journey: {
-                    diagnosisDate: { not: null },
-                  },
-                };
-                if (cancerType) {
-                  whereClause.cancerType = {
-                    equals: cancerType,
-                    mode: 'insensitive',
-                  };
-                }
-                const patients = await this.prisma.patient.findMany({
-                  where: whereClause,
-                  include: {
-                    navigationSteps: {
-                      where: {
-                        stepKey: {
-                          in: [
-                            'surgery',
-                            'colectomy',
-                            'mastectomy',
-                            'lumpectomy',
-                          ],
-                        },
-                        isCompleted: true,
-                        completedAt: { not: null },
-                      },
-                      orderBy: {
-                        completedAt: 'asc',
-                      },
-                      take: 1,
-                    },
-                    journey: {
-                      select: {
-                        diagnosisDate: true,
-                      },
-                    },
-                  },
-                });
-
-                const validTimes = patients
-                  .filter(
-                    (p) =>
-                      p.journey?.diagnosisDate && p.navigationSteps.length > 0
-                  )
-                  .map((p) => {
-                    const surgeryStep = p.navigationSteps[0];
-                    const diffMs =
-                      new Date(surgeryStep.completedAt).getTime() -
-                      new Date(p.journey.diagnosisDate).getTime();
-                    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                  })
-                  .filter((days) => days >= 0);
-
-                if (validTimes.length > 0) {
-                  currentAverageDays = Math.round(
-                    validTimes.reduce((sum, days) => sum + days, 0) /
-                      validTimes.length
-                  );
-                  patientsCount = validTimes.length;
-                  patientsAtRisk = validTimes.filter(
-                    (days) => days > benchmark.criticalDays
-                  ).length;
-                }
-                break;
-              }
-
-              case 'surgery_to_adjuvant_chemotherapy': {
-                // Tempo desde cirurgia até início de quimioterapia adjuvante
-                const whereClause: any = {
-                  tenantId,
-                };
-                if (cancerType) {
-                  whereClause.cancerType = {
-                    equals: cancerType,
-                    mode: 'insensitive',
-                  };
-                }
-                const patients = await this.prisma.patient.findMany({
-                  where: whereClause,
-                  include: {
-                    navigationSteps: {
-                      where: {
-                        stepKey: {
-                          in: [
-                            'surgery',
-                            'colectomy',
-                            'mastectomy',
-                            'lumpectomy',
-                          ],
-                        },
-                        isCompleted: true,
-                        completedAt: { not: null },
-                      },
-                      orderBy: {
-                        completedAt: 'desc',
-                      },
-                      take: 1,
-                    },
-                    journey: {
-                      select: {
-                        treatmentStartDate: true,
-                      },
-                    },
-                  },
-                });
-
-                const validTimes = patients
-                  .filter(
-                    (p) =>
-                      p.navigationSteps.length > 0 &&
-                      p.journey?.treatmentStartDate
-                  )
-                  .map((p) => {
-                    const surgeryStep = p.navigationSteps[0];
-                    const diffMs =
-                      new Date(p.journey.treatmentStartDate).getTime() -
-                      new Date(surgeryStep.completedAt).getTime();
-                    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                  })
-                  .filter((days) => days >= 0);
-
-                if (validTimes.length > 0) {
-                  currentAverageDays = Math.round(
-                    validTimes.reduce((sum, days) => sum + days, 0) /
-                      validTimes.length
-                  );
-                  patientsCount = validTimes.length;
-                  patientsAtRisk = validTimes.filter(
-                    (days) => days > benchmark.criticalDays
-                  ).length;
-                }
-                break;
-              }
-            }
-          } catch (error) {
-            // Se houver erro ao calcular uma métrica específica, continuar com as outras
-            this.logger.error(
-              `Erro ao calcular métrica ${benchmark.metric} para ${cancerType}:`,
-              error instanceof Error ? error.stack : String(error)
-            );
-          }
-
-          // Determinar status baseado na comparação com benchmark
-          let status: 'IDEAL' | 'ACCEPTABLE' | 'CRITICAL' | 'NO_DATA';
-          if (currentAverageDays === null) {
-            status = 'NO_DATA';
-          } else if (currentAverageDays <= benchmark.idealDays) {
-            status = 'IDEAL';
-          } else if (currentAverageDays <= benchmark.acceptableDays) {
-            status = 'ACCEPTABLE';
-          } else {
-            status = 'CRITICAL';
-          }
-
-          metrics.push({
-            cancerType,
-            metric: benchmark.metric,
-            metricLabel: metricLabels[benchmark.metric] || benchmark.metric,
-            currentAverageDays,
-            benchmark,
-            status,
-            patientsCount,
-            patientsAtRisk,
-          });
-        }
-      }
-
-      // Calcular resumo
-      const summary = {
-        totalMetrics: metrics.length,
-        metricsInIdealRange: metrics.filter((m) => m.status === 'IDEAL').length,
-        metricsInAcceptableRange: metrics.filter(
-          (m) => m.status === 'ACCEPTABLE'
-        ).length,
-        metricsInCriticalRange: metrics.filter((m) => m.status === 'CRITICAL')
-          .length,
-        metricsWithNoData: metrics.filter((m) => m.status === 'NO_DATA').length,
-      };
-
-      this.logger.debug(
-        `Cálculo de prazos críticos concluído. Total de métricas: ${metrics.length}`
-      );
-      return {
-        metrics,
-        summary,
-      };
-    } catch (error) {
-      this.logger.error(
-        'Erro ao calcular prazos críticos:',
-        error instanceof Error ? error.stack : String(error)
-      );
-      // Retornar estrutura vazia em caso de erro
-      return {
-        metrics: [],
-        summary: {
-          totalMetrics: 0,
-          metricsInIdealRange: 0,
-          metricsInAcceptableRange: 0,
-          metricsInCriticalRange: 0,
-          metricsWithNoData: 0,
         },
-      };
+      },
+      take,
+    });
+    return alerts.map((a) => ({
+      id: a.id,
+      type: a.type,
+      severity: a.severity,
+      message: a.message,
+      status: a.status,
+      createdAt: a.createdAt.toISOString(),
+      patientId: a.patientId,
+      patient: {
+        id: a.patient.id,
+        name: a.patient.name,
+        phone: a.patient.phone,
+      },
+    }));
+  }
+
+  /**
+   * Lista pacientes filtrados por indicador do dashboard (mensagens não assumidas, biomarcadores pendentes).
+   * Para alertas pendentes use getPendingAlerts.
+   */
+  async getPatientsByIndicator(
+    tenantId: string,
+    indicator: 'alerts' | 'messages' | 'biomarkers',
+    maxResults: number = 100
+  ): Promise<
+    (Patient & {
+      _count: { messages: number; alerts: number; observations: number };
+      pendingAlertsCount: number;
+    })[]
+  > {
+    const take = Math.min(Math.max(1, maxResults), 200);
+    let patientIds: string[] = [];
+
+    if (indicator === 'alerts') {
+      const alerts = await this.prisma.alert.findMany({
+        where: {
+          tenantId,
+          status: { not: 'RESOLVED' },
+        },
+        select: { patientId: true },
+        distinct: ['patientId'],
+      });
+      patientIds = alerts.map((a) => a.patientId);
+    } else if (indicator === 'messages') {
+      const messages = await this.prisma.message.findMany({
+        where: {
+          tenantId,
+          direction: 'INBOUND',
+          assumedBy: null,
+        },
+        select: { patientId: true },
+        distinct: ['patientId'],
+      });
+      patientIds = messages.map((m) => m.patientId);
+    } else if (indicator === 'biomarkers') {
+      const biomarkerStepKeys = [
+        'her2_test',
+        'egfr_test',
+        'pdl1_test',
+        'msi_test',
+        'kras_test',
+        'braf_test',
+        'alk_test',
+        'biomarker_her2',
+        'biomarker_egfr',
+        'biomarker_pdl1',
+        'biomarker_msi',
+        'biomarker_kras',
+        'biomarker_braf',
+        'biomarker_alk',
+      ];
+      const steps = await this.prisma.navigationStep.findMany({
+        where: {
+          tenantId,
+          stepKey: { in: biomarkerStepKeys },
+          isCompleted: false,
+          status: { in: ['PENDING', 'IN_PROGRESS', 'OVERDUE'] },
+        },
+        select: { patientId: true },
+        distinct: ['patientId'],
+      });
+      patientIds = steps.map((s) => s.patientId);
     }
+
+    if (patientIds.length === 0) {
+      return [];
+    }
+
+    const patients = await this.prisma.patient.findMany({
+      where: {
+        id: { in: patientIds },
+        tenantId,
+      },
+      include: {
+        _count: {
+          select: {
+            messages: true,
+            alerts: true,
+            observations: true,
+          },
+        },
+      },
+      orderBy: [
+        { priorityScore: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      take,
+    });
+
+    const ids = patients.map((p) => p.id);
+    const pendingCounts =
+      ids.length > 0
+        ? await this.prisma.alert.groupBy({
+            by: ['patientId'],
+            where: {
+              patientId: { in: ids },
+              tenantId,
+              status: 'PENDING',
+            },
+            _count: { id: true },
+          })
+        : [];
+    const pendingByPatient = new Map(
+      pendingCounts.map((r) => [r.patientId, r._count.id])
+    );
+
+    return patients.map((p) => ({
+      ...p,
+      pendingAlertsCount: pendingByPatient.get(p.id) ?? 0,
+    }));
   }
 }

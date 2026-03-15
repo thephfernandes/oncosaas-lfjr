@@ -10,12 +10,19 @@ import {
   IsArray,
   ValidateNested,
   IsNumber,
+  IsBoolean,
   Min,
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateCancerDiagnosisDto } from './create-cancer-diagnosis.dto';
 import { FamilyHistoryDto } from './family-history.dto';
+import {
+  JourneyStage,
+  ComorbidityType,
+  ComorbiditySeverity,
+  MedicationCategory,
+} from '@prisma/client';
 
 export enum Gender {
   MALE = 'male',
@@ -32,6 +39,48 @@ export enum CancerType {
   BLADDER = 'bladder', // Câncer de Bexiga
   TESTICULAR = 'testicular', // Câncer de Testículo
   OTHER = 'other',
+}
+
+// DTO inline para comorbidade na criação de paciente (sem patientId/tenantId)
+export class InlineComorbidityDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsEnum(ComorbidityType)
+  @IsOptional()
+  type?: ComorbidityType;
+
+  @IsEnum(ComorbiditySeverity)
+  @IsOptional()
+  severity?: ComorbiditySeverity;
+
+  @IsBoolean()
+  @IsOptional()
+  controlled?: boolean;
+}
+
+// DTO inline para medicamento na criação de paciente (sem patientId/tenantId)
+export class InlineMedicationDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  dosage?: string;
+
+  @IsString()
+  @IsOptional()
+  frequency?: string;
+
+  @IsString()
+  @IsOptional()
+  indication?: string;
+
+  @IsEnum(MedicationCategory)
+  @IsOptional()
+  category?: MedicationCategory;
 }
 
 export class CreatePatientDto {
@@ -80,9 +129,9 @@ export class CreatePatientDto {
   @IsOptional()
   currentTreatment?: string;
 
-  @IsString()
+  @IsEnum(JourneyStage)
   @IsOptional()
-  currentStage?: string; // SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP
+  currentStage?: JourneyStage; // SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP
 
   @IsNumber()
   @IsOptional()
@@ -124,6 +173,24 @@ export class CreatePatientDto {
   @Type(() => FamilyHistoryDto)
   familyHistory?: FamilyHistoryDto[];
 
-  // Nota: comorbidades e medicamentos são gerenciados via endpoints dedicados
-  // POST /patients/:id/comorbidities e POST /patients/:id/medications
+  // Comorbidades inline (opcional na criação; também gerenciável via POST /patients/:id/comorbidities)
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => InlineComorbidityDto)
+  comorbidities?: InlineComorbidityDto[];
+
+  // Medicamentos inline (opcional na criação; também gerenciável via POST /patients/:id/medications)
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => InlineMedicationDto)
+  currentMedications?: InlineMedicationDto[];
+
+  // Dias sem interação para disparar alerta NO_RESPONSE (null = padrão global 7)
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(90)
+  maxDaysWithoutInteractionAlert?: number;
 }

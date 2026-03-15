@@ -142,6 +142,12 @@ class AgentOrchestrator:
         cancer_type = clinical_context.get("patient", {}).get("cancerType")
         journey_stage = clinical_context.get("patient", {}).get("currentStage")
         has_llm_keys = llm_provider.has_any_llm_key(agent_config)
+        has_anthropic = llm_provider.has_anthropic_key(agent_config)
+        logger.info(
+            "LLM key check: has_any=%s has_anthropic=%s agent_config_keys=%s",
+            has_llm_keys, has_anthropic,
+            [k for k in (agent_config or {}).keys()],
+        )
         use_llm_analysis = agent_config.get("use_llm_symptom_analysis", True) and has_llm_keys
 
         span_symptoms = tracer.start_span(trace, "symptom_analysis")
@@ -225,6 +231,7 @@ class AgentOrchestrator:
 
         final_message = f"{intent_hint}{message}" if intent_hint else message
 
+        # Multi-agent pipeline: Anthropic preferred, OpenAI fallback (handled inside run_agentic_loop).
         if has_llm_keys:
             span_llm = tracer.start_span(trace, "multi_agent_pipeline")
             llm_start = time.monotonic()
@@ -246,17 +253,7 @@ class AgentOrchestrator:
                     f"{[tc['name'] for tc in all_tool_calls]}"
                 )
         else:
-            span_llm = tracer.start_span(trace, "llm_generate")
-            llm_start = time.monotonic()
-            response_text = await llm_provider.generate(
-                system_prompt=system_prompt,
-                messages=conversation_history + [{"role": "user", "content": final_message}],
-                config=agent_config,
-            )
-            llm_dur = (time.monotonic() - llm_start) * 1000
-            span_llm.finish()
-            model = agent_config.get("llm_model", "claude-sonnet-4-6")
-            tracer.record_llm_call(trace, "generate", agent_config.get("llm_provider", "anthropic"), model, llm_dur)
+            response_text = llm_provider._fallback_response()
 
         # 8. Check if a questionnaire should start (from protocol or LLM tool calls)
         questionnaire_to_start = next(
@@ -508,6 +505,9 @@ class AgentOrchestrator:
 
             response_text = orch_result.get("response", "").strip()
             if not response_text:
+                logger.warning(
+                    "Multi-agent pipeline returned empty response, using fallback message"
+                )
                 response_text = llm_provider._fallback_response()
 
             logger.info(
@@ -517,7 +517,9 @@ class AgentOrchestrator:
             )
 
         except Exception as e:
-            logger.error(f"Multi-agent pipeline failed: {e}")
+            logger.error(
+                "Multi-agent pipeline failed: %s (type=%s)", e, type(e).__name__, exc_info=True
+            )
             response_text = llm_provider._fallback_response()
 
         return response_text, all_tool_calls

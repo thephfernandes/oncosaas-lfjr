@@ -3,13 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 import {
@@ -131,21 +125,13 @@ export function ComorbiditiesForm({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div>
                       <Label className="text-xs">Tipo *</Label>
-                      <Select
+                      <SearchableSelect
+                        options={TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
                         value={c.type ?? 'OTHER'}
-                        onValueChange={(v) => update(index, 'type', v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TYPE_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => update(index, 'type', v)}
+                        placeholder="Buscar tipo de comorbidade..."
+                        aria-label="Tipo de comorbidade"
+                      />
                     </div>
                     <div>
                       <Label className="text-xs">Nome / detalhe</Label>
@@ -176,21 +162,13 @@ export function ComorbiditiesForm({
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 items-end">
                     <div>
                       <Label className="text-xs">Gravidade</Label>
-                      <Select
+                      <SearchableSelect
+                        options={SEVERITY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
                         value={c.severity ?? 'MODERATE'}
-                        onValueChange={(v) => update(index, 'severity', v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SEVERITY_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => update(index, 'severity', v)}
+                        placeholder="Buscar gravidade..."
+                        aria-label="Gravidade da comorbidade"
+                      />
                     </div>
                     <div className="flex items-center gap-2 pb-1">
                       <input

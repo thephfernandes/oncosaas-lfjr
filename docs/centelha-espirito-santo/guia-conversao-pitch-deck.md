@@ -89,7 +89,7 @@ slidev docs/centelha-espirito-santo/pitch-deck-centelha.md
 - Subtítulo: "Plataforma de Otimização Oncológica com IA"
 - Tagline: "Transformando o cuidado oncológico através de IA e WhatsApp"
 - Programa: "Centelha Espírito Santo"
-- Data: 2024
+- Data: 2025
 
 ### Slide 2: O Problema
 

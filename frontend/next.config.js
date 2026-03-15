@@ -12,7 +12,10 @@ const nextConfig = {
     NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || '',
     NEXT_PUBLIC_API_PORT: process.env.NEXT_PUBLIC_API_PORT || '3002',
     NEXT_PUBLIC_META_APP_ID: process.env.NEXT_PUBLIC_META_APP_ID || '',
-    NEXT_PUBLIC_META_CONFIG_ID: process.env.NEXT_PUBLIC_META_CONFIG_ID || '',
+    NEXT_PUBLIC_META_CONFIG_ID:
+      process.env.NEXT_PUBLIC_META_CONFIG_ID ||
+      process.env.NEXT_PUBLIC_META_APP_CONFIG_ID ||
+      '',
   },
 };
 

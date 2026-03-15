@@ -52,6 +52,8 @@ export class WhatsAppConnectionsService {
   private readonly metaAppId: string;
   private readonly metaAppSecret: string;
   private readonly metaOAuthRedirectUri: string;
+  private readonly metaEmbeddedSignupRedirectUri: string;
+  private readonly metaEmbeddedSignupUseRedirectUri: boolean;
   private readonly encryptionKey: string;
   private readonly metaApiBaseUrl: string;
   private readonly metaConfigId: string;
@@ -64,16 +66,21 @@ export class WhatsAppConnectionsService {
       this.configService.get<string>('META_API_VERSION') || 'v18.0';
     this.metaAppId =
       this.configService.get<string>('META_APP_ID') ||
-      this.configService.get<string>('APP_META_APP_ID') ||
+      this.configService.get<string>('META_APP_ID') ||
       '';
     this.metaAppSecret =
       this.configService.get<string>('META_APP_SECRET') || '';
     this.metaConfigId =
-      this.configService.get<string>('APP_META_CONFIG_ID') || '';
+      this.configService.get<string>('META_APP_CONFIG_ID') || '';
     this.metaOAuthRedirectUri =
       this.configService.get<string>('META_OAUTH_REDIRECT_URI') ||
       this.configService.get<string>('META_REDIRECT_URI') ||
       'http://localhost:3002/api/v1/whatsapp-connections/oauth/callback';
+    this.metaEmbeddedSignupRedirectUri =
+      this.configService.get<string>('META_EMBEDDED_SIGNUP_REDIRECT_URI') || '';
+    this.metaEmbeddedSignupUseRedirectUri =
+      this.configService.get<string>('META_EMBEDDED_SIGNUP_USE_REDIRECT_URI') !==
+      'false';
     const configuredEncryptionKey =
       this.configService.get<string>('ENCRYPTION_KEY');
     const isProduction =
@@ -866,26 +873,65 @@ export class WhatsAppConnectionsService {
   }
 
   /**
-   * Definir conexão como padrão
+   * Trocar código do Embedded Signup por business token.
+   *
+   * O redirect_uri enviado na troca de código DEVE ser idêntico ao usado no OAuth.
+   * Com FB.login (popup), o SDK usa redirect_uri interno (staticxx.facebook.com/xd_arbiter)
+   * e o código é emitido para esse URI. A Meta aceita troca SEM redirect_uri nesse fluxo.
+   *
+   * Estratégia (baseada em fórum Meta e Stack Overflow):
+   * 1. Omitir redirect_uri (null) - Eduardo/Hitesh: "no need to send, facebook handles it"
+   * 2. String vazia ("") - HubertBlu: funcionou
+   * 3. xd_arbiter (SDK usa ?version=46) - JSSDKXDConfig no sdk.js
+   * 4. Nossa URL - apenas para fluxo redirect (não popup)
+   *
+   * Ref: https://developers.facebook.com/community/threads/597333095976937/
+   * Ref: https://stackoverflow.com/questions/77555576
+   * Ref: JSSDKXDConfig.XXdUrl no connect.facebook.net/sdk.js
    */
-  /**
-   * Trocar código do Embedded Signup por business token
-   * Conforme documentação: https://developers.facebook.com/docs/whatsapp/embedded-signup/implementation
-   */
-  private async exchangeCodeForBusinessToken(code: string): Promise<string> {
-    try {
-      const response = await axios.post<MetaTokenResponse>(
-        `${this.metaApiBaseUrl}/oauth/access_token`,
-        null,
-        {
-          params: {
-            client_id: this.metaAppId,
-            client_secret: this.metaAppSecret,
-            code: code,
-            redirect_uri: this.metaOAuthRedirectUri,
-          },
-        }
+  private async exchangeCodeForBusinessToken(
+    code: string,
+    redirectUriFromFrontend?: string
+  ): Promise<string> {
+    const rawRedirectUri =
+      redirectUriFromFrontend !== undefined
+        ? String(redirectUriFromFrontend).trim()
+        : (this.metaEmbeddedSignupRedirectUri?.trim() || '');
+    const redirectUri = rawRedirectUri.replace(/\/$/, '');
+
+    const tryExchange = async (
+      redirectUriToUse: string | null,
+      usePost: boolean
+    ) => {
+      const params: Record<string, string> = {
+        client_id: this.metaAppId,
+        client_secret: this.metaAppSecret,
+        code: code,
+      };
+      if (redirectUriToUse !== null) {
+        params.redirect_uri = redirectUriToUse;
+      }
+
+      this.logger.debug(
+        `Exchanging code via ${this.metaApiBaseUrl}/oauth/access_token ` +
+          `(${usePost ? 'POST' : 'GET'}, client_id=${this.metaAppId}, redirect_uri=${redirectUriToUse === null ? 'omitted' : `"${redirectUriToUse}"`})`
       );
+
+      let response: { data: MetaTokenResponse };
+      if (usePost) {
+        response = await axios.post<MetaTokenResponse>(
+          `${this.metaApiBaseUrl}/oauth/access_token`,
+          new URLSearchParams(params).toString(),
+          {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          }
+        );
+      } else {
+        response = await axios.get<MetaTokenResponse>(
+          `${this.metaApiBaseUrl}/oauth/access_token`,
+          { params }
+        );
+      }
 
       if (!response.data.access_token) {
         throw new BadRequestException(
@@ -894,31 +940,189 @@ export class WhatsAppConnectionsService {
       }
 
       return response.data.access_token;
-    } catch (error: any) {
-      this.logger.error(
-        'Error exchanging code for business token:',
-        error.response?.data || error.message
-      );
-      throw new BadRequestException(
-        `Failed to exchange code: ${error.response?.data?.error?.message || error.message}`
-      );
+    };
+
+    // Ordem: redirect_uri do frontend PRIMEIRO (fallback_redirect_uri no FB.login)
+    // Ref: FB.login usa primeiro URL de Valid OAuth Redirect URIs ou fallback_redirect_uri
+    const primaryUris: (string | null)[] = [];
+
+    if (redirectUri) {
+      primaryUris.push(redirectUri);
+      primaryUris.push(redirectUri + '/'); // Variante com barra final
     }
+
+    primaryUris.push(null); // omitir - funciona para alguns (Eduardo, Hitesh)
+    primaryUris.push('');
+
+    // Se META_EMBEDDED_SIGNUP_USE_REDIRECT_URI=true E ainda não temos a URL, adicionar do .env
+    if (
+      this.metaEmbeddedSignupUseRedirectUri &&
+      this.metaEmbeddedSignupRedirectUri &&
+      !redirectUri
+    ) {
+      primaryUris.push(this.metaEmbeddedSignupRedirectUri.trim().replace(/\/$/, ''));
+    }
+
+    let lastError: any;
+    for (let i = 0; i < primaryUris.length; i++) {
+      const uriToTry = primaryUris[i];
+      const label =
+        uriToTry === null
+          ? 'null (omit)'
+          : uriToTry === ''
+            ? '""'
+            : uriToTry?.includes('xd_arbiter')
+              ? `xd_arbiter`
+              : 'app redirect_uri';
+
+      try {
+        if (i > 0) {
+          this.logger.warn(
+            `Token exchange retry (attempt ${i + 1}) with redirect_uri=${label}`
+          );
+        }
+        // Tentar POST primeiro (Hitesh no fórum Meta relatou sucesso com POST)
+        try {
+          return await tryExchange(
+            uriToTry === null ? null : uriToTry!,
+            true
+          );
+        } catch (postErr: any) {
+          const postMetaErr = postErr.response?.data?.error;
+          const postIs36008 =
+            postMetaErr?.code === 36008 ||
+            postMetaErr?.error_subcode === 36008;
+          if (postIs36008) {
+            this.logger.debug(
+              `POST failed (36008), retrying with GET for ${label}`
+            );
+            return await tryExchange(
+              uriToTry === null ? null : uriToTry!,
+              false
+            );
+          }
+          throw postErr;
+        }
+      } catch (err: any) {
+        lastError = err;
+        const metaError = err.response?.data?.error;
+        const is36008 =
+          metaError?.code === 36008 || metaError?.error_subcode === 36008;
+
+        this.logger.debug(
+          `Attempt with ${label} failed${is36008 ? ' (36008 redirect_uri mismatch)' : ''}:`,
+          metaError?.message || err.message
+        );
+
+        if (i === primaryUris.length - 1) {
+          const msg = metaError?.message || lastError.message;
+          this.logger.error(
+            'All redirect_uri attempts failed. Ensure Valid OAuth Redirect URIs includes your app URL.'
+          );
+          throw new BadRequestException(`Failed to exchange code: ${msg}`);
+        }
+      }
+    }
+
+    // Fallback antigo mantido só por compatibilidade (não deve chegar aqui)
+    throw lastError || new BadRequestException('Failed to exchange code');
   }
 
+  private async _exchangeCodeForBusinessTokenLegacy(
+    code: string,
+    redirectUri: string
+  ): Promise<string> {
+    const tryExchange = async (redirectUriToUse: string | null) => {
+      const params: Record<string, string> = {
+        client_id: this.metaAppId,
+        client_secret: this.metaAppSecret,
+        code: code,
+      };
+      if (redirectUriToUse !== null) {
+        params.redirect_uri = redirectUriToUse;
+      }
+      const response = await axios.get<MetaTokenResponse>(
+        `${this.metaApiBaseUrl}/oauth/access_token`,
+        { params }
+      );
+      if (!response.data.access_token) {
+        throw new BadRequestException('Failed to exchange code for business token');
+      }
+      return response.data.access_token;
+    };
+
+    try {
+      return await tryExchange(redirectUri);
+    } catch (firstError: any) {
+      const metaError = firstError.response?.data?.error;
+      const is36008 =
+        metaError?.code === 36008 || metaError?.error_subcode === 36008;
+
+      if (!is36008) {
+        const errorMessage = metaError?.message || firstError.message;
+        this.logger.error('Error exchanging code:', { message: errorMessage });
+        throw new BadRequestException(`Failed to exchange code: ${errorMessage}`);
+      }
+
+      const fallbackUris: (string | null)[] = [null, ''];
+
+      for (let i = 0; i < fallbackUris.length; i++) {
+        const uriToTry = fallbackUris[i];
+        try {
+          this.logger.warn(`Retrying token exchange (36008) with fallback ${i + 1}`);
+          return await tryExchange(uriToTry === null ? null : uriToTry!);
+        } catch (retryError: any) {
+          if (i === fallbackUris.length - 1) {
+            const msg = retryError.response?.data?.error?.message || retryError.message;
+            throw new BadRequestException(`Failed to exchange code: ${msg}`);
+          }
+        }
+      }
+    }
+
+    throw new BadRequestException('Failed to exchange code');
+  }
+
+
   /**
-   * Processar código do Embedded Signup
-   * O código precisa ser trocado por business token primeiro
+   * Processar código do Embedded Signup.
+   * Troca o código por business token.
+   * Usa redirect_uri do frontend (exato) se fornecido; senão META_EMBEDDED_SIGNUP_REDIRECT_URI.
    */
   async processEmbeddedSignup(
     code: string,
-    tenantId: string
+    tenantId: string,
+    redirectUriFromFrontend?: string
   ): Promise<{ success: boolean; connectionId: string; message: string }> {
     try {
       // Passo 1: Trocar código por business token
-      const businessToken = await this.exchangeCodeForBusinessToken(code);
+      const businessToken = await this.exchangeCodeForBusinessToken(
+        code,
+        redirectUriFromFrontend
+      );
 
-      // Passo 2: Buscar Business Managers
-      const businesses = await this.getBusinessManagers(businessToken);
+      // Passo 2: Tentar obter long-lived token (o token do Embedded Signup
+      // pode já ser um System User token que não expira — nesse caso a troca falha
+      // e usamos o original)
+      let longLivedToken: string;
+      let expiresIn: number;
+      try {
+        const longTokenResponse =
+          await this.exchangeShortLivedToken(businessToken);
+        longLivedToken = longTokenResponse.access_token;
+        expiresIn = longTokenResponse.expires_in || 5184000;
+      } catch {
+        this.logger.log(
+          'Token is already long-lived or system user token, using as-is'
+        );
+        longLivedToken = businessToken;
+        expiresIn = 5184000;
+      }
+
+      const expiresAt = new Date(Date.now() + expiresIn * 1000);
+
+      // Buscar Business Managers
+      const businesses = await this.getBusinessManagers(longLivedToken);
 
       if (businesses.length === 0) {
         throw new BadRequestException(
@@ -926,13 +1130,12 @@ export class WhatsAppConnectionsService {
         );
       }
 
-      // Usar o primeiro Business Manager
       const businessId = businesses[0].id;
 
-      // Passo 3: Buscar WhatsApp Business Accounts
+      // Buscar WhatsApp Business Accounts
       const whatsappAccounts = await this.getWhatsAppBusinessAccounts(
         businessId,
-        businessToken
+        longLivedToken
       );
 
       if (whatsappAccounts.length === 0) {
@@ -941,18 +1144,17 @@ export class WhatsAppConnectionsService {
         );
       }
 
-      // Passo 4: Buscar números de telefone e criar conexões
+      // Buscar números de telefone e criar/atualizar conexões
       const connections: WhatsAppConnection[] = [];
       let isFirst = true;
 
       for (const account of whatsappAccounts) {
         const phoneNumbers = await this.getPhoneNumbers(
           account.id,
-          businessToken
+          longLivedToken
         );
 
         for (const phoneNumber of phoneNumbers) {
-          // Verificar se já existe conexão com este número
           const existing = await this.prisma.whatsAppConnection.findFirst({
             where: {
               tenantId,
@@ -960,63 +1162,50 @@ export class WhatsAppConnectionsService {
             },
           });
 
+          const connectionData = {
+            phoneNumberId: phoneNumber.id,
+            whatsappBusinessAccountId: account.id,
+            businessAccountId: businessId,
+            oauthAccessToken: encryptSensitiveData(
+              longLivedToken,
+              this.encryptionKey
+            ),
+            oauthExpiresAt: expiresAt,
+            oauthScopes: [
+              'business_management',
+              'whatsapp_business_management',
+              'whatsapp_business_messaging',
+            ],
+            authMethod: WhatsAppAuthMethod.OAUTH,
+            status: WhatsAppConnectionStatus.CONNECTED,
+            isActive: true,
+            lastSyncAt: new Date(),
+            lastError: null,
+          };
+
           if (existing) {
-            // Atualizar conexão existente
             const updated = await this.prisma.whatsAppConnection.update({
               where: { id: existing.id },
               data: {
-                phoneNumberId: phoneNumber.id,
-                whatsappBusinessAccountId: account.id,
-                businessAccountId: businessId,
-                oauthAccessToken: encryptSensitiveData(
-                  businessToken,
-                  this.encryptionKey
-                ),
-                oauthExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 dias
-                oauthScopes: [
-                  'business_management',
-                  'whatsapp_business_management',
-                  'whatsapp_business_messaging',
-                ],
-                authMethod: WhatsAppAuthMethod.OAUTH,
-                status: WhatsAppConnectionStatus.CONNECTED,
-                isActive: true,
+                ...connectionData,
                 isDefault: isFirst && !existing.isDefault,
-                lastSyncAt: new Date(),
-                lastError: null,
               },
             });
             connections.push(updated);
           } else {
-            // Criar nova conexão
             const created = await this.prisma.whatsAppConnection.create({
               data: {
+                ...connectionData,
                 tenantId,
                 name: `WhatsApp ${phoneNumber.display_phone_number}`,
                 phoneNumber: phoneNumber.display_phone_number,
-                phoneNumberId: phoneNumber.id,
-                whatsappBusinessAccountId: account.id,
-                businessAccountId: businessId,
-                oauthAccessToken: encryptSensitiveData(
-                  businessToken,
-                  this.encryptionKey
-                ),
-                oauthExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 dias
-                oauthScopes: [
-                  'business_management',
-                  'whatsapp_business_management',
-                  'whatsapp_business_messaging',
-                ],
-                authMethod: WhatsAppAuthMethod.OAUTH,
-                status: WhatsAppConnectionStatus.CONNECTED,
-                isActive: true,
                 isDefault: isFirst,
-                lastSyncAt: new Date(),
               },
             });
             connections.push(created);
-            isFirst = false;
           }
+
+          isFirst = false;
         }
       }
 
@@ -1026,16 +1215,15 @@ export class WhatsAppConnectionsService {
         );
       }
 
-      // Passo 5: Configurar webhooks para cada WABA
+      // Configurar webhooks (não-fatal)
       for (const account of whatsappAccounts) {
         try {
-          await this.configureWebhook(account.id, businessToken);
+          await this.configureWebhook(account.id, longLivedToken);
         } catch (error: any) {
           this.logger.warn(
             `Failed to configure webhook for WABA ${account.id}:`,
             error.message
           );
-          // Não falhar o processo se webhook falhar
         }
       }
 
@@ -1095,6 +1283,199 @@ export class WhatsAppConnectionsService {
       this.logger.error(`Error configuring webhook for WABA ${wabaId}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Executar chamadas de API necessárias para completar os testes do Meta App Review.
+   * Cada permissão exige que o app faça pelo menos uma chamada de API que a utilize.
+   *
+   * Permissões testadas:
+   * - email: GET /me?fields=email
+   * - business_management: GET /me/businesses e GET /{businessId}
+   * - whatsapp_business_manage_events: POST /{wabaId}/subscribed_apps
+   * - manage_app_solution: GET /{businessId}/owned_apps (se aplicável)
+   */
+  async runMetaAppReviewTests(
+    id: string,
+    tenantId: string
+  ): Promise<{
+    results: Record<string, { success: boolean; detail?: string }>;
+    summary: string;
+  }> {
+    const connection = await this.findOne(id, tenantId);
+
+    if (connection.authMethod !== WhatsAppAuthMethod.OAUTH) {
+      throw new BadRequestException(
+        'Apenas conexões OAuth/Embedded Signup suportam este teste. Use uma conexão obtida via "Conectar com Meta".'
+      );
+    }
+
+    const token = decryptSensitiveData(
+      connection.oauthAccessToken || '',
+      this.encryptionKey
+    );
+    const businessId = connection.businessAccountId;
+    const wabaId = connection.whatsappBusinessAccountId;
+
+    if (!businessId || !wabaId) {
+      throw new BadRequestException(
+        'Conexão incompleta: faltam businessAccountId ou whatsappBusinessAccountId.'
+      );
+    }
+
+    const results: Record<string, { success: boolean; detail?: string }> = {};
+
+    // 1. email - GET /me?fields=email (requer escopo 'email' na Configuration)
+    try {
+      const meRes = await axios.get<{ id?: string; email?: string }>(
+        `${this.metaApiBaseUrl}/me`,
+        {
+          params: {
+            fields: 'id,email',
+            access_token: token,
+          },
+        }
+      );
+      results.email = {
+        success: true,
+        detail: meRes.data.email
+          ? `Email obtido (oculto por privacidade)`
+          : 'Permissão concedida, email pode estar vazio',
+      };
+    } catch (error: any) {
+      const msg = error.response?.data?.error?.message || error.message;
+      results.email = {
+        success: false,
+        detail: msg.includes('email') || msg.includes('permission')
+          ? `Adicione 'email' à Configuration do Embedded Signup no App Meta`
+          : msg,
+      };
+    }
+
+    // 2. business_management - GET /me/businesses
+    try {
+      const bizRes = await axios.get<{ data: MetaBusiness[] }>(
+        `${this.metaApiBaseUrl}/me/businesses`,
+        {
+          params: { access_token: token },
+        }
+      );
+      results.business_management = {
+        success: true,
+        detail: `${bizRes.data?.data?.length ?? 0} business(es) listado(s)`,
+      };
+    } catch (error: any) {
+      results.business_management = {
+        success: false,
+        detail: error.response?.data?.error?.message || error.message,
+      };
+    }
+
+    // 3. business_management - GET /{businessId} (detalhes do business)
+    try {
+      await axios.get(`${this.metaApiBaseUrl}/${businessId}`, {
+        params: {
+          fields: 'id,name',
+          access_token: token,
+        },
+      });
+      if (!results.business_management?.success) {
+        results.business_management = {
+          success: true,
+          detail: 'Detalhes do business obtidos',
+        };
+      }
+    } catch (error: any) {
+      if (!results.business_management?.success) {
+        results.business_management = {
+          success: false,
+          detail: error.response?.data?.error?.message || error.message,
+        };
+      }
+    }
+
+    // 4. whatsapp_business_manage_events - POST /{businessId}/subscribed_apps
+    try {
+      await axios.post(
+        `${this.metaApiBaseUrl}/${businessId}/subscribed_apps`,
+        {
+          subscribed_fields: [
+            'messages',
+            'message_status',
+            'message_deliveries',
+          ],
+        },
+        { params: { access_token: token } }
+      );
+      results.whatsapp_business_manage_events = {
+        success: true,
+        detail: 'Business Manager inscrito ao app (webhook events)',
+      };
+    } catch (error: any) {
+      results.whatsapp_business_manage_events = {
+        success: false,
+        detail: error.response?.data?.error?.message || error.message,
+      };
+    }
+
+    // 5. whatsapp_business_manage_events - POST /{wabaId}/subscribed_apps
+    try {
+      await axios.post(
+        `${this.metaApiBaseUrl}/${wabaId}/subscribed_apps`,
+        {
+          subscribed_fields: [
+            'messages',
+            'message_status',
+            'message_deliveries',
+            'message_reads',
+          ],
+        },
+        { params: { access_token: token } }
+      );
+      if (results.whatsapp_business_manage_events?.success) {
+        results.whatsapp_business_manage_events.detail +=
+          '; WABA inscrito para webhooks';
+      } else {
+        results.whatsapp_business_manage_events = {
+          success: true,
+          detail: 'WABA inscrito para webhooks',
+        };
+      }
+    } catch (error: any) {
+      if (!results.whatsapp_business_manage_events?.success) {
+        results.whatsapp_business_manage_events = {
+          success: false,
+          detail: error.response?.data?.error?.message || error.message,
+        };
+      }
+    }
+
+    // 6. manage_app_solution - GET /{businessId}/owned_apps (para Solution Partners)
+    try {
+      await axios.get(`${this.metaApiBaseUrl}/${businessId}/owned_apps`, {
+        params: { access_token: token },
+      });
+      results.manage_app_solution = {
+        success: true,
+        detail: 'Apps do business listados',
+      };
+    } catch (error: any) {
+      results.manage_app_solution = {
+        success: false,
+        detail:
+          error.response?.data?.error?.message ||
+          error.message ||
+          'Permissão pode ser exclusiva para Solution Partners',
+      };
+    }
+
+    const successful = Object.values(results).filter((r) => r.success).length;
+    const total = Object.keys(results).length;
+
+    return {
+      results,
+      summary: `${successful}/${total} testes concluídos. Aguarde alguns minutos e atualize a página do App Review no Meta Developers para ver as chamadas registradas.`,
+    };
   }
 
   async setDefault(id: string, tenantId: string): Promise<WhatsAppConnection> {

@@ -6,7 +6,7 @@
 
 Diferenciais tecnológicos únicos: (1) Integração nativa WhatsApp Business API - única solução oncológica usando canal preferido de pacientes, sem necessidade de app, acessível a qualquer smartphone; (2) Agente de IA Conversacional especializado - LLM (GPT-4/Claude) com RAG em base de conhecimento médico oncológico (guidelines NCCN, ASCO), processamento de texto e áudio, detecção automática de sintomas críticos; (3) Priorização com IA específica para oncologia - modelo XGBoost treinado com dados oncológicos, scoring automático (0-100) com explicabilidade, único no mercado brasileiro.
 
-Pesquisa de mercado: soluções existentes são fragmentadas (navegação manual, EHRs genéricos, telemedicina não-especializada). Nenhuma oferece combinação integrada de navegação + priorização IA + agente conversacional WhatsApp. Mercado potencial: 500 hospitais e 2.000 clínicas oncológicas (R$ 15 bilhões em saúde digital).
+Pesquisa de mercado: soluções existentes são fragmentadas (navegação manual, EHRs genéricos, telemedicina não-especializada). Nenhuma oferece combinação integrada de navegação + priorização IA + agente conversacional WhatsApp. Mercado: 359 instituições habilitadas (CACONs/UNACONs). TAM USD 2,76 bi (2025) → USD 5,71 bi (2030).
 
 Barreiras de replicação: expertise em IA médica oncológica, integração complexa HL7/FHIR com múltiplos EHRs, compliance LGPD/ANVISA desde o início, relacionamento com hospitais. Parcerias em negociação: integradores de EHR, associações oncológicas. Registro de software e patente de algoritmo de priorização em processo.
 
@@ -20,7 +20,7 @@ Barreiras de replicação: expertise em IA médica oncológica, integração com
 
 Diferenciais únicos: (1) WhatsApp nativo - única solução oncológica usando canal preferido, sem app; (2) Agente IA especializado - LLM com RAG em conhecimento médico oncológico, processa texto/áudio, detecta sintomas críticos; (3) Priorização IA específica - XGBoost treinado com dados oncológicos, único no Brasil.
 
-Pesquisa mercado: soluções existentes fragmentadas (navegação manual, EHRs genéricos). Nenhuma oferece combinação integrada navegação + priorização IA + WhatsApp. Mercado: 500 hospitais e 2.000 clínicas (R$ 15 bilhões).
+Pesquisa mercado: soluções existentes fragmentadas (navegação manual, EHRs genéricos). Nenhuma oferece combinação integrada navegação + priorização IA + WhatsApp. Mercado: 359 instituições habilitadas. TAM USD 2,76 bi (2025) → USD 5,71 bi (2030).
 
 Barreiras replicação: expertise IA médica, integração HL7/FHIR complexa, compliance LGPD/ANVISA, relacionamento hospitais. Parcerias: integradores EHR, associações oncológicas. Registro software e patente algoritmo em processo.
 
@@ -34,7 +34,7 @@ Barreiras replicação: expertise IA médica, integração HL7/FHIR complexa, co
 
 Tecnologias inovadoras: (1) WhatsApp Business API integrado - canal preferido pacientes, sem app, acessível; (2) LLM especializado - GPT-4/Claude com RAG em guidelines oncológicos (NCCN, ASCO), processamento texto/áudio; (3) XGBoost oncológico - modelo treinado especificamente para priorização de casos oncológicos, único no mercado.
 
-Pesquisa: mercado fragmentado, sem solução integrada similar. Concorrentes: navegação manual, EHRs genéricos, telemedicina não-especializada. Gap: nenhum combina navegação + IA + WhatsApp. Mercado: 500 hospitais, 2.000 clínicas (R$ 15 bilhões).
+Pesquisa: mercado fragmentado, sem solução integrada similar. Concorrentes: navegação manual, EHRs genéricos, telemedicina não-especializada. Gap: nenhum combina navegação + IA + WhatsApp. Mercado: 359 instituições habilitadas. TAM USD 2,76 bi (2025) → USD 5,71 bi (2030).
 
 Dificuldade replicação: expertise IA médica oncológica, integração HL7/FHIR, compliance regulatório, relacionamento hospitais. Parcerias estratégicas em negociação. Propriedade intelectual: registro software e patente algoritmo priorização em processo.
 
@@ -66,7 +66,7 @@ Barreiras replicação: expertise IA médica oncológica, integração HL7/FHIR 
 - ✅ O que agrega valor (acessibilidade, especialização, automação)
 - ✅ O que torna difícil de replicar (expertise, integração, compliance, relacionamento)
 - ✅ Pesquisa sobre soluções similares (mercado fragmentado, sem solução integrada)
-- ✅ Mercado potencial (500 hospitais, 2.000 clínicas, R$ 15 bilhões)
+- ✅ Mercado potencial (359 instituições habilitadas, TAM USD 2,76bi → 5,71bi)
 - ✅ Concorrentes (navegação manual, EHRs genéricos, telemedicina)
 - ✅ Parcerias (integradores EHR, associações oncológicas)
 - ✅ Patentes/registros (em processo)

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { NavigationBar } from '@/components/shared/navigation-bar';
@@ -22,6 +22,8 @@ function IntegrationsPageContent() {
   const queryClient = useQueryClient();
 
   const [oauthFormOpen, setOauthFormOpen] = useState(false);
+  const [processingRedirectCode, setProcessingRedirectCode] = useState(false);
+  const processedCodeRef = useRef<string | null>(null);
 
   // Inicializar autenticação
   useEffect(() => {
@@ -50,6 +52,46 @@ function IntegrationsPageContent() {
       console.error('OAuth Error:', error);
     }
   }, [searchParams, queryClient]);
+
+  // Fluxo de redirecionamento do Embedded Signup: Meta redireciona para redirect_uri?code=XXX
+  // O código deve ser trocado por token via chamada servidor-para-servidor (backend)
+  const redirectCode = searchParams?.get('code');
+  useEffect(() => {
+    if (!redirectCode || !isAuthenticated) return;
+    if (processedCodeRef.current === redirectCode) return;
+
+    processedCodeRef.current = redirectCode;
+    setProcessingRedirectCode(true);
+
+    const processRedirectCode = async () => {
+      try {
+        const redirectUri =
+          typeof window !== 'undefined'
+            ? `${window.location.origin}${window.location.pathname}`
+            : undefined;
+        const result = await whatsappConnectionsApi.processEmbeddedSignup(
+          redirectCode,
+          redirectUri
+        );
+        if (result.success) {
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-connections'] });
+        } else {
+          alert(`Erro ao conectar: ${result.message || 'Erro desconhecido'}`);
+        }
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : 'Erro ao processar conexão';
+        alert(`Erro ao conectar: ${msg}`);
+      } finally {
+        setProcessingRedirectCode(false);
+        processedCodeRef.current = null;
+        // Remove o code da URL (segurança: código de uso único)
+        router.replace('/integrations', { scroll: false });
+      }
+    };
+
+    processRedirectCode();
+  }, [redirectCode, isAuthenticated, queryClient, router]);
 
   // Query para listar conexões
   const {
@@ -83,6 +125,33 @@ function IntegrationsPageContent() {
     mutationFn: (id: string) => whatsappConnectionsApi.setDefault(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-connections'] });
+    },
+  });
+
+  // Mutation para executar testes do Meta App Review
+  const runMetaTestsMutation = useMutation({
+    mutationFn: (id: string) => whatsappConnectionsApi.runMetaTests(id),
+    onSuccess: (data) => {
+      const summary = data?.summary || 'Testes executados.';
+      const failed = data?.results
+        ? Object.entries(data.results).filter(([, r]) => !r.success)
+        : [];
+      if (failed.length > 0) {
+        const details = failed
+          .map(([k, r]) => `${k}: ${r.detail || 'falhou'}`)
+          .join('\n');
+        alert(
+          `${summary}\n\nPermissões com falha:\n${details}\n\nAlgumas permissões (ex: manage_app_solution) podem exigir Solution Partner.`
+        );
+      } else {
+        alert(
+          `${summary}\n\nAguarde alguns minutos e recarregue a página do App Review no Meta Developers.`
+        );
+      }
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : 'Erro ao executar testes';
+      alert(`Erro: ${msg}`);
     },
   });
 
@@ -131,11 +200,19 @@ function IntegrationsPageContent() {
     await setDefaultMutation.mutateAsync(id);
   };
 
-  if (isInitializing) {
+  const handleRunMetaTests = async (id: string) => {
+    await runMetaTestsMutation.mutateAsync(id);
+  };
+
+  if (isInitializing || processingRedirectCode) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-lg text-gray-600">Carregando...</p>
+          <p className="text-lg text-gray-600">
+            {processingRedirectCode
+              ? 'Conectando WhatsApp...'
+              : 'Carregando...'}
+          </p>
         </div>
       </div>
     );
@@ -203,6 +280,7 @@ function IntegrationsPageContent() {
                 onDelete={handleDelete}
                 onTest={handleTest}
                 onSetDefault={handleSetDefault}
+                onRunMetaTests={handleRunMetaTests}
               />
             )}
           </CardContent>

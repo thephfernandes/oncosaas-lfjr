@@ -7,19 +7,18 @@ import {
   Bell,
   Clock,
   MessageSquare,
-  CheckCircle2,
   CalendarX,
   Activity,
   Stethoscope,
   Dna,
-  Target,
+  CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface KPICardsProps {
   metrics: DashboardMetrics | undefined;
   isLoading?: boolean;
-  onCardClick?: (filterType: string, filterValue?: any) => void;
+  onCardClick?: (filterType: string, filterValue?: string | Record<string, unknown>, cardTitle?: string) => void;
 }
 
 export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
@@ -50,7 +49,7 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
       badge: metrics.criticalPatientsCount > 0,
       clickable: true,
       filterType: 'priority',
-      filterValue: { minScore: 75 },
+      filterValue: 'CRITICAL',
     },
     {
       title: 'Total de Pacientes',
@@ -103,15 +102,6 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
       filterValue: { hasUnassumedMessages: true },
     },
     {
-      title: 'Casos Resolvidos Hoje',
-      value: metrics.resolvedTodayCount,
-      icon: CheckCircle2,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
-      clickable: false,
-    },
-    {
       title: 'Etapas Atrasadas',
       value: metrics.overdueStepsCount,
       icon: CalendarX,
@@ -123,7 +113,6 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
       filterType: 'overdueSteps',
       filterValue: { hasOverdueSteps: true },
     },
-    // Métricas Clínicas Críticas
     {
       title: 'Time-to-Treatment',
       value:
@@ -207,32 +196,6 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
       clickable: false,
     },
     {
-      title: 'Estadiamento Completo',
-      value: `${metrics.stagingCompletePercentage}%`,
-      subtitle: 'Antes do tratamento',
-      icon: Target,
-      color:
-        metrics.stagingCompletePercentage >= 90
-          ? 'text-green-600'
-          : metrics.stagingCompletePercentage >= 75
-            ? 'text-orange-600'
-            : 'text-red-600',
-      bgColor:
-        metrics.stagingCompletePercentage >= 90
-          ? 'bg-green-50'
-          : metrics.stagingCompletePercentage >= 75
-            ? 'bg-orange-50'
-            : 'bg-red-50',
-      borderColor:
-        metrics.stagingCompletePercentage >= 90
-          ? 'border-green-200'
-          : metrics.stagingCompletePercentage >= 75
-            ? 'border-orange-200'
-            : 'border-red-200',
-      badge: metrics.stagingCompletePercentage < 75,
-      clickable: false,
-    },
-    {
       title: 'Biomarcadores Pendentes',
       value: metrics.pendingBiomarkersCount,
       subtitle: 'Aguardando resultados',
@@ -274,7 +237,7 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-5 gap-4">
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
@@ -282,7 +245,7 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
             key={index}
             onClick={() => {
               if (card.clickable && onCardClick) {
-                onCardClick(card.filterType!, card.filterValue);
+                onCardClick(card.filterType!, card.filterValue, card.title);
               }
             }}
             className={cn(

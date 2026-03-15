@@ -1,13 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { DashboardMetrics, DashboardStatistics } from '@/lib/api/dashboard';
 import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -23,31 +20,23 @@ import {
   ChartFilters,
   PeriodFilter,
 } from '@/components/dashboard/shared/chart-filters';
+import { useState } from 'react';
 
 interface MetricsChartsProps {
   metrics: DashboardMetrics;
   statistics: DashboardStatistics;
   isLoading?: boolean;
   onPriorityFilter?: (category: string | null) => void;
-  onCancerTypeFilter?: (cancerType: string | null) => void;
-  onJourneyStageFilter?: (journeyStage: string | null) => void;
   onPeriodChange?: (period: PeriodFilter) => void;
   currentPeriod?: PeriodFilter;
 }
 
 // Paleta de cores profissional médica
 const COLORS = {
-  critical: '#dc2626', // red-600 - Mais suave
-  high: '#ea580c', // orange-600 - Mais suave
+  critical: '#dc2626', // red-600
+  high: '#ea580c', // orange-600
   medium: '#f59e0b', // amber-500
-  low: '#10b981', // emerald-500 - Verde médico
-};
-
-const JOURNEY_STAGE_LABELS: Record<string, string> = {
-  SCREENING: 'Rastreio',
-  DIAGNOSIS: 'Diagnóstico',
-  TREATMENT: 'Tratamento',
-  FOLLOW_UP: 'Seguimento',
+  low: '#10b981', // emerald-500
 };
 
 export function MetricsCharts({
@@ -55,14 +44,12 @@ export function MetricsCharts({
   statistics,
   isLoading,
   onPriorityFilter,
-  onCancerTypeFilter,
-  onJourneyStageFilter,
   onPeriodChange,
   currentPeriod = '30d',
 }: MetricsChartsProps) {
   const [drillDownOpen, setDrillDownOpen] = useState(false);
   const [drillDownFilter, setDrillDownFilter] = useState<{
-    type: 'priority' | 'cancerType' | 'journeyStage' | null;
+    type: 'priority' | null;
     value: string | null;
     title: string;
     description?: string;
@@ -71,10 +58,11 @@ export function MetricsCharts({
     value: null,
     title: '',
   });
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {[...Array(4)].map((_, i) => (
+        {[...Array(3)].map((_, i) => (
           <div
             key={i}
             className="bg-white rounded-lg border p-6 h-80 animate-pulse"
@@ -113,16 +101,6 @@ export function MetricsCharts({
 
   const totalPatients = priorityData.reduce((sum, item) => sum + item.value, 0);
 
-  // Dados para gráfico de barras de tipo de câncer (top 5)
-  const cancerTypeData = metrics.cancerTypeDistribution.slice(0, 5);
-
-  // Dados para gráfico de barras de estágio da jornada
-  const journeyStageData = metrics.journeyStageDistribution.map((item) => ({
-    stage: JOURNEY_STAGE_LABELS[item.stage] || item.stage,
-    count: item.count,
-    percentage: item.percentage,
-  }));
-
   // Dados para gráfico de linha de alertas por severidade
   const alertStatisticsData = statistics.alertStatistics.map((item) => ({
     date: new Date(item.date).toLocaleDateString('pt-BR', {
@@ -144,7 +122,6 @@ export function MetricsCharts({
     };
     const priorityValue = categoryMap[data.name] || null;
 
-    // Abrir modal de drill-down
     setDrillDownFilter({
       type: 'priority',
       value: priorityValue,
@@ -153,53 +130,8 @@ export function MetricsCharts({
     });
     setDrillDownOpen(true);
 
-    // Também chamar callback se fornecido (para compatibilidade)
     if (onPriorityFilter) {
       onPriorityFilter(priorityValue);
-    }
-  };
-
-  const handleCancerTypeClick = (data: {
-    cancerType: string;
-    count: number;
-  }) => {
-    // Abrir modal de drill-down
-    setDrillDownFilter({
-      type: 'cancerType',
-      value: data.cancerType,
-      title: `Pacientes com Tipo de Câncer: ${data.cancerType}`,
-      description: `${data.count} paciente${data.count !== 1 ? 's' : ''} encontrado${data.count !== 1 ? 's' : ''}`,
-    });
-    setDrillDownOpen(true);
-
-    // Também chamar callback se fornecido (para compatibilidade)
-    if (onCancerTypeFilter) {
-      onCancerTypeFilter(data.cancerType);
-    }
-  };
-
-  const handleJourneyStageClick = (data: { stage: string; count: number }) => {
-    // Reverter label para valor original
-    const stageMap: Record<string, string> = {
-      Rastreio: 'SCREENING',
-      Diagnóstico: 'DIAGNOSIS',
-      Tratamento: 'TREATMENT',
-      Seguimento: 'FOLLOW_UP',
-    };
-    const originalStage = stageMap[data.stage] || data.stage;
-
-    // Abrir modal de drill-down
-    setDrillDownFilter({
-      type: 'journeyStage',
-      value: originalStage,
-      title: `Pacientes em Estágio: ${data.stage}`,
-      description: `${data.count} paciente${data.count !== 1 ? 's' : ''} encontrado${data.count !== 1 ? 's' : ''}`,
-    });
-    setDrillDownOpen(true);
-
-    // Também chamar callback se fornecido (para compatibilidade)
-    if (onJourneyStageFilter) {
-      onJourneyStageFilter(originalStage);
     }
   };
 
@@ -296,114 +228,6 @@ export function MetricsCharts({
         </ResponsiveContainer>
       </div>
 
-      {/* Gráfico de Barras - Distribuição por Tipo de Câncer */}
-      <div className="bg-white rounded-lg border shadow-sm p-6 chart-slide-up">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800">
-          Top 5 Tipos de Câncer
-        </h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={cancerTypeData} layout="vertical">
-            <defs>
-              <linearGradient id="gradientBlue" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#0ea5e9" stopOpacity={1} />
-                <stop offset="100%" stopColor="#0284c7" stopOpacity={0.9} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              strokeDasharray="4 4"
-              stroke="rgba(148, 163, 184, 0.2)"
-              vertical={false}
-            />
-            <XAxis
-              type="number"
-              tick={{ fontSize: 11, fill: '#64748b' }}
-              axisLine={{ stroke: '#e2e8f0' }}
-            />
-            <YAxis
-              dataKey="cancerType"
-              type="category"
-              width={120}
-              tick={{ fontSize: 12, fill: '#475569' }}
-              axisLine={{ stroke: '#e2e8f0' }}
-            />
-            <Tooltip content={<CustomTooltip unit="pacientes" />} />
-            <Bar
-              dataKey="count"
-              fill="url(#gradientBlue)"
-              radius={[0, 6, 6, 0]}
-              onClick={(data: any) => {
-                if (data && data.activePayload && data.activePayload[0]) {
-                  handleCancerTypeClick(data.activePayload[0].payload);
-                }
-              }}
-              className="chart-hover"
-              style={{
-                cursor: 'pointer',
-                filter: 'drop-shadow(0 2px 4px rgba(14, 165, 233, 0.2))',
-                transition: 'all 0.2s ease-in-out',
-              }}
-              animationBegin={0}
-              animationDuration={600}
-              animationEasing="ease-out"
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Gráfico de Barras - Distribuição por Jornada */}
-      <div className="bg-white rounded-lg border shadow-sm p-6 chart-slide-up">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800">
-          Distribuição por Jornada
-        </h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={journeyStageData}>
-            <defs>
-              <linearGradient id="gradientPurple" x1="0" y1="1" x2="0" y2="0">
-                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
-                <stop offset="100%" stopColor="#7c3aed" stopOpacity={1} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              strokeDasharray="4 4"
-              stroke="rgba(148, 163, 184, 0.2)"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="stage"
-              angle={-45}
-              textAnchor="end"
-              height={80}
-              tick={{ fontSize: 11, fill: '#64748b' }}
-              axisLine={{ stroke: '#e2e8f0' }}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: '#64748b' }}
-              axisLine={{ stroke: '#e2e8f0' }}
-            />
-            <Tooltip content={<CustomTooltip unit="pacientes" />} />
-            <Bar
-              dataKey="count"
-              fill="url(#gradientPurple)"
-              radius={[6, 6, 0, 0]}
-              onClick={(data: any) => {
-                if (data && data.activePayload && data.activePayload[0]) {
-                  handleJourneyStageClick(data.activePayload[0].payload);
-                }
-              }}
-              className="chart-hover"
-              style={{
-                cursor: 'pointer',
-                filter: 'drop-shadow(0 2px 4px rgba(139, 92, 246, 0.2))',
-                transition: 'all 0.2s ease-in-out',
-              }}
-              animationBegin={0}
-              animationDuration={600}
-              animationEasing="ease-out"
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
       {/* Gráfico de Tendência de Pacientes */}
       <div className="bg-white rounded-lg border shadow-sm p-6 chart-slide-up">
         <h3 className="text-lg font-semibold mb-4 text-gray-800">
@@ -426,7 +250,7 @@ export function MetricsCharts({
                 <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.8} />
                 <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0.1} />
               </linearGradient>
-              <linearGradient id="gradientCritical" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="gradientCriticalTrend" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#dc2626" stopOpacity={0.8} />
                 <stop offset="95%" stopColor="#dc2626" stopOpacity={0.1} />
               </linearGradient>
@@ -474,7 +298,7 @@ export function MetricsCharts({
               dataKey="Críticos"
               stackId="1"
               stroke="#dc2626"
-              fill="url(#gradientCritical)"
+              fill="url(#gradientCriticalTrend)"
               strokeWidth={2}
               animationBegin={100}
               animationDuration={800}

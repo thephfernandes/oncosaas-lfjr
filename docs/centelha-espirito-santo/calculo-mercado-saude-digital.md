@@ -107,6 +107,35 @@ Este documento contém uma mistura de:
 - Com SOM de USD 570 mi (10% market share): EV USD 4,5-8,5 bilhões (múltiplo 8-15x)
 - Upside com 15% market share (USD 860 mi): EV USD 10,3 bilhões
 
+### Bottom-up por paciente (navegação oncológica)
+
+Cálculo alternativo por paciente, útil para pitch e proposta Centelha ES (Fase 2).
+
+**Premissas:**
+
+- 704 mil casos novos/ano (INCA 2023-2025).
+- 70% dos casos atendidos pelo SUS, 30% na rede privada (estimativa; não há percentual oficial único).
+- No SUS: 80% sem navegação formal (20% já com soluções/concorrentes).
+- No privado: 50% já tem navegação, logo 50% sem navegação.
+- Seguimento médio: 5 anos.
+- Receita por paciente/mês: R$ 100.
+
+**Cálculo SUS:**
+
+- Casos/ano SUS: 704.000 × 0,70 = 492.800.
+- Sem navegação: 492.800 × 0,80 = 394.240/ano.
+- Estoque 5 anos: 394.240 × 5 = 1.971.200.
+- TAM SUS = 1.971.200 × R$ 100 × 12 = R$ 2,37 bilhões/ano.
+
+**Cálculo privado:**
+
+- Casos/ano privado: 704.000 × 0,30 = 211.200.
+- Sem navegação: 211.200 × 0,50 = 105.600/ano.
+- Estoque 5 anos: 105.600 × 5 = 528.000.
+- TAM privado = 528.000 × R$ 100 × 12 = R$ 0,63 bilhão/ano.
+
+**Resultado:** TAM total = R$ 3,00 bilhões/ano (R$ 2,37 bi SUS + R$ 0,63 bi privado). Estoque total sem navegação em 5 anos: ~2,5 milhões (2,0 mi SUS + 0,5 mi privado).
+
 ---
 
 ## Metodologia Completa - TAM/SAM/SOM

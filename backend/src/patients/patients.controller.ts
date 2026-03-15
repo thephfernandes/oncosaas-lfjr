@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   NotFoundException,
   UseInterceptors,
@@ -20,6 +21,7 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 import { UpdatePriorityDto } from './dto/update-priority.dto';
 import { CreateCancerDiagnosisDto } from './dto/create-cancer-diagnosis.dto';
 import { UpdateCancerDiagnosisDto } from './dto/update-cancer-diagnosis.dto';
+import { TimelineEventType } from './dto/timeline-event.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -188,6 +190,31 @@ export class PatientsController {
       user.tenantId
     );
     return { data: { success: true } };
+  }
+
+  @Get(':id/timeline')
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.ONCOLOGIST,
+    UserRole.NURSE,
+    UserRole.COORDINATOR
+  )
+  async getTimeline(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('types') types?: string,
+    @CurrentUser() user?: any
+  ) {
+    const parsedTypes = types
+      ? (types.split(',').filter(Boolean) as TimelineEventType[])
+      : undefined;
+
+    return this.patientsService.getTimeline(id, user.tenantId, {
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+      types: parsedTypes,
+    });
   }
 
   @Get(':id')

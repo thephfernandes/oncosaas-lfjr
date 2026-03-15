@@ -35,7 +35,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     const userStr = localStorage.getItem('user');
     const tenantId = localStorage.getItem('tenant_id');
 
-    if (token && userStr && tenantId) {
+    // userStr deve ser JSON válido (objeto); evita JSON.parse("") ou dados corrompidos
+    const isUserStrValid = userStr && typeof userStr === 'string' && userStr.trim().startsWith('{');
+
+    if (token && isUserStrValid && tenantId) {
       try {
         // Verificar se o token expirou
         if (apiClient.isTokenExpired()) {

@@ -4,21 +4,29 @@
 
 **Por que você e sua equipe são as pessoas certas para o desenvolvimento do negócio?**
 
+**Versão oficial para o formulário:** O texto de **equipe** usado no formulário da Fase 2 está em [preenchimento-fase2-centelha-es.md](./preenchimento-fase2-centelha-es.md) (seção **11. Equipe**): versão 1 pessoa (811 caracteres) e versão 3 membros (998 caracteres). Este arquivo contém versões expandidas e perfis detalhados.
+
 ---
 
-## Versão Final Otimizada (≤1000 caracteres)
+## Versão 1 pessoa – Formulário (811 caracteres)
 
-**Descrição da Equipe:**
+Texto oficial colado no formulário: ver [preenchimento-fase2-centelha-es.md](./preenchimento-fase2-centelha-es.md), seção 11. Equipe.
 
-Luiz (CEO): Formação médica (UFES, 4º ano) com conhecimento profundo do problema oncológico. Experiência técnica em agentes de IA conversacionais integrados ao WhatsApp (FgtsAgent). Gestão de performance (Turbo Partners) com foco em otimização e ROI mensurável.
+---
 
-Pedro (CTO): Engenheiro de Computação (TU Delft, Holanda). Engenheiro Full-stack Sênior (Upwork, EUA): sistemas com >99,9% uptime, 100M+ registros, lançamentos +$5M/ano. Especialista em arquitetura escalável e sistemas de alta performance.
+## Versão 3 membros – Alternativa (≤1000 caracteres)
 
-Gabriel (Cientista de Dados): Cientista da Computação (UFSCar). Cientista de Dados JR no Bradesco (atual) e RD Saúde: modelos de ML em produção, séries temporais, forecasting, NLP. Projetos: combate de preços, otimização de entregas.
+**Descrição da Equipe (condensada para ≤1000 caracteres):**
 
-Combinação única: conhecimento médico (Luiz) + excelência técnica em sistemas escaláveis (Pedro) + expertise em ML e análise de dados (Gabriel) + experiência em gestão orientada a resultados (todos). Experiência comprovada em tecnologias similares e capacidade de executar soluções complexas B2B em saúde.
+Luiz (CEO): Formação médica (UFES, 4º ano), conhecimento profundo do problema oncológico. Experiência em agentes de IA e WhatsApp (FgtsAgent). Gestão de performance (Turbo Partners), otimização e ROI mensurável.
 
-**Caracteres:** 1042 caracteres ⚠️ (42 caracteres acima do limite, mas inclui 3 membros da equipe - considerar versão mais condensada se necessário)
+Pedro (CTO): Eng. Computação (TU Delft). Full-stack Sênior (Upwork): sistemas >99,9% uptime, 100M+ registros, lançamentos +$5M/ano. Arquitetura escalável e alta performance.
+
+Gabriel (Cientista de Dados): Ciência da Computação (UFSCar). Cientista de Dados JR (Bradesco, RD Saúde): ML em produção, séries temporais, NLP. Projetos: pricing, otimização de entregas.
+
+Combinação: conhecimento médico (Luiz) + sistemas escaláveis (Pedro) + ML/dados (Gabriel) + gestão orientada a resultados. Experiência comprovada em tecnologias similares e soluções B2B em saúde.
+
+**Caracteres:** 998 caracteres ✅
 
 ---
 

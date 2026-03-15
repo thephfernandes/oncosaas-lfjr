@@ -93,6 +93,15 @@ export default function TestePage() {
       queryClient.invalidateQueries({
         queryKey: ['messages', 'unassumed', 'count'],
       });
+
+      // Fallback: refetch após 5s para capturar resposta do agente caso
+      // o evento WebSocket message_sent não chegue (conexão instável, etc.)
+      const patientForRefetch = selectedPatient;
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: ['messages', patientForRefetch],
+        });
+      }, 5000);
     } catch {
       // Silently handle error for now
     } finally {

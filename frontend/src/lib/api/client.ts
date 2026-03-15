@@ -33,6 +33,22 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      transformResponse: [
+        (data: unknown) => {
+          // Evita JSON.parse("") que lança "Unexpected end of JSON input"
+          if (typeof data === 'string' && data.trim() === '') {
+            return null;
+          }
+          if (typeof data === 'string') {
+            try {
+              return JSON.parse(data);
+            } catch {
+              return data;
+            }
+          }
+          return data;
+        },
+      ],
     });
 
     // Interceptor de request: adicionar token JWT e tenant

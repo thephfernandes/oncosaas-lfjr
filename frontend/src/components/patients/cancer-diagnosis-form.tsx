@@ -10,13 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
@@ -55,7 +49,6 @@ import {
 } from '@/lib/utils/patient-cancer-type';
 import {
   ICD10_OPTIONS,
-  ICD10_OTHER_VALUE,
   HISTOLOGICAL_TYPE_OPTIONS,
 } from '@/lib/utils/diagnosis-options';
 
@@ -187,23 +180,15 @@ export function CancerDiagnosisForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Câncer *</FormLabel>
-                      <Select
-                        value={field.value || ''}
-                        onValueChange={(v) => field.onChange(v || undefined)}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo de câncer" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.entries(CANCER_TYPE_LABELS).map(([key, label]) => (
-                            <SelectItem key={key} value={key}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableSelect
+                          options={Object.entries(CANCER_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+                          value={field.value ?? ''}
+                          onChange={(v) => field.onChange(v || undefined)}
+                          placeholder="Buscar tipo de câncer..."
+                          aria-label="Tipo de câncer"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -211,52 +196,22 @@ export function CancerDiagnosisForm({
                 <FormField
                   control={form.control}
                   name="icd10Code"
-                  render={({ field }) => {
-                    const isPreset = field.value && ICD10_OPTIONS.some((o) => o.value === field.value);
-                    const selectValue = isPreset ? field.value! : (field.value ? ICD10_OTHER_VALUE : '');
-                    return (
-                      <FormItem>
-                        <FormLabel>Código CID-10</FormLabel>
-                        <Select
-                          value={selectValue}
-                          onValueChange={(v) => {
-                            if (v === ICD10_OTHER_VALUE || v === '') {
-                              field.onChange('');
-                            } else {
-                              field.onChange(v);
-                            }
-                          }}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione ou digite depois" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {ICD10_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value={ICD10_OTHER_VALUE}>
-                              Outro (digite abaixo)
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {selectValue === ICD10_OTHER_VALUE && (
-                          <FormControl>
-                            <Input
-                              placeholder="Ex: C50.9"
-                              value={field.value || ''}
-                              onChange={(e) => field.onChange(e.target.value || undefined)}
-                              className="mt-2"
-                            />
-                          </FormControl>
-                        )}
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código CID-10</FormLabel>
+                      <FormControl>
+                        <SearchableSelect
+                          options={ICD10_OPTIONS}
+                          value={field.value ?? ''}
+                          onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                          placeholder="Selecione ou digite o código..."
+                          allowCustomValue
+                          aria-label="Código CID-10"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <FormField
                   control={form.control}
@@ -368,23 +323,15 @@ export function CancerDiagnosisForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>T</FormLabel>
-                        <Select
-                          value={field.value ?? ''}
-                          onValueChange={(v) => field.onChange(v || undefined)}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="T" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {T_STAGE_VALUES.map((value) => (
-                              <SelectItem key={value} value={value}>
-                                {value}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={T_STAGE_VALUES.map((value) => ({ value, label: value }))}
+                            value={field.value ?? ''}
+                            onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                            placeholder="T"
+                            aria-label="Estágio T"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -395,23 +342,15 @@ export function CancerDiagnosisForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>N</FormLabel>
-                        <Select
-                          value={field.value ?? ''}
-                          onValueChange={(v) => field.onChange(v || undefined)}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="N" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {N_STAGE_VALUES.map((value) => (
-                              <SelectItem key={value} value={value}>
-                                {value}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={N_STAGE_VALUES.map((value) => ({ value, label: value }))}
+                            value={field.value ?? ''}
+                            onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                            placeholder="N"
+                            aria-label="Estágio N"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -422,23 +361,15 @@ export function CancerDiagnosisForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>M</FormLabel>
-                        <Select
-                          value={field.value ?? ''}
-                          onValueChange={(v) => field.onChange(v || undefined)}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="M" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {M_STAGE_VALUES.map((value) => (
-                              <SelectItem key={value} value={value}>
-                                {value}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={M_STAGE_VALUES.map((value) => ({ value, label: value }))}
+                            value={field.value ?? ''}
+                            onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                            placeholder="M"
+                            aria-label="Estágio M"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -449,23 +380,15 @@ export function CancerDiagnosisForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Grau</FormLabel>
-                        <Select
-                          value={field.value ?? ''}
-                          onValueChange={(v) => field.onChange(v || undefined)}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="G" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {GRADE_VALUES.map((value) => (
-                              <SelectItem key={value} value={value}>
-                                {value}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={GRADE_VALUES.map((value) => ({ value, label: value }))}
+                            value={field.value ?? ''}
+                            onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                            placeholder="G"
+                            aria-label="Grau"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -535,51 +458,22 @@ export function CancerDiagnosisForm({
                 <FormField
                   control={form.control}
                   name="histologicalType"
-                  render={({ field }) => {
-                    const optionValues = HISTOLOGICAL_TYPE_OPTIONS.map((o) => o.value);
-                    const isPreset = field.value && optionValues.includes(field.value);
-                    const selectValue = isPreset ? field.value! : (field.value ? 'outro' : '');
-                    return (
-                      <FormItem>
-                        <FormLabel>Tipo Histológico</FormLabel>
-                        <Select
-                          value={selectValue}
-                          onValueChange={(v) => {
-                            if (v === 'outro' || v === '') {
-                              field.onChange(field.value && !optionValues.includes(field.value) ? field.value : '');
-                            } else {
-                              field.onChange(v);
-                            }
-                          }}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o tipo histológico" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {HISTOLOGICAL_TYPE_OPTIONS.filter((o) => o.value !== 'outro').map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="outro">Outro (especificar)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {(selectValue === 'outro' || (field.value && !optionValues.includes(field.value))) && (
-                          <FormControl>
-                            <Input
-                              placeholder="Ex: carcinoma adenoescamoso"
-                              value={field.value || ''}
-                              onChange={(e) => field.onChange(e.target.value || undefined)}
-                              className="mt-2"
-                            />
-                          </FormControl>
-                        )}
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo Histológico</FormLabel>
+                      <FormControl>
+                        <SearchableSelect
+                          options={HISTOLOGICAL_TYPE_OPTIONS}
+                          value={field.value ?? ''}
+                          onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                          placeholder="Buscar tipo histológico..."
+                          allowCustomValue
+                          aria-label="Tipo histológico"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <FormField
                   control={form.control}
@@ -636,23 +530,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>HER2</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {HER2_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={HER2_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="HER2"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -663,23 +549,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>ER (Receptor de Estrogênio)</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {ER_PR_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={ER_PR_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="ER (Receptor de Estrogênio)"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -690,23 +568,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>PR (Receptor de Progesterona)</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {ER_PR_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={ER_PR_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="PR (Receptor de Progesterona)"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -754,23 +624,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>EGFR</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {MUTATION_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={MUTATION_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="EGFR"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -781,23 +643,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>ALK</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {REARRANGEMENT_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={REARRANGEMENT_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="ALK"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -808,23 +662,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>ROS1</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {REARRANGEMENT_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={REARRANGEMENT_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="ROS1"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -835,23 +681,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>BRAF</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {MUTATION_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={MUTATION_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="BRAF"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -862,23 +700,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>KRAS</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {MUTATION_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={MUTATION_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="KRAS"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -889,23 +719,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>NRAS</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {MUTATION_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={MUTATION_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="NRAS"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -942,23 +764,15 @@ export function CancerDiagnosisForm({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>MSI</FormLabel>
-                            <Select
-                              value={field.value ?? ''}
-                              onValueChange={(v) => field.onChange(v || undefined)}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {MSI_STATUS_VALUES.map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                options={MSI_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                value={field.value ?? ''}
+                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                placeholder="Buscar..."
+                                aria-label="MSI"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}

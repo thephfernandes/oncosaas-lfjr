@@ -23,7 +23,7 @@ import {
   createPatientSchema,
   CreatePatientFormData,
 } from '@/lib/validations/patient';
-import { patientsApi, CreatePatientDto } from '@/lib/api/patients';
+import { patientsApi, CreatePatientDto, type ComorbiditySeverity } from '@/lib/api/patients';
 import {
   getTreatmentOptionsForCancerType,
 } from '@/lib/utils/patient-cancer-type';
@@ -97,50 +97,67 @@ export function PatientCreateDialog({
   });
 
   const onSubmit = (data: CreatePatientFormData) => {
+    // Helper: filtra array e retorna undefined se vazio
+    const filterNonEmpty = <T,>(
+      arr: T[] | undefined,
+      predicate: (item: T) => boolean
+    ): T[] | undefined => {
+      if (!arr || arr.length === 0) return undefined;
+      const filtered = arr.filter(predicate);
+      return filtered.length > 0 ? filtered : undefined;
+    };
+
+    const filteredFamilyHistory = filterNonEmpty(
+      data.familyHistory,
+      (h) =>
+        (h.relationship?.trim().length ?? 0) > 0 &&
+        (h.cancerType?.trim().length ?? 0) > 0
+    )?.map((h) => ({
+      relationship: h.relationship!,
+      cancerType: h.cancerType!,
+      ageAtDiagnosis: h.ageAtDiagnosis,
+    }));
+
     // Mapear dados do formulário para o formato esperado pelo backend
-    const patientData = {
+    const patientData: CreatePatientDto = {
       name: data.name,
-      cpf: data.cpf,
+      cpf: data.cpf || undefined,
       birthDate: data.birthDate,
       gender: data.gender,
       phone: data.phone,
       email: data.email || undefined,
       cancerType: data.cancerType,
-      stage: data.stage,
+      stage: data.stage || undefined,
+      diagnosisDate: data.diagnosisDate || undefined,
       currentStage: data.currentStage || 'SCREENING',
       smokingHistory: data.smokingHistory || undefined,
       alcoholHistory: data.alcoholHistory || undefined,
       occupationalExposure: data.occupationalExposure || undefined,
-      comorbidities:
-        data.comorbidities && data.comorbidities.length > 0
-          ? data.comorbidities.filter(
-              (c: any) => c.name && c.name.trim().length > 0
-            )
-          : undefined,
-      familyHistory:
-        data.familyHistory && data.familyHistory.length > 0
-          ? data.familyHistory.filter(
-              (h: any) =>
-                h.relationship &&
-                h.relationship.trim().length > 0 &&
-                h.cancerType &&
-                h.cancerType.trim().length > 0
-            )
-          : undefined,
-      currentMedications:
-        data.currentMedications && data.currentMedications.length > 0
-          ? data.currentMedications.filter(
-              (m: any) => m.name && m.name.trim().length > 0
-            )
-          : undefined,
+      familyHistory: filteredFamilyHistory,
+      comorbidities: filterNonEmpty(
+        data.comorbidities,
+        (c) => (c.name?.trim().length ?? 0) > 0
+      )?.map((c) => ({
+        name: c.name!,
+        severity: c.severity as ComorbiditySeverity | undefined,
+        controlled: c.controlled,
+      })),
+      currentMedications: filterNonEmpty(
+        data.currentMedications,
+        (m) => (m.name?.trim().length ?? 0) > 0
+      )?.map((m) => ({
+        name: m.name!,
+        dosage: m.dosage,
+        frequency: m.frequency,
+      })),
       performanceStatus:
         data.performanceStatus !== undefined && data.performanceStatus !== null
           ? data.performanceStatus
           : undefined,
       currentTreatment: data.currentTreatment?.trim() || undefined,
-      ehrId: data.ehrPatientId,
+      ehrId: data.ehrPatientId || undefined,
     };
-    createPatientMutation.mutate(patientData as unknown as CreatePatientDto);
+    createPatientMutation.mutate(patientData);
   };
 
   const handleNext = () => {

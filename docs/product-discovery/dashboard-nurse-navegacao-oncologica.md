@@ -46,48 +46,55 @@ Criar um dashboard específico para enfermeiros de navegação oncológica que p
 
 ## 📊 Métricas Essenciais para Navegação Oncológica
 
-### Métricas Operacionais (Já Implementadas)
+### Métricas Operacionais do Enfermeiro (API: nurse-metrics)
 
-- ✅ Alertas resolvidos hoje
-- ✅ Tempo médio de resposta
-- ✅ Pacientes atendidos hoje
+- ✅ `alertsResolvedToday` — Alertas resolvidos hoje pelo enfermeiro
+- ✅ `averageResponseTimeMinutes` — Tempo médio de resposta (minutos)
+- ✅ `patientsAttendedToday` — Pacientes únicos atendidos hoje
+- ✅ `topReportedSymptoms` — Sintomas mais reportados (top 5, últimos 30 dias)
 
-### Métricas de Navegação Oncológica (Novas)
+**Descontinuados:**
+- ~~`agentResponseRate`~~ — Removido por baixo valor operacional no dia a dia
+
+### Métricas de Navegação Oncológica (API: navigation-metrics)
 
 1. **Etapas Atrasadas**
-   - Total de etapas com status OVERDUE
-   - Etapas críticas atrasadas (obrigatórias + >14 dias)
-   - Pacientes com etapas atrasadas
+   - ✅ `overdueStepsCount` — Total de etapas atrasadas
+   - ✅ `criticalOverdueStepsCount` — Etapas críticas (obrigatórias + >14 dias)
 
 2. **Distribuição por Fase da Jornada**
-   - Pacientes em SCREENING
-   - Pacientes em DIAGNOSIS
-   - Pacientes em TREATMENT
-   - Pacientes em FOLLOW_UP
+   - ✅ `patientsByStage` — Pacientes em SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP
 
 3. **Progresso de Etapas**
-   - Taxa de conclusão de etapas (% concluídas/total)
-   - Tempo médio de conclusão por fase
-   - Etapas próximas do prazo (próximas 7 dias)
+   - ✅ `stepsDueSoonCount` — Etapas com prazo nos próximos 7 dias
+   - ✅ `overallCompletionRate` — Taxa geral de conclusão (%)
 
-4. **Alertas de Navegação**
-   - NAVIGATION_DELAY (atraso em etapa)
-   - MISSING_EXAM (exame necessário não realizado)
-   - STAGING_INCOMPLETE (estadiamento incompleto)
-   - TREATMENT_DELAY (atraso no início do tratamento)
-   - FOLLOW_UP_OVERDUE (seguimento atrasado)
+**Descontinuados:**
+- ~~`stageMetrics`~~ — Métricas detalhadas por fase (removido — ruído visual)
+- ~~`bottlenecks`~~ — Lista de bottlenecks identificados (removido — mais adequado ao dashboard gerencial)
+- ~~`averageTimePerStage`~~ — Tempo médio por fase (removido — mais adequado ao dashboard gerencial)
+
+### Alertas de Navegação (mantidos no CriticalAlertsPanel)
+
+- NAVIGATION_DELAY (atraso em etapa)
+- MISSING_EXAM (exame necessário não realizado)
+- STAGING_INCOMPLETE (estadiamento incompleto)
+- TREATMENT_DELAY (atraso no início do tratamento)
+- FOLLOW_UP_OVERDUE (seguimento atrasado)
 
 ---
 
 ## 🎨 Componentes do Dashboard
 
-### 1. Métricas no Topo (Compactas)
+### 1. NurseMetricsPanel (Métricas Operacionais)
 
-- Alertas resolvidos hoje
-- Tempo médio de resposta
-- Pacientes atendidos hoje
-- **NOVO:** Etapas atrasadas (total)
-- **NOVO:** Pacientes por fase da jornada (4 cards: SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP)
+- 3 cards: Alertas Resolvidos Hoje, Tempo Médio de Resposta, Pacientes Atendidos Hoje
+- Card: Sintomas Mais Reportados (top 5)
+
+### 2. NavigationMetricsPanel (Métricas de Navegação)
+
+- 4 cards: Etapas Atrasadas, Etapas Próximas do Prazo, Taxa de Conclusão, Total de Pacientes
+- Grid: Pacientes por Fase da Jornada (SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP)
 
 ### 2. Lista de Pacientes com Etapas Críticas
 

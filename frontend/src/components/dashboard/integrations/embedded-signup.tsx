@@ -48,7 +48,7 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
             appId: appId,
             autoLogAppEvents: true,
             xfbml: true,
-            version: 'v24.0', // Versão mais recente conforme documentação
+            version: 'v25.0', // Graph API version conforme documentação Meta
           });
           setSdkLoaded(true);
         }
@@ -103,37 +103,40 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
     }
 
     // Listener de mensagens para capturar eventos WA_EMBEDDED_SIGNUP
+    // Conforme doc Meta: https://www.facebook.com e https://web.facebook.com
     const messageListener = (event: MessageEvent) => {
-      if (!event.origin.endsWith('facebook.com')) return;
+      if (
+        event.origin !== 'https://www.facebook.com' &&
+        event.origin !== 'https://web.facebook.com'
+      ) {
+        return;
+      }
 
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'WA_EMBEDDED_SIGNUP') {
-          console.log('WA_EMBEDDED_SIGNUP event:', data);
-
           if (
             data.event === 'FINISH' ||
             data.event === 'FINISH_ONLY_WABA' ||
             data.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING'
           ) {
             // Fluxo completado com sucesso
-            // Os dados já foram processados pelo callback do FB.login
-            // Este listener captura informações adicionais como waba_id, phone_number_id
             if (data.data?.waba_id && data.data?.phone_number_id) {
               console.log('WABA ID:', data.data.waba_id);
               console.log('Phone Number ID:', data.data.phone_number_id);
             }
           } else if (data.event === 'CANCEL') {
-            // Fluxo cancelado ou abandonado
             const currentStep = data.data?.current_step || 'unknown';
-            console.log('Fluxo cancelado na etapa:', currentStep);
             onError?.(`Fluxo cancelado na etapa: ${currentStep}`);
+            setIsLoading(false);
+          } else if (data.event === 'ERROR') {
+            const errorMessage = data.data?.error_message || 'Erro no fluxo';
+            onError?.(errorMessage);
             setIsLoading(false);
           }
         }
-      } catch (error) {
-        // Ignorar erros de parsing
-        console.log('Message event (não JSON):', event.data);
+      } catch {
+        // Ignorar erros de parsing (respostas não-JSON)
       }
     };
 
@@ -154,27 +157,41 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
 
     setIsLoading(true);
 
-    const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID || '';
+    const configId = String(
+      process.env.NEXT_PUBLIC_META_CONFIG_ID ||
+        process.env.NEXT_PUBLIC_META_APP_CONFIG_ID ||
+        ''
+    ).trim();
 
     if (!configId) {
       setIsLoading(false);
-      onError?.('Meta Config ID não configurado');
+      onError?.(
+        'Meta Config ID não configurado. Defina NEXT_PUBLIC_META_APP_CONFIG_ID no .env.local. ' +
+          'O ID deve vir de Facebook Login for Business → Configuration (WhatsApp Embedded Signup).'
+      );
       return;
     }
 
-    // Callback conforme documentação oficial
-    // O callback recebe response.authResponse.code (não accessToken)
+    // redirect_uri DEVE ser idêntico ao usado no OAuth. Com FB.login, usar fallback_redirect_uri
+    // para definir explicitamente o valor, e o mesmo na troca do código.
+    // Normalizar removendo barra final para evitar divergência com backend.
+    // Ref: https://stackoverflow.com/questions/77347825/facebook-javascript-sdk-oauth-redirect-uri-validation-issue
+    const redirectUri =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}`.replace(
+            /\/$/,
+            ''
+          )
+        : '';
+
     const fbLoginCallback = (response: any) => {
-      if (response.authResponse && response.authResponse.code) {
-        // Processar código de forma assíncrona
+      if (response.authResponse?.code) {
         (async () => {
           try {
-            const code = response.authResponse.code;
-            console.log('Código recebido do Embedded Signup:', code);
-
-            // Enviar código para o backend para trocar por business token
-            const result =
-              await whatsappConnectionsApi.processEmbeddedSignupCode(code);
+            const result = await whatsappConnectionsApi.processEmbeddedSignup(
+              response.authResponse.code,
+              redirectUri
+            );
 
             if (result.success) {
               onSuccess?.();
@@ -182,10 +199,7 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
               onError?.(result.message || 'Erro ao processar conexão');
             }
           } catch (error: any) {
-            console.error(
-              'Erro ao processar código do Embedded Signup:',
-              error
-            );
+            console.error('Erro ao processar Embedded Signup:', error);
             onError?.(error.message || 'Erro ao processar conexão');
           } finally {
             setIsLoading(false);
@@ -201,15 +215,46 @@ export function EmbeddedSignup({ onSuccess, onError }: EmbeddedSignupProps) {
       }
     };
 
-    // Launch Embedded Signup conforme documentação oficial
-    // Usar FB.login com parâmetros específicos do Embedded Signup
+    if (!redirectUri) {
+      setIsLoading(false);
+      onError?.('Não foi possível obter a URL da página. Verifique se está em HTTPS.');
+      return;
+    }
+
     try {
       window.FB.login(fbLoginCallback, {
-        config_id: configId, // ID da configuração do Facebook Login for Business
-        response_type: 'code', // Receber código trocável (não accessToken)
+        config_id: configId,
+        response_type: 'code',
         override_default_response_type: true,
+        fallback_redirect_uri: redirectUri,
         extras: {
-          setup: {},
+          version: 'v3',
+          setup: {
+            business: {
+              id: null,
+              name: null,
+              email: null,
+              phone: { code: null, number: null },
+              website: null,
+              address: {
+                streetAddress1: null,
+                streetAddress2: null,
+                city: null,
+                state: null,
+                zipPostal: null,
+                country: null,
+              },
+              timezone: null,
+            },
+            phone: {
+              displayName: null,
+              category: null,
+              description: null,
+            },
+            preVerifiedPhone: { ids: null },
+            solutionID: null,
+            whatsAppBusinessAccount: { ids: null },
+          },
         },
       });
     } catch (error: any) {

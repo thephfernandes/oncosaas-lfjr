@@ -1186,6 +1186,16 @@ export class OncologyNavigationService {
         isRequired: false, // Depende do resultado do PSOF
         dueDate: this.addDays(new Date(), 60), // Prazo de 60 dias se necessário
       });
+
+      steps.push({
+        journeyStage: JourneyStage.SCREENING,
+        stepKey: 'consulta_inicial',
+        stepName: 'Consulta Inicial',
+        stepDescription:
+          'Consulta inicial para avaliação de risco e encaminhamento ao rastreio de câncer colorretal',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 14),
+      });
     }
 
     // DIAGNÓSTICO (DIAGNOSIS)
@@ -1232,6 +1242,16 @@ export class OncologyNavigationService {
 
       steps.push({
         journeyStage: JourneyStage.DIAGNOSIS,
+        stepKey: 'consulta_discussao_diagnostico',
+        stepName: 'Consulta para Discussão do Diagnóstico',
+        stepDescription:
+          'Consulta com oncologista para discussão do diagnóstico, estadiamento e plano terapêutico',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 28),
+      });
+
+      steps.push({
+        journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'genetic_testing',
         stepName: 'Teste Genético (MSI, KRAS, NRAS, BRAF)',
         stepDescription:
@@ -1253,6 +1273,16 @@ export class OncologyNavigationService {
 
     // TRATAMENTO (TREATMENT)
     if (requestedStage === JourneyStage.TREATMENT) {
+      steps.push({
+        journeyStage: JourneyStage.TREATMENT,
+        stepKey: 'consulta_oncologista',
+        stepName: 'Consulta de Acompanhamento Oncológico',
+        stepDescription:
+          'Consulta com oncologista para acompanhamento do tratamento e manejo de efeitos adversos',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 7),
+      });
+
       steps.push({
         journeyStage: JourneyStage.TREATMENT,
         stepKey: 'surgical_evaluation',
@@ -1296,6 +1326,16 @@ export class OncologyNavigationService {
 
     // SEGUIMENTO (FOLLOW_UP)
     if (requestedStage === JourneyStage.FOLLOW_UP) {
+      steps.push({
+        journeyStage: JourneyStage.FOLLOW_UP,
+        stepKey: 'consulta_seguimento',
+        stepName: 'Consulta de Seguimento',
+        stepDescription:
+          'Consulta de seguimento oncológico para avaliação clínica, revisão de exames e detecção de recidiva',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 90),
+      });
+
       steps.push({
         journeyStage: JourneyStage.FOLLOW_UP,
         stepKey: 'cea_3months',
@@ -1378,6 +1418,16 @@ export class OncologyNavigationService {
         isRequired: false,
         dueDate: this.addDays(new Date(), 45),
       });
+
+      steps.push({
+        journeyStage: JourneyStage.SCREENING,
+        stepKey: 'consulta_inicial',
+        stepName: 'Consulta Inicial',
+        stepDescription:
+          'Consulta inicial para avaliação de risco e encaminhamento ao rastreio de câncer de mama',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 14),
+      });
     }
 
     // DIAGNÓSTICO (DIAGNOSIS)
@@ -1431,6 +1481,16 @@ export class OncologyNavigationService {
 
       steps.push({
         journeyStage: JourneyStage.DIAGNOSIS,
+        stepKey: 'consulta_discussao_diagnostico',
+        stepName: 'Consulta para Discussão do Diagnóstico',
+        stepDescription:
+          'Consulta com oncologista para discussão do diagnóstico, subtipo molecular e plano terapêutico',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 28),
+      });
+
+      steps.push({
+        journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'genetic_counseling',
         stepName: 'Aconselhamento Genético',
         stepDescription: 'Avaliar risco hereditário (BRCA1/BRCA2) se indicado',
@@ -1441,6 +1501,16 @@ export class OncologyNavigationService {
 
     // TRATAMENTO (TREATMENT)
     if (requestedStage === JourneyStage.TREATMENT) {
+      steps.push({
+        journeyStage: JourneyStage.TREATMENT,
+        stepKey: 'consulta_oncologista',
+        stepName: 'Consulta de Acompanhamento Oncológico',
+        stepDescription:
+          'Consulta com oncologista para acompanhamento do tratamento e manejo de efeitos adversos',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 7),
+      });
+
       steps.push({
         journeyStage: JourneyStage.TREATMENT,
         stepKey: 'surgical_evaluation',
@@ -1520,6 +1590,16 @@ export class OncologyNavigationService {
     if (requestedStage === JourneyStage.FOLLOW_UP) {
       steps.push({
         journeyStage: JourneyStage.FOLLOW_UP,
+        stepKey: 'consulta_seguimento',
+        stepName: 'Consulta de Seguimento',
+        stepDescription:
+          'Consulta de seguimento oncológico para avaliação clínica, revisão de exames e detecção de recidiva',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 90),
+      });
+
+      steps.push({
+        journeyStage: JourneyStage.FOLLOW_UP,
         stepKey: 'mammography_6months',
         stepName: 'Mamografia aos 6 meses',
         stepDescription: 'Primeira mamografia pós-tratamento',
@@ -1573,6 +1653,16 @@ export class OncologyNavigationService {
 
     // RASTREIO (SCREENING)
     if (requestedStage === JourneyStage.SCREENING) {
+      steps.push({
+        journeyStage: JourneyStage.SCREENING,
+        stepKey: 'consulta_inicial',
+        stepName: 'Consulta Inicial',
+        stepDescription:
+          'Consulta inicial para avaliação de risco e encaminhamento ao rastreio de câncer de pulmão',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 14),
+      });
+
       steps.push({
         journeyStage: JourneyStage.SCREENING,
         stepKey: 'low_dose_ct',
@@ -1632,6 +1722,16 @@ export class OncologyNavigationService {
 
       steps.push({
         journeyStage: JourneyStage.DIAGNOSIS,
+        stepKey: 'consulta_discussao_diagnostico',
+        stepName: 'Consulta para Discussão do Diagnóstico',
+        stepDescription:
+          'Consulta com oncologista para discussão do diagnóstico, estadiamento e definição da estratégia terapêutica',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 28),
+      });
+
+      steps.push({
+        journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'brain_mri',
         stepName: 'Ressonância Magnética de Crânio',
         stepDescription:
@@ -1643,6 +1743,16 @@ export class OncologyNavigationService {
 
     // TRATAMENTO (TREATMENT)
     if (requestedStage === JourneyStage.TREATMENT) {
+      steps.push({
+        journeyStage: JourneyStage.TREATMENT,
+        stepKey: 'consulta_oncologista',
+        stepName: 'Consulta de Acompanhamento Oncológico',
+        stepDescription:
+          'Consulta com oncologista para acompanhamento do tratamento e manejo de efeitos adversos',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 7),
+      });
+
       steps.push({
         journeyStage: JourneyStage.TREATMENT,
         stepKey: 'surgical_evaluation',
@@ -1700,6 +1810,16 @@ export class OncologyNavigationService {
 
     // SEGUIMENTO (FOLLOW_UP)
     if (requestedStage === JourneyStage.FOLLOW_UP) {
+      steps.push({
+        journeyStage: JourneyStage.FOLLOW_UP,
+        stepKey: 'consulta_seguimento',
+        stepName: 'Consulta de Seguimento',
+        stepDescription:
+          'Consulta de seguimento oncológico para avaliação clínica, revisão de exames e detecção de recidiva',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 90),
+      });
+
       steps.push({
         journeyStage: JourneyStage.FOLLOW_UP,
         stepKey: 'ct_thorax_3months',
@@ -1772,6 +1892,16 @@ export class OncologyNavigationService {
         isRequired: true,
         dueDate: this.addDays(new Date(), 30),
       });
+
+      steps.push({
+        journeyStage: JourneyStage.SCREENING,
+        stepKey: 'consulta_inicial',
+        stepName: 'Consulta Inicial',
+        stepDescription:
+          'Consulta inicial para avaliação de risco e encaminhamento ao rastreio de câncer de próstata',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 14),
+      });
     }
 
     // DIAGNÓSTICO (DIAGNOSIS)
@@ -1820,10 +1950,30 @@ export class OncologyNavigationService {
         isRequired: false,
         dueDate: this.addDays(new Date(), 35),
       });
+
+      steps.push({
+        journeyStage: JourneyStage.DIAGNOSIS,
+        stepKey: 'consulta_discussao_diagnostico',
+        stepName: 'Consulta para Discussão do Diagnóstico',
+        stepDescription:
+          'Consulta com oncologista/urologista para discussão do diagnóstico, Gleason score e opções de tratamento',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 28),
+      });
     }
 
     // TRATAMENTO (TREATMENT)
     if (requestedStage === JourneyStage.TREATMENT) {
+      steps.push({
+        journeyStage: JourneyStage.TREATMENT,
+        stepKey: 'consulta_oncologista',
+        stepName: 'Consulta de Acompanhamento Oncológico',
+        stepDescription:
+          'Consulta com oncologista/urologista para acompanhamento do tratamento e manejo de efeitos adversos',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 7),
+      });
+
       steps.push({
         journeyStage: JourneyStage.TREATMENT,
         stepKey: 'treatment_decision',
@@ -1863,6 +2013,16 @@ export class OncologyNavigationService {
 
     // SEGUIMENTO (FOLLOW_UP)
     if (requestedStage === JourneyStage.FOLLOW_UP) {
+      steps.push({
+        journeyStage: JourneyStage.FOLLOW_UP,
+        stepKey: 'consulta_seguimento',
+        stepName: 'Consulta de Seguimento',
+        stepDescription:
+          'Consulta de seguimento oncológico para avaliação clínica, revisão de PSA e detecção de recidiva bioquímica',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 90),
+      });
+
       steps.push({
         journeyStage: JourneyStage.FOLLOW_UP,
         stepKey: 'psa_3months',
@@ -1920,6 +2080,16 @@ export class OncologyNavigationService {
     if (requestedStage === JourneyStage.SCREENING) {
       steps.push({
         journeyStage: JourneyStage.SCREENING,
+        stepKey: 'consulta_inicial',
+        stepName: 'Consulta Inicial',
+        stepDescription:
+          'Consulta inicial para avaliação de risco e encaminhamento ao rastreio de câncer renal',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 14),
+      });
+
+      steps.push({
+        journeyStage: JourneyStage.SCREENING,
         stepKey: 'abdominal_ultrasound',
         stepName: 'Ultrassonografia de Abdome',
         stepDescription: 'Rastreio de massa renal',
@@ -1974,10 +2144,30 @@ export class OncologyNavigationService {
         isRequired: false,
         dueDate: this.addDays(new Date(), 35),
       });
+
+      steps.push({
+        journeyStage: JourneyStage.DIAGNOSIS,
+        stepKey: 'consulta_discussao_diagnostico',
+        stepName: 'Consulta para Discussão do Diagnóstico',
+        stepDescription:
+          'Consulta com oncologista/urologista para discussão do diagnóstico, estadiamento e plano terapêutico',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 28),
+      });
     }
 
     // TRATAMENTO (TREATMENT)
     if (requestedStage === JourneyStage.TREATMENT) {
+      steps.push({
+        journeyStage: JourneyStage.TREATMENT,
+        stepKey: 'consulta_oncologista',
+        stepName: 'Consulta de Acompanhamento Oncológico',
+        stepDescription:
+          'Consulta com oncologista para acompanhamento do tratamento e manejo de efeitos adversos',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 7),
+      });
+
       steps.push({
         journeyStage: JourneyStage.TREATMENT,
         stepKey: 'surgical_evaluation',
@@ -2018,6 +2208,16 @@ export class OncologyNavigationService {
 
     // SEGUIMENTO (FOLLOW_UP)
     if (requestedStage === JourneyStage.FOLLOW_UP) {
+      steps.push({
+        journeyStage: JourneyStage.FOLLOW_UP,
+        stepKey: 'consulta_seguimento',
+        stepName: 'Consulta de Seguimento',
+        stepDescription:
+          'Consulta de seguimento oncológico para avaliação clínica, função renal e detecção de recidiva',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 90),
+      });
+
       steps.push({
         journeyStage: JourneyStage.FOLLOW_UP,
         stepKey: 'ct_abdomen_3months',
@@ -2075,6 +2275,16 @@ export class OncologyNavigationService {
     if (requestedStage === JourneyStage.SCREENING) {
       steps.push({
         journeyStage: JourneyStage.SCREENING,
+        stepKey: 'consulta_inicial',
+        stepName: 'Consulta Inicial',
+        stepDescription:
+          'Consulta inicial para avaliação de risco e encaminhamento ao rastreio de câncer de bexiga',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 14),
+      });
+
+      steps.push({
+        journeyStage: JourneyStage.SCREENING,
         stepKey: 'urine_cytology',
         stepName: 'Citologia Urinária',
         stepDescription: 'Rastreio de células neoplásicas na urina',
@@ -2129,10 +2339,30 @@ export class OncologyNavigationService {
         isRequired: true,
         dueDate: this.addDays(new Date(), 28),
       });
+
+      steps.push({
+        journeyStage: JourneyStage.DIAGNOSIS,
+        stepKey: 'consulta_discussao_diagnostico',
+        stepName: 'Consulta para Discussão do Diagnóstico',
+        stepDescription:
+          'Consulta com oncologista/urologista para discussão do diagnóstico, grau de invasão e plano terapêutico',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 28),
+      });
     }
 
     // TRATAMENTO (TREATMENT)
     if (requestedStage === JourneyStage.TREATMENT) {
+      steps.push({
+        journeyStage: JourneyStage.TREATMENT,
+        stepKey: 'consulta_oncologista',
+        stepName: 'Consulta de Acompanhamento Oncológico',
+        stepDescription:
+          'Consulta com oncologista para acompanhamento do tratamento e manejo de efeitos adversos',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 7),
+      });
+
       steps.push({
         journeyStage: JourneyStage.TREATMENT,
         stepKey: 'intravesical_bcg',
@@ -2173,6 +2403,16 @@ export class OncologyNavigationService {
 
     // SEGUIMENTO (FOLLOW_UP)
     if (requestedStage === JourneyStage.FOLLOW_UP) {
+      steps.push({
+        journeyStage: JourneyStage.FOLLOW_UP,
+        stepKey: 'consulta_seguimento',
+        stepName: 'Consulta de Seguimento',
+        stepDescription:
+          'Consulta de seguimento oncológico para avaliação clínica, revisão de exames e detecção de recidiva',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 90),
+      });
+
       steps.push({
         journeyStage: JourneyStage.FOLLOW_UP,
         stepKey: 'cystoscopy_3months',
@@ -2230,6 +2470,16 @@ export class OncologyNavigationService {
     if (requestedStage === JourneyStage.SCREENING) {
       steps.push({
         journeyStage: JourneyStage.SCREENING,
+        stepKey: 'consulta_inicial',
+        stepName: 'Consulta Inicial',
+        stepDescription:
+          'Consulta inicial para avaliação de risco e encaminhamento ao rastreio de câncer testicular',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 7),
+      });
+
+      steps.push({
+        journeyStage: JourneyStage.SCREENING,
         stepKey: 'testicular_ultrasound',
         stepName: 'Ultrassonografia de Testículo',
         stepDescription: 'Avaliar massa testicular',
@@ -2285,10 +2535,30 @@ export class OncologyNavigationService {
         isRequired: true,
         dueDate: this.addDays(new Date(), 14),
       });
+
+      steps.push({
+        journeyStage: JourneyStage.DIAGNOSIS,
+        stepKey: 'consulta_discussao_diagnostico',
+        stepName: 'Consulta para Discussão do Diagnóstico',
+        stepDescription:
+          'Consulta com oncologista para discussão do diagnóstico, tipo histológico e plano terapêutico',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 21),
+      });
     }
 
     // TRATAMENTO (TREATMENT)
     if (requestedStage === JourneyStage.TREATMENT) {
+      steps.push({
+        journeyStage: JourneyStage.TREATMENT,
+        stepKey: 'consulta_oncologista',
+        stepName: 'Consulta de Acompanhamento Oncológico',
+        stepDescription:
+          'Consulta com oncologista para acompanhamento do tratamento e manejo de efeitos adversos',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 7),
+      });
+
       steps.push({
         journeyStage: JourneyStage.TREATMENT,
         stepKey: 'retroperitoneal_lymph_node_dissection',
@@ -2319,6 +2589,16 @@ export class OncologyNavigationService {
 
     // SEGUIMENTO (FOLLOW_UP)
     if (requestedStage === JourneyStage.FOLLOW_UP) {
+      steps.push({
+        journeyStage: JourneyStage.FOLLOW_UP,
+        stepKey: 'consulta_seguimento',
+        stepName: 'Consulta de Seguimento',
+        stepDescription:
+          'Consulta de seguimento oncológico para avaliação clínica, revisão de marcadores tumorais e detecção de recidiva',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 30),
+      });
+
       steps.push({
         journeyStage: JourneyStage.FOLLOW_UP,
         stepKey: 'tumor_markers_1month',
@@ -2385,6 +2665,16 @@ export class OncologyNavigationService {
     if (requestedStage === JourneyStage.SCREENING) {
       steps.push({
         journeyStage: JourneyStage.SCREENING,
+        stepKey: 'consulta_inicial',
+        stepName: 'Consulta Inicial',
+        stepDescription:
+          'Consulta inicial para avaliação de risco e encaminhamento ao rastreio',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 14),
+      });
+
+      steps.push({
+        journeyStage: JourneyStage.SCREENING,
         stepKey: 'screening_exam',
         stepName: 'Exame de Rastreio',
         stepDescription:
@@ -2422,10 +2712,30 @@ export class OncologyNavigationService {
         isRequired: true,
         dueDate: this.addDays(new Date(), 28),
       });
+
+      steps.push({
+        journeyStage: JourneyStage.DIAGNOSIS,
+        stepKey: 'consulta_discussao_diagnostico',
+        stepName: 'Consulta para Discussão do Diagnóstico',
+        stepDescription:
+          'Consulta com oncologista para discussão do diagnóstico, estadiamento e plano terapêutico',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 28),
+      });
     }
 
     // TRATAMENTO (TREATMENT)
     if (requestedStage === JourneyStage.TREATMENT) {
+      steps.push({
+        journeyStage: JourneyStage.TREATMENT,
+        stepKey: 'consulta_oncologista',
+        stepName: 'Consulta de Acompanhamento Oncológico',
+        stepDescription:
+          'Consulta com oncologista para acompanhamento do tratamento e manejo de efeitos adversos',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 7),
+      });
+
       steps.push({
         journeyStage: JourneyStage.TREATMENT,
         stepKey: 'treatment_planning',
@@ -2438,6 +2748,16 @@ export class OncologyNavigationService {
 
     // SEGUIMENTO (FOLLOW_UP)
     if (requestedStage === JourneyStage.FOLLOW_UP) {
+      steps.push({
+        journeyStage: JourneyStage.FOLLOW_UP,
+        stepKey: 'consulta_seguimento',
+        stepName: 'Consulta de Seguimento Oncológico',
+        stepDescription:
+          'Consulta de seguimento oncológico para avaliação clínica, revisão de exames e detecção de recidiva',
+        isRequired: true,
+        dueDate: this.addDays(new Date(), 90),
+      });
+
       steps.push({
         journeyStage: JourneyStage.FOLLOW_UP,
         stepKey: 'follow_up_3months',

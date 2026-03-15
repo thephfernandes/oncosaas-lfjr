@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Inject,
   forwardRef,
   Logger,
@@ -14,9 +15,21 @@ import { ImportPatientRowDto } from './dto/import-patients.dto';
 import { PatientDetailResponse } from './dto/patient-detail-response.dto';
 import { CreateCancerDiagnosisDto } from './dto/create-cancer-diagnosis.dto';
 import { UpdateCancerDiagnosisDto } from './dto/update-cancer-diagnosis.dto';
-import { Patient, Prisma, JourneyStage } from '@prisma/client';
+import {
+  Patient,
+  Prisma,
+  JourneyStage,
+  ComorbidityType,
+  MedicationCategory,
+} from '@prisma/client';
 import { OncologyNavigationService } from '../oncology-navigation/oncology-navigation.service';
 import { PriorityRecalculationService } from '../oncology-navigation/priority-recalculation.service';
+import {
+  TimelineEvent,
+  TimelineEventType,
+  TimelineQueryDto,
+  TimelineResponse,
+} from './dto/timeline-event.dto';
 import {
   normalizePhoneNumber,
   hashPhoneNumber,
@@ -245,8 +258,35 @@ export class PatientsService {
     const normalizedPhone = normalizePhoneNumber(createPatientDto.phone);
     const phoneHash = hashPhoneNumber(normalizedPhone);
 
-    // Extrair cancerDiagnoses do DTO para processar separadamente
-    const { cancerDiagnoses, ...patientData } = createPatientDto;
+    // Verificar duplicidade de telefone por tenant
+    const existingByPhone = await this.prisma.patient.findFirst({
+      where: { tenantId, phoneHash },
+    });
+    if (existingByPhone) {
+      throw new ConflictException(
+        'Já existe um paciente cadastrado com este telefone neste tenant.'
+      );
+    }
+
+    // Verificar duplicidade de CPF por tenant (se informado)
+    if (createPatientDto.cpf) {
+      const existingByCpf = await this.prisma.patient.findFirst({
+        where: { tenantId, cpf: createPatientDto.cpf },
+      });
+      if (existingByCpf) {
+        throw new ConflictException(
+          'Já existe um paciente cadastrado com este CPF neste tenant.'
+        );
+      }
+    }
+
+    // Extrair relações do DTO para processar separadamente
+    const {
+      cancerDiagnoses,
+      comorbidities,
+      currentMedications,
+      ...patientData
+    } = createPatientDto;
 
     // Processar cancerDiagnoses se fornecidos
     const processedDiagnoses = cancerDiagnoses?.map((diagnosis) => {
@@ -274,7 +314,7 @@ export class PatientsService {
         cpf: patientData.cpf,
         birthDate: new Date(createPatientDto.birthDate),
         gender: patientData.gender,
-        phone: patientData.phone,
+        phone: normalizedPhone,
         email: patientData.email,
         cancerType: patientData.cancerType,
         stage: patientData.stage,
@@ -282,12 +322,13 @@ export class PatientsService {
           ? new Date(patientData.diagnosisDate)
           : undefined,
         performanceStatus: patientData.performanceStatus,
-        currentStage: patientData.currentStage as JourneyStage,
+        currentStage: patientData.currentStage,
         smokingHistory: patientData.smokingHistory,
         alcoholHistory: patientData.alcoholHistory,
         occupationalExposure: patientData.occupationalExposure,
         familyHistory: patientData.familyHistory as any,
         ehrPatientId: patientData.ehrId,
+        maxDaysWithoutInteractionAlert: patientData.maxDaysWithoutInteractionAlert,
         tenantId, // SEMPRE incluir tenantId
         phoneHash, // Hash para busca eficiente
         cancerDiagnoses: processedDiagnoses
@@ -295,6 +336,33 @@ export class PatientsService {
               create: processedDiagnoses,
             }
           : undefined,
+        comorbidities:
+          comorbidities && comorbidities.length > 0
+            ? {
+                create: comorbidities.map((c) => ({
+                  tenantId,
+                  name: c.name,
+                  type: c.type,
+                  severity: c.severity,
+                  controlled: c.controlled ?? false,
+                  ...this.resolveComorbidityRiskFlags(c.type),
+                })),
+              }
+            : undefined,
+        medications:
+          currentMedications && currentMedications.length > 0
+            ? {
+                create: currentMedications.map((m) => ({
+                  tenantId,
+                  name: m.name,
+                  dosage: m.dosage,
+                  frequency: m.frequency,
+                  indication: m.indication,
+                  category: m.category,
+                  ...this.resolveMedicationRiskFlags(m.category),
+                })),
+              }
+            : undefined,
       },
       include: {
         cancerDiagnoses: {
@@ -407,6 +475,9 @@ export class PatientsService {
     }
     if (updatePatientDto.ehrId !== undefined) {
       updateData.ehrPatientId = updatePatientDto.ehrId;
+    }
+    if (updatePatientDto.maxDaysWithoutInteractionAlert !== undefined) {
+      updateData.maxDaysWithoutInteractionAlert = updatePatientDto.maxDaysWithoutInteractionAlert;
     }
     if ((updatePatientDto as any).clinicalDisposition !== undefined) {
       updateData.clinicalDisposition = (updatePatientDto as any).clinicalDisposition;
@@ -912,6 +983,56 @@ export class PatientsService {
    * @param tStage T stage (T1-T4, Tis, Tx)
    * @param nStage N stage (N0-N3, Nx)
    * @param mStage M stage (M0, M1, Mx)
+   * Derives comorbidity risk flags from type.
+   */
+  private resolveComorbidityRiskFlags(type?: ComorbidityType) {
+    if (!type) return {};
+    const sepsisRisk: ComorbidityType[] = [
+      ComorbidityType.DIABETES_TYPE_1,
+      ComorbidityType.DIABETES_TYPE_2,
+      ComorbidityType.CHRONIC_KIDNEY_DISEASE,
+      ComorbidityType.HEART_FAILURE,
+      ComorbidityType.HIV_AIDS,
+      ComorbidityType.LIVER_CIRRHOSIS,
+      ComorbidityType.AUTOIMMUNE_DISEASE,
+    ];
+    const thrombosis: ComorbidityType[] = [
+      ComorbidityType.ATRIAL_FIBRILLATION,
+      ComorbidityType.DEEP_VEIN_THROMBOSIS,
+      ComorbidityType.PULMONARY_EMBOLISM,
+    ];
+    const renal: ComorbidityType[] = [ComorbidityType.CHRONIC_KIDNEY_DISEASE];
+    const pulmonary: ComorbidityType[] = [
+      ComorbidityType.COPD,
+      ComorbidityType.ASTHMA,
+      ComorbidityType.HEART_FAILURE,
+    ];
+    return {
+      increasesSepsisRisk: sepsisRisk.includes(type),
+      increasesBleedingRisk: false,
+      increasesThrombosisRisk: thrombosis.includes(type),
+      affectsRenalClearance: renal.includes(type),
+      affectsPulmonaryReserve: pulmonary.includes(type),
+    };
+  }
+
+  /**
+   * Derives medication clinical flags from category.
+   */
+  private resolveMedicationRiskFlags(category?: MedicationCategory) {
+    if (!category) return {};
+    return {
+      isAnticoagulant: category === MedicationCategory.ANTICOAGULANT,
+      isAntiplatelet: category === MedicationCategory.ANTIPLATELET,
+      isCorticosteroid: category === MedicationCategory.CORTICOSTEROID,
+      isImmunosuppressant: category === MedicationCategory.IMMUNOSUPPRESSANT,
+      isOpioid: category === MedicationCategory.OPIOID_ANALGESIC,
+      isNSAID: category === MedicationCategory.NSAID,
+      isGrowthFactor: category === MedicationCategory.GROWTH_FACTOR,
+    };
+  }
+
+  /**
    * @param grade Grade (G1-G4, Gx)
    * @returns String formatada como "T2N1M0 G2" ou null se não houver dados suficientes
    */
@@ -1195,5 +1316,425 @@ export class PatientsService {
     await this.prisma.cancerDiagnosis.delete({
       where: { id: diagnosisId },
     });
+  }
+
+  /**
+   * Retorna a timeline unificada do paciente, agregando múltiplas fontes de dados
+   * @param patientId ID do paciente
+   * @param tenantId ID do tenant
+   * @param query Parâmetros de paginação e filtro por tipo
+   * @returns Timeline ordenada por data decrescente
+   */
+  async getTimeline(
+    patientId: string,
+    tenantId: string,
+    query: TimelineQueryDto
+  ): Promise<TimelineResponse> {
+    // Verificar se paciente existe e pertence ao tenant
+    const patient = await this.prisma.patient.findFirst({
+      where: { id: patientId, tenantId },
+      select: { id: true },
+    });
+
+    if (!patient) {
+      throw new NotFoundException(`Patient with ID ${patientId} not found`);
+    }
+
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
+    const typeFilter = query.types;
+    const now = new Date();
+
+    const shouldInclude = (type: TimelineEventType) =>
+      !typeFilter || typeFilter.length === 0 || typeFilter.includes(type);
+
+    // Executar queries em paralelo para evitar N+1
+    const [
+      observations,
+      alerts,
+      examResults,
+      navigationSteps,
+      diagnoses,
+      treatments,
+      internalNotes,
+      interventions,
+      questionnaireResponses,
+    ] = await Promise.all([
+      shouldInclude('symptom')
+        ? this.prisma.observation.findMany({
+            where: { patientId, tenantId, effectiveDateTime: { lte: now } },
+            select: {
+              id: true,
+              code: true,
+              display: true,
+              valueQuantity: true,
+              valueString: true,
+              unit: true,
+              effectiveDateTime: true,
+              status: true,
+            },
+            orderBy: { effectiveDateTime: 'desc' },
+          })
+        : [],
+      shouldInclude('alert')
+        ? this.prisma.alert.findMany({
+            where: { patientId, tenantId },
+            select: {
+              id: true,
+              type: true,
+              severity: true,
+              message: true,
+              status: true,
+              context: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : [],
+      shouldInclude('exam')
+        ? this.prisma.complementaryExamResult.findMany({
+            where: { tenantId, exam: { patientId, tenantId }, performedAt: { lte: now } },
+            select: {
+              id: true,
+              performedAt: true,
+              valueNumeric: true,
+              valueText: true,
+              unit: true,
+              referenceRange: true,
+              isAbnormal: true,
+              report: true,
+              exam: {
+                select: {
+                  id: true,
+                  name: true,
+                  type: true,
+                  code: true,
+                  labCategory: true,
+                },
+              },
+            },
+            orderBy: { performedAt: 'desc' },
+          })
+        : [],
+      shouldInclude('navigation_step') || shouldInclude('consultation')
+        ? this.prisma.navigationStep.findMany({
+            where: { patientId, tenantId },
+            select: {
+              id: true,
+              stepKey: true,
+              stepName: true,
+              stepDescription: true,
+              cancerType: true,
+              journeyStage: true,
+              status: true,
+              isCompleted: true,
+              completedAt: true,
+              completedBy: true,
+              expectedDate: true,
+              dueDate: true,
+              actualDate: true,
+              institutionName: true,
+              professionalName: true,
+              result: true,
+              notes: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : [],
+      shouldInclude('diagnosis')
+        ? this.prisma.cancerDiagnosis.findMany({
+            where: { patientId, tenantId, diagnosisDate: { lte: now } },
+            select: {
+              id: true,
+              cancerType: true,
+              icd10Code: true,
+              stage: true,
+              tStage: true,
+              nStage: true,
+              mStage: true,
+              histologicalType: true,
+              diagnosisDate: true,
+              diagnosisConfirmed: true,
+              isPrimary: true,
+              isActive: true,
+            },
+            orderBy: { diagnosisDate: 'desc' },
+          })
+        : [],
+      shouldInclude('treatment')
+        ? this.prisma.treatment.findMany({
+            where: { patientId, tenantId, startDate: { lte: now } },
+            select: {
+              id: true,
+              treatmentType: true,
+              treatmentName: true,
+              protocol: true,
+              intent: true,
+              startDate: true,
+              actualEndDate: true,
+              status: true,
+              currentCycle: true,
+              totalCycles: true,
+              response: true,
+              notes: true,
+            },
+            orderBy: { startDate: 'desc' },
+          })
+        : [],
+      shouldInclude('note')
+        ? this.prisma.internalNote.findMany({
+            where: { patientId, tenantId },
+            select: {
+              id: true,
+              content: true,
+              authorId: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : [],
+      shouldInclude('intervention')
+        ? this.prisma.intervention.findMany({
+            where: { patientId, tenantId },
+            select: {
+              id: true,
+              type: true,
+              notes: true,
+              userId: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : [],
+      shouldInclude('questionnaire')
+        ? this.prisma.questionnaireResponse.findMany({
+            where: { patientId, tenantId },
+            select: {
+              id: true,
+              completedAt: true,
+              scores: true,
+              appliedBy: true,
+              questionnaire: {
+                select: { id: true, code: true, name: true, type: true },
+              },
+            },
+            orderBy: { completedAt: 'desc' },
+          })
+        : [],
+    ]);
+
+    // Mapear cada fonte para TimelineEvent[]
+    const events: TimelineEvent[] = [];
+
+    for (const obs of observations) {
+      events.push({
+        type: 'symptom',
+        date: obs.effectiveDateTime.toISOString(),
+        payload: {
+          id: obs.id,
+          code: obs.code,
+          display: obs.display,
+          valueQuantity: obs.valueQuantity ? Number(obs.valueQuantity) : null,
+          valueString: obs.valueString,
+          unit: obs.unit,
+          status: obs.status,
+        },
+      });
+    }
+
+    for (const alert of alerts) {
+      events.push({
+        type: 'alert',
+        date: alert.createdAt.toISOString(),
+        payload: {
+          id: alert.id,
+          alertType: alert.type,
+          severity: alert.severity,
+          message: alert.message,
+          status: alert.status,
+          context: alert.context,
+        },
+      });
+    }
+
+    for (const result of examResults) {
+      events.push({
+        type: 'exam',
+        date: result.performedAt.toISOString(),
+        payload: {
+          id: result.id,
+          examName: result.exam.name,
+          examType: result.exam.type,
+          examCode: result.exam.code,
+          labCategory: result.exam.labCategory,
+          valueNumeric: result.valueNumeric,
+          valueText: result.valueText,
+          unit: result.unit,
+          referenceRange: result.referenceRange,
+          isAbnormal: result.isAbnormal,
+          report: result.report,
+        },
+      });
+    }
+
+    // Separar NavigationSteps em navigation_step e consultation.
+    // Só incluir na timeline etapas que tenham alguma data relevante (não usar createdAt como fallback).
+    const consultationKeys = ['consulta', 'consultation', 'consult'];
+    for (const step of navigationSteps) {
+      const stepDate =
+        step.completedAt ??
+        step.actualDate ??
+        step.dueDate ??
+        step.expectedDate ??
+        null;
+      if (stepDate == null) continue; // Etapa sem data não aparece na timeline
+      // Excluir eventos com data no futuro
+      if (stepDate > now) continue;
+      const isConsultation = consultationKeys.some(
+        (k) =>
+          step.stepKey.toLowerCase().includes(k) ||
+          step.stepName.toLowerCase().includes(k)
+      );
+      const eventType: TimelineEventType =
+        isConsultation && shouldInclude('consultation')
+          ? 'consultation'
+          : 'navigation_step';
+
+      if (!shouldInclude(eventType)) continue;
+
+      events.push({
+        type: eventType,
+        date: stepDate.toISOString(),
+        payload: {
+          id: step.id,
+          stepKey: step.stepKey,
+          stepName: step.stepName,
+          stepDescription: step.stepDescription,
+          cancerType: step.cancerType,
+          journeyStage: step.journeyStage,
+          status: step.status,
+          isCompleted: step.isCompleted,
+          completedAt: step.completedAt?.toISOString() ?? null,
+          completedBy: step.completedBy,
+          dueDate: step.dueDate?.toISOString() ?? null,
+          actualDate: step.actualDate?.toISOString() ?? null,
+          institutionName: step.institutionName,
+          professionalName: step.professionalName,
+          result: step.result,
+          notes: step.notes,
+        },
+      });
+    }
+
+    for (const diag of diagnoses) {
+      events.push({
+        type: 'diagnosis',
+        date: diag.diagnosisDate.toISOString(),
+        payload: {
+          id: diag.id,
+          cancerType: diag.cancerType,
+          icd10Code: diag.icd10Code,
+          stage: diag.stage,
+          tStage: diag.tStage,
+          nStage: diag.nStage,
+          mStage: diag.mStage,
+          histologicalType: diag.histologicalType,
+          diagnosisConfirmed: diag.diagnosisConfirmed,
+          isPrimary: diag.isPrimary,
+          isActive: diag.isActive,
+        },
+      });
+    }
+
+    for (const treatment of treatments) {
+      // Evento de início
+      events.push({
+        type: 'treatment',
+        date: treatment.startDate.toISOString(),
+        payload: {
+          id: treatment.id,
+          treatmentType: treatment.treatmentType,
+          treatmentName: treatment.treatmentName,
+          protocol: treatment.protocol,
+          intent: treatment.intent,
+          status: treatment.status,
+          currentCycle: treatment.currentCycle,
+          totalCycles: treatment.totalCycles,
+          response: treatment.response,
+          notes: treatment.notes,
+          subEvent: 'start',
+        },
+      });
+      // Se houve término no passado, adicionar evento separado
+      if (treatment.actualEndDate && treatment.actualEndDate <= now) {
+        events.push({
+          type: 'treatment',
+          date: treatment.actualEndDate.toISOString(),
+          payload: {
+            id: treatment.id,
+            treatmentType: treatment.treatmentType,
+            treatmentName: treatment.treatmentName,
+            protocol: treatment.protocol,
+            status: treatment.status,
+            response: treatment.response,
+            subEvent: 'end',
+          },
+        });
+      }
+    }
+
+    for (const note of internalNotes) {
+      events.push({
+        type: 'note',
+        date: note.createdAt.toISOString(),
+        payload: {
+          id: note.id,
+          content: note.content,
+          authorId: note.authorId,
+        },
+      });
+    }
+
+    for (const intervention of interventions) {
+      events.push({
+        type: 'intervention',
+        date: intervention.createdAt.toISOString(),
+        payload: {
+          id: intervention.id,
+          interventionType: intervention.type,
+          notes: intervention.notes,
+          userId: intervention.userId,
+        },
+      });
+    }
+
+    for (const qr of questionnaireResponses) {
+      events.push({
+        type: 'questionnaire',
+        date: qr.completedAt.toISOString(),
+        payload: {
+          id: qr.id,
+          scores: qr.scores,
+          appliedBy: qr.appliedBy,
+          questionnaire: qr.questionnaire,
+        },
+      });
+    }
+
+    // Ordenar por data decrescente
+    events.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    const total = events.length;
+    const paginated = events.slice(offset, offset + limit);
+
+    return {
+      data: paginated,
+      total,
+      limit,
+      offset,
+    };
   }
 }

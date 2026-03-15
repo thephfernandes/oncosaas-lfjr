@@ -27,7 +27,7 @@ import { TeamPerformance } from '@/components/dashboard/oncologist/team-performa
 import { CriticalStepsSection } from '@/components/dashboard/oncologist/critical-steps-section';
 import { ROISection } from '@/components/dashboard/oncologist/roi-section';
 import { ExecutiveView } from '@/components/dashboard/oncologist/executive-view';
-import { CriticalTimelinesSection } from '@/components/dashboard/oncologist/critical-timelines-section';
+
 import {
   useDashboardMetrics,
   useDashboardStatistics,
@@ -289,7 +289,15 @@ function ManagementDashboard() {
   // Estado do modal de drill-down
   const [drillDownModal, setDrillDownModal] = useState<{
     open: boolean;
-    filterType: 'priority' | 'cancerType' | 'journeyStage' | null;
+    filterType:
+      | 'priority'
+      | 'cancerType'
+      | 'journeyStage'
+      | 'alerts'
+      | 'messages'
+      | 'overdueSteps'
+      | 'biomarkers'
+      | null;
     filterValue: string | null;
     title: string;
     description?: string;
@@ -349,41 +357,56 @@ function ManagementDashboard() {
     router.push(`/patients?priority=${encodeURIComponent(category)}`);
   };
 
-  const handleCancerTypeFilter = (cancerType: string | null) => {
-    if (!cancerType) {
-      router.push('/patients');
-      return;
-    }
-    router.push(`/patients?cancerType=${encodeURIComponent(cancerType)}`);
-  };
+  const handleKPICardClick = (
+    filterType: string,
+    filterValue?: string | Record<string, unknown>,
+    cardTitle?: string
+  ) => {
+    if (!filterType) return;
 
-  const handleJourneyStageFilter = (journeyStage: string | null) => {
-    if (!journeyStage) {
-      router.push('/patients');
-      return;
-    }
-    router.push(`/patients?journeyStage=${encodeURIComponent(journeyStage)}`);
-  };
-
-  const handleKPICardClick = (filterType: string, filterValue?: string) => {
-    if (!filterType || !filterValue) return;
-
+    const filterValueStr =
+      typeof filterValue === 'string' ? filterValue : null;
     const validFilterType = filterType as
       | 'priority'
       | 'cancerType'
-      | 'journeyStage';
-    const titleMap: Record<string, string> = {
-      priority: `Pacientes com prioridade ${filterValue}`,
-      cancerType: `Pacientes com ${filterValue}`,
-      journeyStage: `Pacientes em ${filterValue}`,
+      | 'journeyStage'
+      | 'alerts'
+      | 'messages'
+      | 'overdueSteps'
+      | 'biomarkers';
+
+    const titleByFilterType: Record<string, string> = {
+      priority: filterValueStr
+        ? `Pacientes — prioridade ${filterValueStr}`
+        : cardTitle || 'Pacientes por prioridade',
+      cancerType: filterValueStr
+        ? `Pacientes — ${filterValueStr}`
+        : cardTitle || 'Pacientes por tipo de câncer',
+      journeyStage: filterValueStr
+        ? `Pacientes — ${filterValueStr}`
+        : cardTitle || 'Pacientes por estágio',
+      alerts: cardTitle || 'Alertas Pendentes',
+      messages: cardTitle || 'Mensagens Não Assumidas',
+      overdueSteps: cardTitle || 'Etapas Atrasadas',
+      biomarkers: cardTitle || 'Biomarcadores Pendentes',
+    };
+
+    const descriptionByFilterType: Record<string, string> = {
+      priority: 'Pacientes filtrados por prioridade. Clique em um paciente para ver detalhes.',
+      cancerType: 'Pacientes filtrados por tipo de câncer. Clique em um paciente para ver detalhes.',
+      journeyStage: 'Pacientes filtrados por estágio da jornada. Clique em um paciente para ver detalhes.',
+      alerts: 'Lista de alertas pendentes. Clique em um alerta para abrir o paciente.',
+      messages: 'Pacientes com mensagens não assumidas. Clique em um paciente para ver detalhes.',
+      overdueSteps: 'Pacientes com pelo menos uma etapa de navegação atrasada.',
+      biomarkers: 'Pacientes com biomarcadores pendentes. Clique em um paciente para ver detalhes.',
     };
 
     setDrillDownModal({
       open: true,
       filterType: validFilterType,
-      filterValue,
-      title: titleMap[filterType] || `Pacientes — ${filterValue}`,
-      description: 'Clique em um paciente para ver detalhes',
+      filterValue: filterValueStr,
+      title: cardTitle || titleByFilterType[filterType] || 'Pacientes',
+      description: descriptionByFilterType[filterType] || 'Clique em um paciente para ver detalhes',
     });
   };
 
@@ -516,6 +539,11 @@ function ManagementDashboard() {
                 </div>
               )}
 
+              {/* Pacientes com Etapas Críticas - abaixo dos indicadores, acima dos gráficos */}
+              {metrics && metrics.overdueStepsCount > 0 && (
+                <CriticalStepsSection maxResults={10} />
+              )}
+
               {/* Gráficos de Métricas */}
               {isLoadingMetrics || isLoadingStatistics ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -535,8 +563,6 @@ function ManagementDashboard() {
                   statistics={statistics}
                   isLoading={false}
                   onPriorityFilter={handlePriorityFilter}
-                  onCancerTypeFilter={handleCancerTypeFilter}
-                  onJourneyStageFilter={handleJourneyStageFilter}
                   onPeriodChange={(period) =>
                     setStatisticsPeriod(period as '7d' | '30d' | '90d')
                   }
@@ -577,14 +603,6 @@ function ManagementDashboard() {
               {/* Seção de ROI */}
               {metrics && statistics && (
                 <ROISection metrics={metrics} statistics={statistics} />
-              )}
-
-              {/* Seção de Prazos Críticos por Tipo de Câncer */}
-              <CriticalTimelinesSection />
-
-              {/* Seção de Pacientes com Etapas Críticas */}
-              {metrics && metrics.overdueStepsCount > 0 && (
-                <CriticalStepsSection maxResults={10} />
               )}
             </TabsContent>
 

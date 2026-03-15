@@ -114,6 +114,8 @@ services:
       - '127.0.0.1:8001:8001'
     environment:
       BACKEND_URL: http://backend:3002
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
 
 volumes:
   postgres_data:
