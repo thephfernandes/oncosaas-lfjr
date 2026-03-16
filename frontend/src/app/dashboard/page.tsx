@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { PatientListConnected } from '@/components/dashboard/patient-list-connected';
 import { AlertsPanel } from '@/components/dashboard/alerts-panel';
@@ -52,17 +52,14 @@ function NursingDashboard() {
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [isNursingActive, setIsNursingActive] = useState(false);
   const [activeTab, setActiveTab] = useState<'patients' | 'alerts'>('patients');
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  // Verificar autenticação e obter paciente da URL
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const patientId = params.get('patient');
-      if (patientId) {
-        setSelectedPatient(patientId);
-      }
-    }
-  }, []);
+  const handlePatientSelect = (patientId: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('patient', patientId);
+    router.push(`/dashboard?${params.toString()}`);
+  };
 
   const { data: selectedPatientData, isLoading: isLoadingPatient } = usePatient(
     selectedPatient || '',
@@ -170,7 +167,7 @@ function NursingDashboard() {
 
               <div className="flex-1 overflow-y-auto p-4 min-h-0">
                 {activeTab === 'patients' ? (
-                  <PatientListConnected onPatientSelect={setSelectedPatient} />
+                  <PatientListConnected onPatientSelect={handlePatientSelect} />
                 ) : (
                   <AlertsPanel
                     onAlertSelect={setSelectedAlert}

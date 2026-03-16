@@ -142,8 +142,7 @@ export function InterventionHistory({ patientId }: InterventionHistoryProps) {
                       )}
                       {intervention.message && (
                         <p className="text-xs text-muted-foreground italic">
-                          Mensagem relacionada: "
-                          {intervention.message.content.substring(0, 50)}..."
+                          {`Mensagem relacionada: "${intervention.message.content.substring(0, 50)}..."`}
                         </p>
                       )}
                       <div className="text-xs text-muted-foreground">

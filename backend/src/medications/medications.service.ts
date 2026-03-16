@@ -34,7 +34,7 @@ export class MedicationsService {
     const med = await this.prisma.medication.findFirst({
       where: { id, tenantId },
     });
-    if (!med) throw new NotFoundException(`Medication ${id} not found`);
+    if (!med) {throw new NotFoundException(`Medication ${id} not found`);}
     return med;
   }
 
@@ -73,8 +73,8 @@ export class MedicationsService {
     if (dto.category) {
       Object.assign(updateData, resolveClinicalFlags(dto.category));
     }
-    if (dto.startDate) updateData.startDate = new Date(dto.startDate);
-    if (dto.endDate) updateData.endDate = new Date(dto.endDate);
+    if (dto.startDate) {updateData.startDate = new Date(dto.startDate);}
+    if (dto.endDate) {updateData.endDate = new Date(dto.endDate);}
 
     return this.prisma.medication.update({
       where: { id },

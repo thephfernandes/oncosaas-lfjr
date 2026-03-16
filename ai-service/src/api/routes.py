@@ -1,15 +1,6 @@
-"""
-Rotas da API do AI Service
-"""
-
 import json
 import logging
 from typing import Dict, List, Optional
-
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-
-logger = logging.getLogger(__name__)
 from ..models.priority_model import priority_model, FEATURE_COLUMNS, extract_features
 from ..models.schemas import (
     AgentProcessRequest,
@@ -46,15 +37,15 @@ from ..agent.context_builder import context_builder
 from ..agent.symptom_analyzer import symptom_analyzer
 from ..agent.questionnaire_engine import questionnaire_engine
 from ..agent.protocol_engine import protocol_engine
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
-
 
 # ============================================
 # Models de requisição/resposta (legacy)
 # ============================================
-
-
 class PriorityRequest(BaseModel):
     patient_id: Optional[str] = None
     cancer_type: str
@@ -828,7 +819,7 @@ def _highest_severity(risks: List[RiskPrediction]) -> str:
 
 
 @router.post("/agent/predict-risk", response_model=PredictRiskResponse)
-async def predict_risk(request: PredictRiskRequest):
+async def agent_predict_risk(request: PredictRiskRequest):
     """Predict risk factors for a single patient (delays, worsening, abandonment)."""
     try:
         risks = _analyze_patient_risk(request)
@@ -842,7 +833,7 @@ async def predict_risk(request: PredictRiskRequest):
 
 
 @router.post("/agent/predict-risk-bulk", response_model=BulkPredictRiskResponse)
-async def predict_risk_bulk(request: BulkPredictRiskRequest):
+async def agent_predict_risk_bulk(request: BulkPredictRiskRequest):
     """Predict risk factors for multiple patients at once (daily scheduler)."""
     try:
         results: List[PredictRiskResponse] = []
@@ -957,11 +948,11 @@ def _build_nurse_assist_fallback(request: NurseAssistRequest) -> NurseAssistResp
 
     summary = ". ".join(parts) + "."
 
-    last_msgs = (
-        request.conversation_history[-3:] if request.conversation_history else []
-    )
-    patient_msgs = [m for m in last_msgs if m.role == "patient"]
-    last_patient = patient_msgs[-1].content if patient_msgs else ""
+    # last_msgs = (
+    #     request.conversation_history[-3:] if request.conversation_history else []
+    # )
+    # patient_msgs = [m for m in last_msgs if m.role == "patient"]
+    # last_patient = patient_msgs[-1].content if patient_msgs else ""
 
     replies = [
         SuggestedReply(
@@ -1019,7 +1010,6 @@ async def nurse_assist(request: NurseAssistRequest):
     AI assistant for nurses: generates conversation summary,
     suggested replies, and recommended clinical actions.
     """
-    import json
     import logging
     from ..agent.llm_provider import llm_provider
 
@@ -1325,7 +1315,6 @@ async def patient_summary(request: PatientSummaryRequest):
     Generates an intelligent patient summary using LLM tool calling.
     Falls back to rule-based generation if LLM is unavailable.
     """
-    import json
     from ..agent.llm_provider import llm_provider
 
     steps_desc = []

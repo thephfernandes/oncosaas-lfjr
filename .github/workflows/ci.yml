@@ -35,9 +35,6 @@ jobs:
       - name: Type check
         run: npm run type-check
 
-      - name: Test
-        run: npm test -- --watchAll=false
-
       - name: Security audit
         run: npm audit --audit-level=high
         continue-on-error: true

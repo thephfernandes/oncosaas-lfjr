@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import joblib
 import numpy as np
@@ -147,7 +147,6 @@ class OncologyPriorityModel:
 
     def train(self, X: pd.DataFrame, y: pd.Series) -> Dict[str, Any]:
         """Train the ordinal classifier."""
-        from sklearn.model_selection import StratifiedKFold
         from sklearn.metrics import classification_report
 
         self.model = self._create_model()

@@ -28,10 +28,8 @@ export function useReadPatients() {
     });
   }, []);
 
-  // Sincronizar com localStorage na montagem e quando outro componente atualizar
+  // Sincronizar com localStorage quando outro componente atualizar
   useEffect(() => {
-    setReadPatientIds(getReadPatientIds());
-
     const handler = () => setReadPatientIds(getReadPatientIds());
     window.addEventListener(READ_PATIENTS_UPDATED_EVENT, handler);
     return () => window.removeEventListener(READ_PATIENTS_UPDATED_EVENT, handler);

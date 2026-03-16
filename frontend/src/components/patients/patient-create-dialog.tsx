@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -53,7 +53,7 @@ export function PatientCreateDialog({
     register,
     handleSubmit,
     formState: { errors },
-    watch,
+    control,
     setValue,
     reset,
   } = useForm<CreatePatientFormData>({
@@ -66,6 +66,14 @@ export function PatientCreateDialog({
       phone: '',
     },
   });
+
+  const gender = useWatch({ control, name: 'gender' });
+  const cancerType = useWatch({ control, name: 'cancerType' });
+  const currentStage = useWatch({ control, name: 'currentStage' });
+  const performanceStatus = useWatch({ control, name: 'performanceStatus' });
+  const comorbidities = useWatch({ control, name: 'comorbidities' });
+  const currentMedications = useWatch({ control, name: 'currentMedications' });
+  const familyHistory = useWatch({ control, name: 'familyHistory' });
 
   const createPatientMutation = useMutation({
     mutationFn: (data: CreatePatientDto) => patientsApi.create(data),
@@ -221,7 +229,7 @@ export function PatientCreateDialog({
               <div>
                 <label className="text-sm font-medium">Sexo *</label>
                 <Select
-                  value={watch('gender')}
+                  value={gender}
                   onValueChange={(value) => setValue('gender', value as any)}
                 >
                   <SelectTrigger>
@@ -278,7 +286,7 @@ export function PatientCreateDialog({
               <div>
                 <label className="text-sm font-medium">Tipo de Câncer *</label>
                 <Select
-                  value={watch('cancerType')}
+                  value={cancerType}
                   onValueChange={(value) =>
                     setValue('cancerType', value as any)
                   }
@@ -317,21 +325,21 @@ export function PatientCreateDialog({
               <div>
                 <label className="text-sm font-medium">
                   Data do Diagnóstico{' '}
-                  {watch('currentStage') !== 'SCREENING' && (
+                  {currentStage !== 'SCREENING' && (
                     <span className="text-red-600">*</span>
                   )}
                 </label>
                 <Input
                   type="date"
                   {...register('diagnosisDate')}
-                  required={watch('currentStage') !== 'SCREENING'}
+                  required={currentStage !== 'SCREENING'}
                 />
                 {errors.diagnosisDate && (
                   <p className="text-sm text-destructive mt-1">
                     {errors.diagnosisDate.message}
                   </p>
                 )}
-                {watch('currentStage') === 'SCREENING' && (
+                {currentStage === 'SCREENING' && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Opcional para pacientes em rastreio
                   </p>
@@ -344,9 +352,9 @@ export function PatientCreateDialog({
                 </label>
                 <Select
                   value={
-                    watch('performanceStatus') !== null &&
-                    watch('performanceStatus') !== undefined
-                      ? String(watch('performanceStatus'))
+                    performanceStatus !== null &&
+                    performanceStatus !== undefined
+                      ? String(performanceStatus)
                       : ''
                   }
                   onValueChange={(value) => {
@@ -396,7 +404,7 @@ export function PatientCreateDialog({
                   Estágio da Jornada
                 </label>
                 <Select
-                  value={watch('currentStage')}
+                  value={currentStage}
                   onValueChange={(value) =>
                     setValue('currentStage', value as any)
                   }
@@ -453,7 +461,7 @@ export function PatientCreateDialog({
 
                   <div>
                     <ComorbiditiesForm
-                      value={watch('comorbidities') as any}
+                      value={comorbidities as any}
                       onChange={(comorbidities) =>
                         setValue('comorbidities', comorbidities as any)
                       }
@@ -462,7 +470,7 @@ export function PatientCreateDialog({
 
                   <div>
                     <CurrentMedicationsForm
-                      value={watch('currentMedications') as any}
+                      value={currentMedications as any}
                       onChange={(currentMedications) =>
                         setValue(
                           'currentMedications',
@@ -474,7 +482,7 @@ export function PatientCreateDialog({
 
                   <div>
                     <FamilyHistoryForm
-                      value={watch('familyHistory') as any}
+                      value={familyHistory as any}
                       onChange={(familyHistory) =>
                         setValue('familyHistory', familyHistory as any)
                       }

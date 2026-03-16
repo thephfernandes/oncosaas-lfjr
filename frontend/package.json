@@ -1,5 +1,5 @@
 {
-  "name": "ONCONAV-frontend",
+  "name": "oncosaas-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,8 +7,8 @@
     "dev:https": "node server.js",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
     "type-check": "tsc --noEmit"
@@ -55,13 +55,9 @@
     "@types/node": "^20.14.12",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
     "baseline-browser-mapping": "^2.9.19",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^15.1.0",
-    "eslint-config-prettier": "^9.1.2",
-    "prettier": "^3.6.2"
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.1.6"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

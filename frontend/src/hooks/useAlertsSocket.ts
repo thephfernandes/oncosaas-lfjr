@@ -5,10 +5,11 @@ import { useSocket } from './useSocket';
 import { Alert } from '@/lib/api/alerts';
 
 export const useAlertsSocket = () => {
-  const { socket, isConnected } = useSocket('/alerts');
+  const { socketRef, isConnected } = useSocket('/alerts');
   const [alerts, setAlerts] = useState<Alert[]>([]);
 
   useEffect(() => {
+    const socket = socketRef.current;
     if (!socket || !isConnected) return;
 
     const handleCriticalAlert = (alert: Alert) => {
@@ -28,7 +29,7 @@ export const useAlertsSocket = () => {
     return () => {
       socket.off('critical_alert');
     };
-  }, [socket, isConnected]);
+  }, [socketRef, isConnected]);
 
   return { alerts, isConnected };
 };

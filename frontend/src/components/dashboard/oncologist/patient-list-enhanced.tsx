@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Patient } from '@/lib/api/patients';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -53,18 +53,12 @@ export function PatientListEnhanced({
   const [showFilters, setShowFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20); // Mostrar 20 pacientes por vez
 
-  // Atualizar filtros quando externalFilters mudar
-  useEffect(() => {
-    if (externalFilters) {
-      if (externalFilters.priority) setPriorityFilter(externalFilters.priority);
-      if (externalFilters.hasAlerts) setHasAlertsFilter(true);
-      if (externalFilters.hasOverdueSteps) setHasOverdueStepsFilter(true);
-      if (externalFilters.cancerType)
-        setCancerTypeFilter(externalFilters.cancerType);
-      if (externalFilters.journeyStage)
-        setJourneyStageFilter(externalFilters.journeyStage);
-    }
-  }, [externalFilters]);
+  // Effective filters: externalFilters take precedence over internal state
+  const effectivePriorityFilter = externalFilters?.priority ?? priorityFilter;
+  const effectiveCancerTypeFilter = externalFilters?.cancerType ?? cancerTypeFilter;
+  const effectiveJourneyStageFilter = externalFilters?.journeyStage ?? journeyStageFilter;
+  const effectiveHasAlertsFilter = externalFilters?.hasAlerts ?? hasAlertsFilter;
+  const effectiveHasOverdueStepsFilter = externalFilters?.hasOverdueSteps ?? hasOverdueStepsFilter;
 
   // Obter valores únicos para filtros
   const uniqueCancerTypes = useMemo(() => {
@@ -97,8 +91,8 @@ export function PatientListEnhanced({
 
       // Filtro de prioridade
       if (
-        priorityFilter &&
-        (patient.priorityCategory || 'MEDIUM') !== priorityFilter
+        effectivePriorityFilter &&
+        (patient.priorityCategory || 'MEDIUM') !== effectivePriorityFilter
       ) {
         return false;
       }
@@ -112,12 +106,12 @@ export function PatientListEnhanced({
       }
 
       // Filtro de tipo de câncer
-      if (cancerTypeFilter && patient.cancerType !== cancerTypeFilter) {
+      if (effectiveCancerTypeFilter && patient.cancerType !== effectiveCancerTypeFilter) {
         return false;
       }
 
       // Filtro de estágio da jornada
-      if (journeyStageFilter && patient.currentStage !== journeyStageFilter) {
+      if (effectiveJourneyStageFilter && patient.currentStage !== effectiveJourneyStageFilter) {
         return false;
       }
 
@@ -127,13 +121,13 @@ export function PatientListEnhanced({
       }
 
       // Filtro de alertas
-      if (hasAlertsFilter && (patient.pendingAlertsCount ?? patient._count?.alerts ?? 0) === 0) {
+      if (effectiveHasAlertsFilter && (patient.pendingAlertsCount ?? patient._count?.alerts ?? 0) === 0) {
         return false;
       }
 
       // Filtro de etapas atrasadas (por enquanto, apenas verifica se tem alertas de navegação)
       // TODO: Adicionar informação de etapas atrasadas ao tipo Patient
-      if (hasOverdueStepsFilter) {
+      if (effectiveHasOverdueStepsFilter) {
         // Por enquanto, verificamos se tem alertas de navegação
         // Isso será melhorado quando tivermos dados de etapas diretamente no paciente
         const hasNavigationAlerts = (patient.pendingAlertsCount ?? patient._count?.alerts ?? 0) > 0;
@@ -147,12 +141,12 @@ export function PatientListEnhanced({
   }, [
     patients,
     searchQuery,
-    priorityFilter,
-    cancerTypeFilter,
-    journeyStageFilter,
+    effectivePriorityFilter,
+    effectiveCancerTypeFilter,
+    effectiveJourneyStageFilter,
     statusFilter,
-    hasAlertsFilter,
-    hasOverdueStepsFilter,
+    effectiveHasAlertsFilter,
+    effectiveHasOverdueStepsFilter,
     externalFilters,
   ]);
 
@@ -198,11 +192,11 @@ export function PatientListEnhanced({
   };
 
   const activeFiltersCount =
-    (priorityFilter ? 1 : 0) +
-    (cancerTypeFilter ? 1 : 0) +
-    (journeyStageFilter ? 1 : 0) +
+    (effectivePriorityFilter ? 1 : 0) +
+    (effectiveCancerTypeFilter ? 1 : 0) +
+    (effectiveJourneyStageFilter ? 1 : 0) +
     (statusFilter ? 1 : 0) +
-    (hasAlertsFilter ? 1 : 0);
+    (effectiveHasAlertsFilter ? 1 : 0);
 
   if (isLoading) {
     return (

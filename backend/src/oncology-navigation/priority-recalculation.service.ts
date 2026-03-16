@@ -94,10 +94,10 @@ export class PriorityRecalculationService {
       let hasFever = false;
       for (const obs of patient.observations) {
         const val = parseInt(obs.valueString ?? '0', 10) || 0;
-        if (obs.code === 'symptom_dor' && val > painScore) painScore = val;
-        if (obs.code === 'symptom_nausea' && val > nauseaScore) nauseaScore = val;
-        if (obs.code === 'symptom_fadiga' && val > fatigueScore) fatigueScore = val;
-        if (obs.code === 'symptom_febre') hasFever = true;
+        if (obs.code === 'symptom_dor' && val > painScore) {painScore = val;}
+        if (obs.code === 'symptom_nausea' && val > nauseaScore) {nauseaScore = val;}
+        if (obs.code === 'symptom_fadiga' && val > fatigueScore) {fatigueScore = val;}
+        if (obs.code === 'symptom_febre') {hasFever = true;}
       }
 
       const now = new Date();

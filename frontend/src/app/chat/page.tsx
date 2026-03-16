@@ -174,7 +174,7 @@ export default function ChatPage() {
     } else if (!assumedMessage) {
       setIsNursingActive(false);
     }
-  }, [assumedMessage?.id, isConversationAssumedByCurrentUser]);
+  }, [assumedMessage, assumedMessage?.id, isConversationAssumedByCurrentUser]);
 
   // Carregar filtros do localStorage ao montar o componente
   useEffect(() => {

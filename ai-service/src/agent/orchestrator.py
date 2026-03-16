@@ -16,11 +16,9 @@ from .protocol_engine import protocol_engine
 from .questionnaire_engine import questionnaire_engine
 from .intent_classifier import intent_classifier, INTENT_GREETING, INTENT_EMERGENCY, INTENT_APPOINTMENT_QUERY, INTENT_EMOTIONAL_SUPPORT
 from .prompts.system_prompt import build_system_prompt
-from .prompts.action_tools import AGENT_ACTION_TOOLS
 from .prompts.orchestrator_prompt import build_orchestrator_prompt, ORCHESTRATOR_ROUTING_TOOLS
 from .subagents import SymptomAgent, NavigationAgent, QuestionnaireAgent, EmotionalSupportAgent
-from .clinical_rules import clinical_rules_engine, ER_IMMEDIATE, ER_DAYS
-from .clinical_scores import clinical_scores
+from .clinical_rules import clinical_rules_engine, ER_IMMEDIATE
 
 logger = logging.getLogger(__name__)
 
