@@ -17,14 +17,14 @@ dotenv.config({ path: resolve(__dirname, '../../.env') });
 const prisma = new PrismaClient();
 
 function isInvalidNumber(value: unknown): boolean {
-  if (value === null || value === undefined) return false;
-  if (typeof value !== 'number') return false;
+  if (value === null || value === undefined) {return false;}
+  if (typeof value !== 'number') {return false;}
   return Number.isNaN(value) || value < 0 || !Number.isFinite(value);
 }
 
 function checkPercentage(value: unknown): boolean {
-  if (value === null || value === undefined) return true;
-  if (typeof value !== 'number') return true;
+  if (value === null || value === undefined) {return true;}
+  if (typeof value !== 'number') {return true;}
   return value >= 0 && value <= 100;
 }
 
