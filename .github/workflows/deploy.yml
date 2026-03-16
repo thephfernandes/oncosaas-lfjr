@@ -45,8 +45,8 @@ jobs:
             context: ./backend
           - service: frontend
             context: ./frontend
-          - service: ai-service
-            context: ./ai-service
+          # - service: ai-service
+          #   context: ./ai-service
 
     steps:
       - name: Checkout
@@ -99,7 +99,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [backend, frontend, ai-service]
+        service: [backend, frontend]
 
     steps:
       - name: Configure AWS credentials
@@ -188,7 +188,7 @@ jobs:
             # Pull the three app images (infra images are pulled on demand by Compose)
             docker pull "$ECR_REGISTRY/oncosaas-backend:$IMAGE_TAG"
             docker pull "$ECR_REGISTRY/oncosaas-frontend:$IMAGE_TAG"
-            docker pull "$ECR_REGISTRY/oncosaas-ai-service:$IMAGE_TAG"
+            # docker pull "$ECR_REGISTRY/oncosaas-ai-service:$IMAGE_TAG"
 
             # Restart the full stack — --no-build forces Compose to use the pulled images
             # --force-recreate ensures old containers are stopped before new ones start,

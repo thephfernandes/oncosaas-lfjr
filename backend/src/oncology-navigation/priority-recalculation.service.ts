@@ -111,7 +111,7 @@ export class PriorityRecalculationService {
         : 30;
 
       const treatmentCycle =
-        patient.treatments[0]?.currentCycle != null
+        patient.treatments[0]?.currentCycle !== null && patient.treatments[0]?.currentCycle !== undefined
           ? Number(patient.treatments[0].currentCycle)
           : 0;
 
