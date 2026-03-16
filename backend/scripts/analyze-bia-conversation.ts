@@ -97,7 +97,7 @@ async function main() {
 
     report.push(`\n--- Troca ${seq} ---`);
     report.push(`INBOUND: "${inbound.content}"`);
-    if (outbound) report.push(`OUTBOUND: "${outbound.content?.substring(0, 100)}..."`);
+    if (outbound) {report.push(`OUTBOUND: "${outbound.content?.substring(0, 100)}..."`);}
 
     const checks: ChecklistItem[] = [];
 
@@ -113,7 +113,7 @@ async function main() {
         : 'N/A (sem sintoma)',
     });
     if (hasSymptomWord && !hasScaleRequest && !/^\d+$/.test(inbound.content))
-      deviations.push(`Troca ${seq}: Paciente relatou sintoma mas agente não pediu escala 0-10`);
+      {deviations.push(`Troca ${seq}: Paciente relatou sintoma mas agente não pediu escala 0-10`);}
 
     // 2. Agente extraiu e registrou em structuredData?
     const hasStructuredData = !!(
@@ -125,7 +125,7 @@ async function main() {
       note: outbound ? (hasStructuredData ? '✅ structuredData preenchido' : '⚠️ structuredData null (pode ser bug)') : 'N/A',
     });
     if (hasSymptomWord && outbound && !hasStructuredData)
-      deviations.push(`Troca ${seq}: structuredData não preenchido apesar de sintoma/valor`);
+      {deviations.push(`Troca ${seq}: structuredData não preenchido apesar de sintoma/valor`);}
 
     // 3. Para score ≥7, foi criado alerta?
     const numericReply = parseInt(inbound.content.replace(/\D/g, ''), 10);
@@ -145,7 +145,7 @@ async function main() {
         : 'N/A',
     });
     if (isHighScore && !decisionHasAlert && !hasAlertForPatient)
-      deviations.push(`Troca ${seq}: Paciente respondeu ${numericReply}/10 mas nenhum alerta foi criado`);
+      {deviations.push(`Troca ${seq}: Paciente respondeu ${numericReply}/10 mas nenhum alerta foi criado`);}
 
     // 4. Resposta segue orientações clínicas?
     const hasClinicalGuidance =

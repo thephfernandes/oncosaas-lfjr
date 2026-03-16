@@ -23,6 +23,13 @@ class ApiClient {
   private client: AxiosInstance;
   private tenantId: string | null = null;
   private refreshPromise: Promise<string> | null = null;
+  private tokenRefreshListeners: Set<(token: string) => void> = new Set();
+
+  /** Register a callback invoked whenever the access token is silently refreshed. */
+  onTokenRefreshed(listener: (token: string) => void): () => void {
+    this.tokenRefreshListeners.add(listener);
+    return () => this.tokenRefreshListeners.delete(listener);
+  }
 
   constructor() {
     const apiUrl = getApiUrl();
@@ -88,7 +95,8 @@ class ApiClient {
             try {
               const newAccessToken =
                 await this.refreshAccessToken(refreshToken);
-              originalRequest.headers = (originalRequest.headers ?? {}) as AxiosRequestHeaders;
+              originalRequest.headers = (originalRequest.headers ??
+                {}) as AxiosRequestHeaders;
               originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
               return this.client(originalRequest);
             } catch {
@@ -144,6 +152,7 @@ class ApiClient {
       if (newRefreshToken) {
         this.setRefreshToken(newRefreshToken);
       }
+      this.tokenRefreshListeners.forEach((fn) => fn(access_token as string));
       return access_token as string;
     })().finally(() => {
       this.refreshPromise = null;
@@ -157,6 +166,10 @@ class ApiClient {
   setToken(token: string): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem('auth_token', token);
+      // Set a session cookie so Next.js middleware can detect authenticated state.
+      // This is NOT the JWT itself — it's a presence flag only.
+      // The JWT remains in localStorage; a full HttpOnly cookie migration is a longer-term refactor.
+      document.cookie = 'session_active=1; path=/; SameSite=Lax';
     }
   }
 
@@ -197,6 +210,9 @@ class ApiClient {
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('tenant_id');
       localStorage.removeItem('user');
+      // Clear session cookie so middleware redirects unauthenticated requests
+      document.cookie =
+        'session_active=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     }
     this.tenantId = null;
   }

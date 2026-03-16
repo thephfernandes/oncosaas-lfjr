@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -73,7 +74,8 @@ export function ComplementaryExamCreateDialog({
   onSuccess,
 }: ComplementaryExamCreateDialogProps): React.ReactElement {
   const queryClient = useQueryClient();
-  const [comboboxOpen, setComboboxOpen] = useState(false);
+  const [comboboxOpenState, setComboboxOpen] = useState(false);
+  const comboboxOpen = open && comboboxOpenState;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateComplementaryExamFormData>({
@@ -94,9 +96,12 @@ export function ComplementaryExamCreateDialog({
     },
   });
 
-  const examType = form.watch('type');
-  const searchQuery = form.watch('name');
-  const catalogOptions = filterCatalogByTypeAndSearch(examType, searchQuery ?? '');
+  const examType = useWatch({ control: form.control, name: 'type' });
+  const searchQuery = useWatch({ control: form.control, name: 'name' });
+  const catalogOptions = filterCatalogByTypeAndSearch(
+    examType,
+    searchQuery ?? ''
+  );
 
   const createMutation = useMutation({
     mutationFn: async (data: CreateComplementaryExamFormData) => {
@@ -141,7 +146,7 @@ export function ComplementaryExamCreateDialog({
     },
   });
 
-  function resetForm() {
+  const resetForm = useCallback(() => {
     form.reset({
       type: 'LABORATORY',
       name: '',
@@ -156,12 +161,11 @@ export function ComplementaryExamCreateDialog({
         report: '',
       },
     });
-  }
+  }, [form]);
 
   useEffect(() => {
     if (!open) {
       resetForm();
-      setComboboxOpen(false);
     } else {
       const current = form.getValues('initialResult.performedAt');
       if (!current || (typeof current === 'string' && current.trim() === '')) {
@@ -171,7 +175,7 @@ export function ComplementaryExamCreateDialog({
         );
       }
     }
-  }, [open, form]);
+  }, [open, form, resetForm]);
 
   const onSelectCatalogEntry = (entry: CatalogExamEntry) => {
     form.setValue('name', entry.name);
@@ -259,11 +263,14 @@ export function ComplementaryExamCreateDialog({
                       <ul className="max-h-48 overflow-auto py-1">
                         {catalogOptions.length === 0 ? (
                           <li className="px-3 py-2 text-sm text-muted-foreground">
-                            Nenhum exame encontrado. Digite para buscar ou use um nome livre.
+                            Nenhum exame encontrado. Digite para buscar ou use
+                            um nome livre.
                           </li>
                         ) : (
                           catalogOptions.map((entry) => (
-                            <li key={`${entry.type}-${entry.name}-${entry.code ?? ''}`}>
+                            <li
+                              key={`${entry.type}-${entry.name}-${entry.code ?? ''}`}
+                            >
                               <button
                                 type="button"
                                 className={cn(
@@ -274,7 +281,9 @@ export function ComplementaryExamCreateDialog({
                                 {catalogDisplayLabel(entry)}
                                 {(entry.unit || entry.referenceRange) && (
                                   <span className="block text-xs text-muted-foreground mt-0.5">
-                                    {[entry.unit, entry.referenceRange].filter(Boolean).join(' · ')}
+                                    {[entry.unit, entry.referenceRange]
+                                      .filter(Boolean)
+                                      .join(' · ')}
                                   </span>
                                 )}
                               </button>
@@ -318,7 +327,9 @@ export function ComplementaryExamCreateDialog({
 
             {/* Resultado inicial (opcional) */}
             <div className="space-y-3 pt-2 border-t">
-              <h4 className="text-sm font-medium">Resultado inicial (opcional)</h4>
+              <h4 className="text-sm font-medium">
+                Resultado inicial (opcional)
+              </h4>
               <FormField
                 control={form.control}
                 name="initialResult.performedAt"

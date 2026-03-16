@@ -1,16 +1,25 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const PUBLIC_ROUTES = new Set(['/login', '/']);
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Rotas públicas - permitir acesso sem autenticação
-  const publicRoutes = ['/login', '/'];
-  const isPublicRoute = publicRoutes.includes(pathname);
+  if (PUBLIC_ROUTES.has(pathname)) {
+    return NextResponse.next();
+  }
 
-  // Para rotas protegidas, a verificação será feita no cliente
-  // pois o token está no localStorage (não em cookies)
-  // O middleware apenas permite acesso às rotas públicas
+  // Check for the session presence cookie set by apiClient.setToken().
+  // Note: this is a lightweight presence flag, not the JWT itself.
+  // The full HttpOnly cookie migration (proper server-side auth) is a planned improvement.
+  const sessionActive = request.cookies.get('session_active');
+
+  if (!sessionActive) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   return NextResponse.next();
 }

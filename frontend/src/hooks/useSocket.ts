@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth-store';
 import { getWebSocketUrl } from '@/lib/utils/api-config';
 
 export const useSocket = (namespace: string = '/') => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const errorToastShown = useRef(false);
   const { token, user } = useAuthStore();
@@ -60,12 +60,13 @@ export const useSocket = (namespace: string = '/') => {
       }
     });
 
-    setSocket(socketInstance);
+    socketRef.current = socketInstance;
 
     return () => {
       socketInstance.close();
+      socketRef.current = null;
     };
   }, [token, user, namespace]);
 
-  return { socket, isConnected };
+  return { socketRef, isConnected };
 };

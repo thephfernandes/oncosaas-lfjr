@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -50,24 +50,23 @@ const END_SHIFT_ITEMS: ChecklistItem[] = [
 
 export function ShiftChecklist({ type }: ShiftChecklistProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [items, setItems] = useState<ChecklistItem[]>(
-    type === 'start' ? START_SHIFT_ITEMS : END_SHIFT_ITEMS
-  );
   const { user } = useAuthStore();
-
-  // Carregar estado do localStorage
-  useEffect(() => {
-    const storageKey = `shift-checklist-${type}-${user?.id}`;
+  const [items, setItems] = useState<ChecklistItem[]>(() => {
+    if (typeof window === 'undefined') {
+      return type === 'start' ? START_SHIFT_ITEMS : END_SHIFT_ITEMS;
+    }
+    const userId = useAuthStore.getState().user?.id;
+    const storageKey = `shift-checklist-${type}-${userId}`;
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
-        const savedItems = JSON.parse(saved);
-        setItems(savedItems);
-      } catch (e) {
+        return JSON.parse(saved) as ChecklistItem[];
+      } catch {
         // Ignorar erro de parsing
       }
     }
-  }, [type, user?.id]);
+    return type === 'start' ? START_SHIFT_ITEMS : END_SHIFT_ITEMS;
+  });
 
   // Salvar estado no localStorage
   const saveToStorage = (newItems: ChecklistItem[]) => {

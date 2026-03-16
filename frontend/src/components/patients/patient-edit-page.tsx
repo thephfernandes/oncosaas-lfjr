@@ -204,16 +204,25 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
       const genderRaw = patient.gender?.toString?.()?.trim?.() ?? '';
       const genderNormalized = (() => {
         const g = genderRaw.toLowerCase();
-        if (['male', 'female', 'other'].includes(g)) return g as 'male' | 'female' | 'other';
+        if (['male', 'female', 'other'].includes(g))
+          return g as 'male' | 'female' | 'other';
         if (g === 'm' || g === 'masculino') return 'male' as const;
         if (g === 'f' || g === 'feminino') return 'female' as const;
         return undefined;
       })();
 
       // Normalizar currentStage: sempre um valor válido para o Select (default SCREENING)
-      const STAGES = ['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'] as const;
-      const currentStageRaw = patient.currentStage?.toString?.()?.trim?.()?.toUpperCase?.() ?? '';
-      const currentStageNormalized = (STAGES as readonly string[]).includes(currentStageRaw)
+      const STAGES = [
+        'SCREENING',
+        'DIAGNOSIS',
+        'TREATMENT',
+        'FOLLOW_UP',
+      ] as const;
+      const currentStageRaw =
+        patient.currentStage?.toString?.()?.trim?.()?.toUpperCase?.() ?? '';
+      const currentStageNormalized = (STAGES as readonly string[]).includes(
+        currentStageRaw
+      )
         ? (currentStageRaw as CreatePatientFormData['currentStage'])
         : ('SCREENING' as CreatePatientFormData['currentStage']);
 
@@ -263,9 +272,13 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
           setValue('gender', formData.gender, { shouldValidate: false });
         }
         if (formData.cancerType) {
-          setValue('cancerType', formData.cancerType, { shouldValidate: false });
+          setValue('cancerType', formData.cancerType, {
+            shouldValidate: false,
+          });
         }
-        setValue('currentStage', formData.currentStage!, { shouldValidate: false });
+        setValue('currentStage', formData.currentStage!, {
+          shouldValidate: false,
+        });
         if (formData.performanceStatus !== undefined) {
           setValue('performanceStatus', formData.performanceStatus, {
             shouldValidate: false,
@@ -527,7 +540,7 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { status?: number } }).response?.status === 403
             ? 'Você não tem permissão para excluir pacientes.'
-            : (err as { message?: string }).message ?? 'Erro ao excluir.'
+            : ((err as { message?: string }).message ?? 'Erro ao excluir.')
           : 'Erro ao excluir.';
       toast.error(message);
     } finally {
@@ -941,8 +954,7 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                O campo "Estágio" acima será calculado automaticamente a partir
-                dos campos TNM preenchidos.
+                {`O campo "Estágio" acima será calculado automaticamente a partir dos campos TNM preenchidos.`}
               </p>
 
               <div>
@@ -1139,11 +1151,15 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
           <>
             <Card className="mt-8 border-destructive/50">
               <CardHeader>
-                <CardTitle className="text-destructive">Zona de perigo</CardTitle>
+                <CardTitle className="text-destructive">
+                  Zona de perigo
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Excluir este paciente remove todos os dados associados (jornada, etapas, alertas, conversas). Esta ação não pode ser desfeita.
+                  Excluir este paciente remove todos os dados associados
+                  (jornada, etapas, alertas, conversas). Esta ação não pode ser
+                  desfeita.
                 </p>
                 <Button
                   type="button"
@@ -1157,16 +1173,24 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
               </CardContent>
             </Card>
 
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialog
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+            >
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Excluir paciente?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tem certeza que deseja excluir <strong>{patient?.name}</strong>? Todos os dados do paciente (jornada, etapas, alertas, mensagens) serão removidos permanentemente. Esta ação não pode ser desfeita.
+                    Tem certeza que deseja excluir{' '}
+                    <strong>{patient?.name}</strong>? Todos os dados do paciente
+                    (jornada, etapas, alertas, mensagens) serão removidos
+                    permanentemente. Esta ação não pode ser desfeita.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                  <AlertDialogCancel disabled={isDeleting}>
+                    Cancelar
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={(e) => {
                       e.preventDefault();

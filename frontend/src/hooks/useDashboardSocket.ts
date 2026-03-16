@@ -10,10 +10,11 @@ import { Alert } from '@/lib/api/alerts';
  * Invalida queries de métricas e estatísticas quando há mudanças
  */
 export const useDashboardSocket = () => {
-  const { socket, isConnected } = useSocket('/alerts');
+  const { socketRef, isConnected } = useSocket('/alerts');
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const socket = socketRef.current;
     if (!socket || !isConnected) return;
 
     // Escutar novos alertas críticos
@@ -69,7 +70,7 @@ export const useDashboardSocket = () => {
       socket.off('new_alert', handleNewAlert);
       socket.off('open_alerts_count', handleOpenAlertsCount);
     };
-  }, [socket, isConnected, queryClient]);
+  }, [socketRef, isConnected, queryClient]);
 
   return {
     isConnected,

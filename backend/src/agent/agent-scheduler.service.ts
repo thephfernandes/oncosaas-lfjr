@@ -62,18 +62,18 @@ export class AgentSchedulerService {
         const cancerType = patient.cancerType as string;
         const stage = patient.currentStage as string;
         const conversation = patient.conversations[0];
-        if (!conversation || !cancerType) continue;
+        if (!conversation || !cancerType) {continue;}
 
         const checkInRules = await this.clinicalProtocols.getCheckInRules(
           patient.tenantId,
           cancerType,
         );
-        if (!checkInRules) continue;
+        if (!checkInRules) {continue;}
 
         const rule = checkInRules[stage] as
           | { frequency: string; questionnaire: string | null }
           | undefined;
-        if (!rule?.questionnaire) continue;
+        if (!rule?.questionnaire) {continue;}
 
         const questionnaireType = rule.questionnaire;
         const frequencyDays = FREQUENCY_DAYS[rule.frequency] ?? 7;
@@ -94,7 +94,7 @@ export class AgentSchedulerService {
           const daysSince = Math.floor(
             (now.getTime() - lastAt.getTime()) / (24 * 60 * 60 * 1000),
           );
-          if (daysSince < frequencyDays) continue;
+          if (daysSince < frequencyDays) {continue;}
         }
 
         const existing = await this.prisma.scheduledAction.findFirst({
@@ -104,7 +104,7 @@ export class AgentSchedulerService {
             status: ScheduledActionStatus.PENDING,
           },
         });
-        if (existing) continue;
+        if (existing) {continue;}
 
         await this.prisma.scheduledAction.create({
           data: {
@@ -372,7 +372,7 @@ export class AgentSchedulerService {
         },
       });
 
-      if (!patient) return null;
+      if (!patient) {return null;}
 
       const currentStage = patient.currentStage ?? 'SCREENING';
       const recentSteps = await this.prisma.navigationStep.findMany({

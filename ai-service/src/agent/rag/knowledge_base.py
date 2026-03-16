@@ -34,6 +34,21 @@ def _get_index_dir() -> Path:
 _INDEX_DIR = _get_index_dir()
 
 _MODEL_NAME = os.getenv("RAG_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+
+
+class _FastEmbedWrapper:
+    """Wraps fastembed.TextEmbedding to expose the same .encode() interface
+    used by sentence-transformers, so the rest of the RAG code is unchanged."""
+
+    def __init__(self, model):
+        self._model = model
+
+    def encode(self, texts, normalize_embeddings=True, show_progress_bar=False):
+        # fastembed yields per-document numpy arrays; stack into a 2-D array
+        embeddings = list(self._model.embed(texts))
+        return np.array(embeddings, dtype=np.float32)
+
+
 _TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 _SCORE_THRESHOLD = float(os.getenv("RAG_SCORE_THRESHOLD", "0.30"))
 
@@ -168,16 +183,29 @@ class OncologyKnowledgeRAG:
         return data
 
     def _load_embedding_model(self):
+        # Try fastembed first (lighter, used in production Docker image)
+        try:
+            from fastembed import TextEmbedding
+
+            model = TextEmbedding(_MODEL_NAME)
+            logger.info(f"Embedding model loaded (fastembed): {_MODEL_NAME}")
+            return _FastEmbedWrapper(model)
+        except ImportError:
+            logger.info("fastembed not installed, trying sentence-transformers...")
+        except Exception as exc:
+            logger.warning(f"fastembed failed: {exc}, trying sentence-transformers...")
+
+        # Fallback to sentence-transformers (dev environment)
         try:
             from sentence_transformers import SentenceTransformer
 
             model = SentenceTransformer(_MODEL_NAME)
-            logger.info(f"Embedding model loaded: {_MODEL_NAME}")
+            logger.info(f"Embedding model loaded (sentence-transformers): {_MODEL_NAME}")
             return model
         except ImportError:
             logger.error(
-                "sentence-transformers not installed. "
-                "Install with: pip install sentence-transformers"
+                "Neither fastembed nor sentence-transformers is installed. "
+                "Install with: pip install fastembed  OR  pip install sentence-transformers"
             )
             return None
         except Exception as exc:

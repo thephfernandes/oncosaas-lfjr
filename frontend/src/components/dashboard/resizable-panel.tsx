@@ -25,7 +25,18 @@ export function ResizablePanel({
   side = 'left',
   forcedWidth,
 }: ResizablePanelProps) {
-  const [width, setWidth] = useState(defaultWidth);
+  const [width, setWidth] = useState(() => {
+    if (storageKey && typeof window !== 'undefined') {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const savedWidth = parseInt(saved, 10);
+        if (savedWidth >= minWidth && savedWidth <= maxWidth) {
+          return savedWidth;
+        }
+      }
+    }
+    return defaultWidth;
+  });
 
   // Se forcedWidth estiver definido, usar ele
   const effectiveWidth = forcedWidth ?? width;
@@ -33,18 +44,6 @@ export function ResizablePanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
-
-  useEffect(() => {
-    if (storageKey && typeof window !== 'undefined') {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const savedWidth = parseInt(saved, 10);
-        if (savedWidth >= minWidth && savedWidth <= maxWidth) {
-          setWidth(savedWidth);
-        }
-      }
-    }
-  }, [storageKey, minWidth, maxWidth]);
 
   useEffect(() => {
     if (storageKey && typeof window !== 'undefined') {

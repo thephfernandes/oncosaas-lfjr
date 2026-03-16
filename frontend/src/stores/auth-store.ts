@@ -31,12 +31,19 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     set({ isInitializing: true });
 
+    // Keep the Zustand token in sync when the API client silently refreshes it.
+    // This ensures useSocket (and other consumers of `token`) re-connect with the new token.
+    apiClient.onTokenRefreshed((newToken) => {
+      set({ token: newToken, isAuthenticated: true });
+    });
+
     const token = localStorage.getItem('auth_token');
     const userStr = localStorage.getItem('user');
     const tenantId = localStorage.getItem('tenant_id');
 
     // userStr deve ser JSON válido (objeto); evita JSON.parse("") ou dados corrompidos
-    const isUserStrValid = userStr && typeof userStr === 'string' && userStr.trim().startsWith('{');
+    const isUserStrValid =
+      userStr && typeof userStr === 'string' && userStr.trim().startsWith('{');
 
     if (token && isUserStrValid && tenantId) {
       try {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,10 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { patientsApi, Patient } from '@/lib/api/patients';
-import {
-  dashboardApi,
-  PendingAlert,
-} from '@/lib/api/dashboard';
+import { dashboardApi, PendingAlert } from '@/lib/api/dashboard';
 import { Search, Download, Loader2, CalendarX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -89,7 +86,6 @@ export function ChartDrillDownModal({
 }: ChartDrillDownModalProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
 
   const isOverdueSteps = filterType === 'overdueSteps';
   const isAlertsFilter = filterType === 'alerts';
@@ -180,17 +176,12 @@ export function ChartDrillDownModal({
     if (!indicatorPatients) return [];
     if (!searchTerm.trim()) return indicatorPatients;
     const term = searchTerm.toLowerCase().trim();
-    return indicatorPatients.filter((p) =>
-      p.name.toLowerCase().includes(term)
-    );
+    return indicatorPatients.filter((p) => p.name.toLowerCase().includes(term));
   }, [indicatorPatients, searchTerm]);
 
   // Filtrar pacientes baseado no tipo de filtro (apenas para priority, cancerType, journeyStage)
-  useEffect(() => {
-    if (isOverdueSteps || isIndicatorFilter || !allPatients) {
-      setFilteredPatients([]);
-      return;
-    }
+  const filteredPatients = useMemo(() => {
+    if (isOverdueSteps || isIndicatorFilter || !allPatients) return [];
 
     let filtered = [...allPatients];
 
@@ -215,11 +206,17 @@ export function ChartDrillDownModal({
       filtered = filtered.filter((p) => p.name.toLowerCase().includes(term));
     }
 
-    setFilteredPatients(filtered);
-  }, [allPatients, filterType, filterValue, searchTerm, isOverdueSteps, isIndicatorFilter]);
+    return filtered;
+  }, [
+    allPatients,
+    filterType,
+    filterValue,
+    searchTerm,
+    isOverdueSteps,
+    isIndicatorFilter,
+  ]);
 
-  const displayTitle =
-    typeof title === 'string' ? title : 'Pacientes';
+  const displayTitle = typeof title === 'string' ? title : 'Pacientes';
 
   // Mostrar apenas pacientes com etapa realmente atrasada (dias de atraso > 0)
   const criticalStepsOverdueOnly =
@@ -227,12 +224,11 @@ export function ChartDrillDownModal({
       (p) =>
         p.criticalStep.daysOverdue != null && p.criticalStep.daysOverdue > 0
     ) ?? [];
-  const criticalStepsFiltered =
-    searchTerm
-      ? criticalStepsOverdueOnly.filter((p) =>
-          p.patientName.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : criticalStepsOverdueOnly;
+  const criticalStepsFiltered = searchTerm
+    ? criticalStepsOverdueOnly.filter((p) =>
+        p.patientName.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : criticalStepsOverdueOnly;
   const patientListToShow =
     isIndicatorFilter && !isAlertsFilter
       ? indicatorPatientsFiltered
@@ -275,13 +271,7 @@ export function ChartDrillDownModal({
       return;
     }
     if (isAlertsFilter) {
-      const headers = [
-        'Paciente',
-        'Tipo',
-        'Severidade',
-        'Mensagem',
-        'Data',
-      ];
+      const headers = ['Paciente', 'Tipo', 'Severidade', 'Mensagem', 'Data'];
       const rows = pendingAlertsFiltered.map((a) => [
         a.patient.name,
         ALERT_TYPE_LABELS[a.type] ?? a.type,

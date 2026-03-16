@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { PatientListConnected } from '@/components/dashboard/patient-list-connected';
 import { AlertsPanel } from '@/components/dashboard/alerts-panel';
@@ -27,6 +27,7 @@ import { TeamPerformance } from '@/components/dashboard/oncologist/team-performa
 import { CriticalStepsSection } from '@/components/dashboard/oncologist/critical-steps-section';
 import { ROISection } from '@/components/dashboard/oncologist/roi-section';
 import { ExecutiveView } from '@/components/dashboard/oncologist/executive-view';
+import { CriticalTimelinesSection } from '@/components/dashboard/oncologist/critical-timelines-section';
 
 import {
   useDashboardMetrics,
@@ -48,21 +49,15 @@ import { NurseSpecificDashboard } from '@/components/dashboard/nurse/nurse-speci
 // Componente do Dashboard de Enfermagem (legado - manter para compatibilidade)
 function NursingDashboard() {
   const { isAuthenticated } = useAuthStore();
-  const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('patient');
+    }
+    return null;
+  });
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [isNursingActive, setIsNursingActive] = useState(false);
   const [activeTab, setActiveTab] = useState<'patients' | 'alerts'>('patients');
-
-  // Verificar autenticação e obter paciente da URL
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const patientId = params.get('patient');
-      if (patientId) {
-        setSelectedPatient(patientId);
-      }
-    }
-  }, []);
 
   const { data: selectedPatientData, isLoading: isLoadingPatient } = usePatient(
     selectedPatient || '',
@@ -364,8 +359,7 @@ function ManagementDashboard() {
   ) => {
     if (!filterType) return;
 
-    const filterValueStr =
-      typeof filterValue === 'string' ? filterValue : null;
+    const filterValueStr = typeof filterValue === 'string' ? filterValue : null;
     const validFilterType = filterType as
       | 'priority'
       | 'cancerType'
@@ -392,13 +386,19 @@ function ManagementDashboard() {
     };
 
     const descriptionByFilterType: Record<string, string> = {
-      priority: 'Pacientes filtrados por prioridade. Clique em um paciente para ver detalhes.',
-      cancerType: 'Pacientes filtrados por tipo de câncer. Clique em um paciente para ver detalhes.',
-      journeyStage: 'Pacientes filtrados por estágio da jornada. Clique em um paciente para ver detalhes.',
-      alerts: 'Lista de alertas pendentes. Clique em um alerta para abrir o paciente.',
-      messages: 'Pacientes com mensagens não assumidas. Clique em um paciente para ver detalhes.',
+      priority:
+        'Pacientes filtrados por prioridade. Clique em um paciente para ver detalhes.',
+      cancerType:
+        'Pacientes filtrados por tipo de câncer. Clique em um paciente para ver detalhes.',
+      journeyStage:
+        'Pacientes filtrados por estágio da jornada. Clique em um paciente para ver detalhes.',
+      alerts:
+        'Lista de alertas pendentes. Clique em um alerta para abrir o paciente.',
+      messages:
+        'Pacientes com mensagens não assumidas. Clique em um paciente para ver detalhes.',
       overdueSteps: 'Pacientes com pelo menos uma etapa de navegação atrasada.',
-      biomarkers: 'Pacientes com biomarcadores pendentes. Clique em um paciente para ver detalhes.',
+      biomarkers:
+        'Pacientes com biomarcadores pendentes. Clique em um paciente para ver detalhes.',
     };
 
     setDrillDownModal({
@@ -406,7 +406,9 @@ function ManagementDashboard() {
       filterType: validFilterType,
       filterValue: filterValueStr,
       title: cardTitle || titleByFilterType[filterType] || 'Pacientes',
-      description: descriptionByFilterType[filterType] || 'Clique em um paciente para ver detalhes',
+      description:
+        descriptionByFilterType[filterType] ||
+        'Clique em um paciente para ver detalhes',
     });
   };
 
@@ -604,6 +606,9 @@ function ManagementDashboard() {
               {metrics && statistics && (
                 <ROISection metrics={metrics} statistics={statistics} />
               )}
+
+              {/* Seção de Prazos Críticos por Tipo de Câncer */}
+              <CriticalTimelinesSection />
             </TabsContent>
 
             {/* Conteúdo da aba Enfermeira */}

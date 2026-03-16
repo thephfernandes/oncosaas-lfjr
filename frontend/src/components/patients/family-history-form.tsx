@@ -18,27 +18,21 @@ export function FamilyHistoryForm({
   const familyHistory = Array.isArray(value) ? value : [];
 
   const addFamilyMember = () => {
-    const newMember: FamilyHistory = {
-      relationship: '',
-      cancerType: '',
-    };
-    const updated = [...familyHistory, newMember];
-    onChange(updated);
+    onChange([...familyHistory, { relationship: '', cancerType: '' }]);
   };
 
   const updateFamilyMember = (
     index: number,
     field: keyof FamilyHistory,
-    val: string | number | undefined
+    fieldValue: FamilyHistory[typeof field]
   ) => {
     const updated = [...familyHistory];
-    updated[index] = { ...updated[index], [field]: val };
+    updated[index] = { ...updated[index], [field]: fieldValue };
     onChange(updated);
   };
 
   const removeFamilyMember = (index: number) => {
-    const updated = familyHistory.filter((_, i) => i !== index);
-    onChange(updated);
+    onChange(familyHistory.filter((_, i) => i !== index));
   };
 
   return (
@@ -58,8 +52,7 @@ export function FamilyHistoryForm({
 
       {familyHistory.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nenhum histórico familiar adicionado. Clique em "Adicionar" para
-          incluir.
+          {`Nenhum histórico familiar adicionado. Clique em "Adicionar" para incluir.`}
         </p>
       ) : (
         <div className="space-y-3">

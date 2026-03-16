@@ -1,5 +1,5 @@
 {
-  "name": "ONCONAV-backend",
+  "name": "oncosaas-backend",
   "version": "0.1.0",
   "description": "Backend API para Plataforma Oncológica",
   "author": "",
@@ -15,8 +15,8 @@
     "start:dev:https": "cross-env USE_HTTPS=true nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "lint:check": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -33,9 +33,9 @@
     "analyze-bia": "ts-node scripts/analyze-bia-conversation.ts"
   },
   "dependencies": {
-    "@nestjs/common": "^11.1.16",
+    "@nestjs/common": "^11.1.17",
     "@nestjs/config": "^4.0.3",
-    "@nestjs/core": "^11.1.16",
+    "@nestjs/core": "^11.1.17",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^11.0.5",
@@ -90,17 +90,10 @@
   },
   "lint-staged": {
     "*.{ts}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
+      "eslint --fix"
     ]
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
-  },
-  "overrides": {
-    "ajv": "^8.18.0"
   }
 }

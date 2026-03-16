@@ -489,14 +489,20 @@ function PatientNavigationCard({
       {isExpanded && (
         <div className="mt-4 ml-8 space-y-4">
           <div className="flex justify-end">
-            <Popover open={addStepPopoverOpen} onOpenChange={setAddStepPopoverOpen}>
+            <Popover
+              open={addStepPopoverOpen}
+              onOpenChange={setAddStepPopoverOpen}
+            >
               <PopoverTrigger asChild>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar etapa
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-56 p-2 bg-background z-[100]">
+              <PopoverContent
+                align="end"
+                className="w-56 p-2 bg-background z-[100]"
+              >
                 <p className="text-sm font-medium text-muted-foreground px-2 py-1 mb-1">
                   Escolha a fase
                 </p>
@@ -562,7 +568,11 @@ function PatientNavigationCard({
                   </div>
                   <div className="p-4 space-y-2">
                     {steps.map((step) => (
-                      <StepCard key={step.id} step={step} apiUrl={apiUrl} />
+                      <StepCard
+                        key={`${step.id}-${step.updatedAt}`}
+                        step={step}
+                        apiUrl={apiUrl}
+                      />
                     ))}
                   </div>
                 </div>
@@ -622,35 +632,6 @@ function StepCard({ step, apiUrl }: StepCardProps) {
 
   const files = ((step.metadata as { files?: FileMetadata[] })?.files ||
     []) as FileMetadata[];
-
-  // Atualizar estado quando step mudar
-  useEffect(() => {
-    setNotes(step.notes || '');
-    setIsCompleted(step.isCompleted);
-    setInstitutionName(step.institutionName || '');
-    setProfessionalName(step.professionalName || '');
-    setResult(step.result || '');
-    setFindings(step.findings || []);
-    setActualDate(
-      step.actualDate
-        ? new Date(step.actualDate).toISOString().split('T')[0]
-        : ''
-    );
-    setDueDate(
-      step.dueDate ? new Date(step.dueDate).toISOString().split('T')[0] : ''
-    );
-  }, [
-    step.id,
-    step.notes,
-    step.isCompleted,
-    step.status,
-    step.institutionName,
-    step.professionalName,
-    step.result,
-    step.findings,
-    step.actualDate,
-    step.dueDate,
-  ]);
 
   const handleSave = async (): Promise<void> => {
     try {

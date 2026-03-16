@@ -50,7 +50,7 @@ export function WhatsAppConnectionsList({
           Nenhuma conexão WhatsApp configurada ainda.
         </p>
         <p className="text-sm text-gray-400">
-          Clique em "Conectar Novo Número" para começar.
+          {`Clique em "Conectar Novo Número" para começar.`}
         </p>
       </div>
     );

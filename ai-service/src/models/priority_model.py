@@ -104,6 +104,8 @@ FEATURE_COLUMNS = [
     "symptom_high_count",      # n symptoms at HIGH severity
 ]
 
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "priority_model.joblib")
+
 
 class OncologyPriorityModel:
     """
@@ -147,7 +149,6 @@ class OncologyPriorityModel:
 
     def train(self, X: pd.DataFrame, y: pd.Series) -> Dict[str, Any]:
         """Train the ordinal classifier."""
-        from sklearn.model_selection import StratifiedKFold
         from sklearn.metrics import classification_report
 
         self.model = self._create_model()

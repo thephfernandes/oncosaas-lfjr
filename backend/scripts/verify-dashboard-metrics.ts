@@ -3,7 +3,7 @@
  * Executar após prisma:seed: npx ts-node scripts/verify-dashboard-metrics.ts
  *
  * Valida que nenhuma métrica retorna valores inválidos (NaN, negativos,
- * percentuais > 100).
+ * percentuais > 100) e que statusDistribution soma ~100%.
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -17,14 +17,14 @@ dotenv.config({ path: resolve(__dirname, '../../.env') });
 const prisma = new PrismaClient();
 
 function isInvalidNumber(value: unknown): boolean {
-  if (value === null || value === undefined) return false;
-  if (typeof value !== 'number') return false;
+  if (value === null || value === undefined) {return false;}
+  if (typeof value !== 'number') {return false;}
   return Number.isNaN(value) || value < 0 || !Number.isFinite(value);
 }
 
 function checkPercentage(value: unknown): boolean {
-  if (value === null || value === undefined) return true;
-  if (typeof value !== 'number') return true;
+  if (value === null || value === undefined) {return true;}
+  if (typeof value !== 'number') {return true;}
   return value >= 0 && value <= 100;
 }
 
@@ -60,6 +60,9 @@ async function main() {
     if (isInvalidNumber(metrics.unassumedMessagesCount)) {
       errors.push(`unassumedMessagesCount inválido: ${metrics.unassumedMessagesCount}`);
     }
+    if (isInvalidNumber(metrics.resolvedTodayCount)) {
+      errors.push(`resolvedTodayCount inválido: ${metrics.resolvedTodayCount}`);
+    }
     if (
       metrics.averageResponseTimeMinutes !== null &&
       isInvalidNumber(metrics.averageResponseTimeMinutes)
@@ -87,6 +90,11 @@ async function main() {
         `averageTimeToDiagnosisDays inválido: ${metrics.averageTimeToDiagnosisDays}`
       );
     }
+    if (isInvalidNumber(metrics.stagingCompletePercentage)) {
+      errors.push(
+        `stagingCompletePercentage inválido: ${metrics.stagingCompletePercentage}`
+      );
+    }
     if (isInvalidNumber(metrics.pendingBiomarkersCount)) {
       errors.push(
         `pendingBiomarkersCount inválido: ${metrics.pendingBiomarkersCount}`
@@ -96,6 +104,34 @@ async function main() {
       errors.push(
         `treatmentAdherencePercentage inválido: ${metrics.treatmentAdherencePercentage}`
       );
+    }
+
+    const statusSum = metrics.statusDistribution.reduce(
+      (sum, s) => sum + s.percentage,
+      0
+    );
+    if (metrics.statusDistribution.length > 0) {
+      if (statusSum < 99.5 || statusSum > 100.5) {
+        errors.push(
+          `statusDistribution: soma de percentage = ${statusSum.toFixed(2)} (deve estar entre 99.5 e 100.5)`
+        );
+      }
+    }
+
+    for (const item of metrics.cancerTypeDistribution) {
+      if (!checkPercentage(item.percentage)) {
+        errors.push(
+          `cancerTypeDistribution[${item.cancerType}]: percentage ${item.percentage} inválido`
+        );
+      }
+    }
+
+    for (const item of metrics.journeyStageDistribution) {
+      if (!checkPercentage(item.percentage)) {
+        errors.push(
+          `journeyStageDistribution[${item.stage}]: percentage ${item.percentage} inválido`
+        );
+      }
     }
 
     await dashboardService.getStatistics(tenantId, '7d');

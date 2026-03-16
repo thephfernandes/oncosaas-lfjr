@@ -38,11 +38,7 @@ import { usePendingDecisions } from '@/hooks/useConversations';
 import { useReadPatients } from '@/hooks/useReadPatients';
 import { conversationsApi } from '@/lib/api/conversations';
 import { useMessagesSocket } from '@/hooks/useMessagesSocket';
-import {
-  useAlert,
-  useAlerts,
-  useCriticalAlertsCount,
-} from '@/hooks/useAlerts';
+import { useAlert, useAlerts, useCriticalAlertsCount } from '@/hooks/useAlerts';
 import { Button } from '@/components/ui/button';
 import { Bell, X } from 'lucide-react';
 import { Alert } from '@/lib/api/alerts';
@@ -86,11 +82,7 @@ export default function ChatPage() {
     ? pendingDecisionsRaw
     : [];
   const displayablePendingCount = pendingDecisions.filter(
-    (d) =>
-      d &&
-      d.requiresApproval &&
-      !d.approvedAt &&
-      !d.rejected
+    (d) => d && d.requiresApproval && !d.approvedAt && !d.rejected
   ).length;
   const { readPatientIds, markAsRead } = useReadPatients();
 
@@ -310,8 +302,12 @@ export default function ChatPage() {
     try {
       await conversationsApi.returnToAgent(conversationId);
       setIsNursingActive(false);
-      queryClient.invalidateQueries({ queryKey: ['messages', selectedPatient ?? ''] });
-      queryClient.invalidateQueries({ queryKey: ['messages', 'unassumed', 'count'] });
+      queryClient.invalidateQueries({
+        queryKey: ['messages', selectedPatient ?? ''],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['messages', 'unassumed', 'count'],
+      });
       toast.success('Conversa devolvida para a IA');
     } catch (error) {
       toast.error('Erro ao devolver conversa para a IA', {
@@ -496,11 +492,12 @@ export default function ChatPage() {
                           <MessageSquare className="h-4 w-4" />
                           <span className="text-sm">
                             Não lidas
-                            {unreadPatientIdsSet && unreadPatientIdsSet.size > 0 && (
-                              <span className="ml-1 opacity-80">
-                                ({unreadPatientIdsSet.size})
-                              </span>
-                            )}
+                            {unreadPatientIdsSet &&
+                              unreadPatientIdsSet.size > 0 && (
+                                <span className="ml-1 opacity-80">
+                                  ({unreadPatientIdsSet.size})
+                                </span>
+                              )}
                           </span>
                         </button>
                       </div>
@@ -529,7 +526,9 @@ export default function ChatPage() {
                       )}
 
                       {/* Indicador de filtros ativos */}
-                      {(priorityFilter || cancerTypeFilter || unreadOnlyFilter) && (
+                      {(priorityFilter ||
+                        cancerTypeFilter ||
+                        unreadOnlyFilter) && (
                         <div className="pt-2 border-t">
                           <button
                             onClick={handleClearFilters}
@@ -720,12 +719,7 @@ export default function ChatPage() {
             <div className="h-full overflow-y-auto flex flex-col bg-white">
               <Accordion
                 type="multiple"
-                defaultValue={[
-                  'patient',
-                  'priority',
-                  'alert',
-                  'steps',
-                ]}
+                defaultValue={['patient', 'priority', 'alert', 'steps']}
                 className="w-full"
               >
                 {/* 1. Detalhes do Paciente (sem priorização nem etapas aqui) */}
@@ -754,9 +748,7 @@ export default function ChatPage() {
                   </AccordionTrigger>
                   <AccordionContent className="pb-4 pt-0">
                     {selectedPatientData ? (
-                      <PatientPrioritySection
-                        patient={selectedPatientData}
-                      />
+                      <PatientPrioritySection patient={selectedPatientData} />
                     ) : (
                       <p className="text-sm text-gray-500 py-2">
                         Selecione um paciente para ver o score de priorização.
@@ -809,15 +801,14 @@ export default function ChatPage() {
                                   </span>
                                   <span className="text-xs text-gray-500">
                                     {alert.severity} ·{' '}
-                                    {new Date(alert.createdAt).toLocaleDateString(
-                                      'pt-BR',
-                                      {
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      }
-                                    )}
+                                    {new Date(
+                                      alert.createdAt
+                                    ).toLocaleDateString('pt-BR', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
                                   </span>
                                 </button>
                               ))}
@@ -859,7 +850,8 @@ export default function ChatPage() {
                         cancerType={
                           selectedPatientData.cancerDiagnoses?.length
                             ? selectedPatientData.cancerDiagnoses[0].cancerType.toLowerCase()
-                            : selectedPatientData.cancerType?.toLowerCase() ?? null
+                            : (selectedPatientData.cancerType?.toLowerCase() ??
+                              null)
                         }
                         currentStage={selectedPatientData.currentStage}
                       />

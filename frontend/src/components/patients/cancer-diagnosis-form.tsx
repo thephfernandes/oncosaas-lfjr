@@ -74,7 +74,8 @@ export function CancerDiagnosisForm({
     resolver: zodResolver(cancerDiagnosisSchema),
     defaultValues: diagnosis
       ? {
-          cancerType: getCancerTypeKey(diagnosis.cancerType) ?? diagnosis.cancerType,
+          cancerType:
+            getCancerTypeKey(diagnosis.cancerType) ?? diagnosis.cancerType,
           icd10Code: diagnosis.icd10Code || undefined,
           tStage: (diagnosis.tStage as any) || undefined,
           nStage: (diagnosis.nStage as any) || undefined,
@@ -182,7 +183,9 @@ export function CancerDiagnosisForm({
                       <FormLabel>Tipo de Câncer *</FormLabel>
                       <FormControl>
                         <SearchableSelect
-                          options={Object.entries(CANCER_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+                          options={Object.entries(CANCER_TYPE_LABELS).map(
+                            ([value, label]) => ({ value, label })
+                          )}
                           value={field.value ?? ''}
                           onChange={(v) => field.onChange(v || undefined)}
                           placeholder="Buscar tipo de câncer..."
@@ -203,7 +206,9 @@ export function CancerDiagnosisForm({
                         <SearchableSelect
                           options={ICD10_OPTIONS}
                           value={field.value ?? ''}
-                          onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                          onChange={(v) =>
+                            field.onChange(v === '' ? undefined : v)
+                          }
                           placeholder="Selecione ou digite o código..."
                           allowCustomValue
                           aria-label="Código CID-10"
@@ -264,29 +269,9 @@ export function CancerDiagnosisForm({
                   )}
                 />
                 <div className="space-y-4 pt-2">
-                <FormField
-                  control={form.control}
-                  name="diagnosisConfirmed"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="mt-1"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Diagnóstico Confirmado</FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                {!primaryDiagnosisId && (
                   <FormField
                     control={form.control}
-                    name="isPrimary"
+                    name="diagnosisConfirmed"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                         <FormControl>
@@ -298,12 +283,32 @@ export function CancerDiagnosisForm({
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Diagnóstico Primário</FormLabel>
+                          <FormLabel>Diagnóstico Confirmado</FormLabel>
                         </div>
                       </FormItem>
                     )}
                   />
-                )}
+                  {!primaryDiagnosisId && (
+                    <FormField
+                      control={form.control}
+                      name="isPrimary"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={field.onChange}
+                              className="mt-1"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Diagnóstico Primário</FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -325,9 +330,14 @@ export function CancerDiagnosisForm({
                         <FormLabel>T</FormLabel>
                         <FormControl>
                           <SearchableSelect
-                            options={T_STAGE_VALUES.map((value) => ({ value, label: value }))}
+                            options={T_STAGE_VALUES.map((value) => ({
+                              value,
+                              label: value,
+                            }))}
                             value={field.value ?? ''}
-                            onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                            onChange={(v) =>
+                              field.onChange(v === '' ? undefined : v)
+                            }
                             placeholder="T"
                             aria-label="Estágio T"
                           />
@@ -344,9 +354,14 @@ export function CancerDiagnosisForm({
                         <FormLabel>N</FormLabel>
                         <FormControl>
                           <SearchableSelect
-                            options={N_STAGE_VALUES.map((value) => ({ value, label: value }))}
+                            options={N_STAGE_VALUES.map((value) => ({
+                              value,
+                              label: value,
+                            }))}
                             value={field.value ?? ''}
-                            onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                            onChange={(v) =>
+                              field.onChange(v === '' ? undefined : v)
+                            }
                             placeholder="N"
                             aria-label="Estágio N"
                           />
@@ -363,9 +378,14 @@ export function CancerDiagnosisForm({
                         <FormLabel>M</FormLabel>
                         <FormControl>
                           <SearchableSelect
-                            options={M_STAGE_VALUES.map((value) => ({ value, label: value }))}
+                            options={M_STAGE_VALUES.map((value) => ({
+                              value,
+                              label: value,
+                            }))}
                             value={field.value ?? ''}
-                            onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                            onChange={(v) =>
+                              field.onChange(v === '' ? undefined : v)
+                            }
                             placeholder="M"
                             aria-label="Estágio M"
                           />
@@ -382,9 +402,14 @@ export function CancerDiagnosisForm({
                         <FormLabel>Grau</FormLabel>
                         <FormControl>
                           <SearchableSelect
-                            options={GRADE_VALUES.map((value) => ({ value, label: value }))}
+                            options={GRADE_VALUES.map((value) => ({
+                              value,
+                              label: value,
+                            }))}
                             value={field.value ?? ''}
-                            onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                            onChange={(v) =>
+                              field.onChange(v === '' ? undefined : v)
+                            }
                             placeholder="G"
                             aria-label="Grau"
                           />
@@ -465,7 +490,9 @@ export function CancerDiagnosisForm({
                         <SearchableSelect
                           options={HISTOLOGICAL_TYPE_OPTIONS}
                           value={field.value ?? ''}
-                          onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                          onChange={(v) =>
+                            field.onChange(v === '' ? undefined : v)
+                          }
                           placeholder="Buscar tipo histológico..."
                           allowCustomValue
                           aria-label="Tipo histológico"
@@ -532,9 +559,14 @@ export function CancerDiagnosisForm({
                             <FormLabel>HER2</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={HER2_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={HER2_STATUS_VALUES.map((value) => ({
+                                  value,
+                                  label: value,
+                                }))}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="HER2"
                               />
@@ -551,9 +583,14 @@ export function CancerDiagnosisForm({
                             <FormLabel>ER (Receptor de Estrogênio)</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={ER_PR_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={ER_PR_STATUS_VALUES.map((value) => ({
+                                  value,
+                                  label: value,
+                                }))}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="ER (Receptor de Estrogênio)"
                               />
@@ -570,9 +607,14 @@ export function CancerDiagnosisForm({
                             <FormLabel>PR (Receptor de Progesterona)</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={ER_PR_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={ER_PR_STATUS_VALUES.map((value) => ({
+                                  value,
+                                  label: value,
+                                }))}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="PR (Receptor de Progesterona)"
                               />
@@ -626,9 +668,13 @@ export function CancerDiagnosisForm({
                             <FormLabel>EGFR</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={MUTATION_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={MUTATION_STATUS_VALUES.map(
+                                  (value) => ({ value, label: value })
+                                )}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="EGFR"
                               />
@@ -645,9 +691,13 @@ export function CancerDiagnosisForm({
                             <FormLabel>ALK</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={REARRANGEMENT_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={REARRANGEMENT_STATUS_VALUES.map(
+                                  (value) => ({ value, label: value })
+                                )}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="ALK"
                               />
@@ -664,9 +714,13 @@ export function CancerDiagnosisForm({
                             <FormLabel>ROS1</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={REARRANGEMENT_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={REARRANGEMENT_STATUS_VALUES.map(
+                                  (value) => ({ value, label: value })
+                                )}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="ROS1"
                               />
@@ -683,9 +737,13 @@ export function CancerDiagnosisForm({
                             <FormLabel>BRAF</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={MUTATION_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={MUTATION_STATUS_VALUES.map(
+                                  (value) => ({ value, label: value })
+                                )}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="BRAF"
                               />
@@ -702,9 +760,13 @@ export function CancerDiagnosisForm({
                             <FormLabel>KRAS</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={MUTATION_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={MUTATION_STATUS_VALUES.map(
+                                  (value) => ({ value, label: value })
+                                )}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="KRAS"
                               />
@@ -721,9 +783,13 @@ export function CancerDiagnosisForm({
                             <FormLabel>NRAS</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={MUTATION_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={MUTATION_STATUS_VALUES.map(
+                                  (value) => ({ value, label: value })
+                                )}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="NRAS"
                               />
@@ -766,9 +832,14 @@ export function CancerDiagnosisForm({
                             <FormLabel>MSI</FormLabel>
                             <FormControl>
                               <SearchableSelect
-                                options={MSI_STATUS_VALUES.map((value) => ({ value, label: value }))}
+                                options={MSI_STATUS_VALUES.map((value) => ({
+                                  value,
+                                  label: value,
+                                }))}
                                 value={field.value ?? ''}
-                                onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                                onChange={(v) =>
+                                  field.onChange(v === '' ? undefined : v)
+                                }
                                 placeholder="Buscar..."
                                 aria-label="MSI"
                               />

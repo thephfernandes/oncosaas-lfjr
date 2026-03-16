@@ -58,7 +58,7 @@ export class ComorbiditiesService {
     const item = await this.prisma.comorbidity.findFirst({
       where: { id, tenantId },
     });
-    if (!item) throw new NotFoundException(`Comorbidity ${id} not found`);
+    if (!item) {throw new NotFoundException(`Comorbidity ${id} not found`);}
     return item;
   }
 
@@ -85,8 +85,8 @@ export class ComorbiditiesService {
     await this.findOne(id, tenantId);
 
     const updateData: any = { ...dto };
-    if (dto.type) Object.assign(updateData, resolveRiskFlags(dto.type));
-    if (dto.diagnosedAt) updateData.diagnosedAt = new Date(dto.diagnosedAt);
+    if (dto.type) {Object.assign(updateData, resolveRiskFlags(dto.type));}
+    if (dto.diagnosedAt) {updateData.diagnosedAt = new Date(dto.diagnosedAt);}
 
     return this.prisma.comorbidity.update({ where: { id }, data: updateData });
   }

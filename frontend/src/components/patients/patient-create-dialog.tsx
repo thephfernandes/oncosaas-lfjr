@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -23,10 +23,12 @@ import {
   createPatientSchema,
   CreatePatientFormData,
 } from '@/lib/validations/patient';
-import { patientsApi, CreatePatientDto, type ComorbiditySeverity } from '@/lib/api/patients';
 import {
-  getTreatmentOptionsForCancerType,
-} from '@/lib/utils/patient-cancer-type';
+  patientsApi,
+  CreatePatientDto,
+  type ComorbiditySeverity,
+} from '@/lib/api/patients';
+import { getTreatmentOptionsForCancerType } from '@/lib/utils/patient-cancer-type';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -56,7 +58,7 @@ export function PatientCreateDialog({
     register,
     handleSubmit,
     formState: { errors },
-    watch,
+    control,
     setValue,
     reset,
   } = useForm<CreatePatientFormData>({
@@ -71,8 +73,15 @@ export function PatientCreateDialog({
     },
   });
 
-  const currentStage = watch('currentStage');
-  const cancerType = watch('cancerType');
+  const gender = useWatch({ control, name: 'gender' });
+  const cancerType = useWatch({ control, name: 'cancerType' });
+  const currentStage = useWatch({ control, name: 'currentStage' });
+  const performanceStatus = useWatch({ control, name: 'performanceStatus' });
+  const comorbidities = useWatch({ control, name: 'comorbidities' });
+  const currentMedications = useWatch({ control, name: 'currentMedications' });
+  const familyHistory = useWatch({ control, name: 'familyHistory' });
+  const currentTreatment = useWatch({ control, name: 'currentTreatment' });
+
   const needsDiagnosisFields =
     currentStage === 'TREATMENT' || currentStage === 'FOLLOW_UP';
   const needsTreatmentField =
@@ -254,7 +263,7 @@ export function PatientCreateDialog({
               <div>
                 <label className="text-sm font-medium">Sexo *</label>
                 <Select
-                  value={watch('gender')}
+                  value={gender}
                   onValueChange={(value) => setValue('gender', value as any)}
                 >
                   <SelectTrigger>
@@ -314,11 +323,13 @@ export function PatientCreateDialog({
                   Estágio da Jornada *
                 </label>
                 <Select
-                  value={watch('currentStage')}
+                  value={currentStage}
                   onValueChange={(value) => {
                     setValue('currentStage', value as any);
                     if (value !== 'TREATMENT' && value !== 'FOLLOW_UP') {
-                      setValue('currentTreatment', '', { shouldValidate: true });
+                      setValue('currentTreatment', '', {
+                        shouldValidate: true,
+                      });
                     }
                   }}
                 >
@@ -327,6 +338,7 @@ export function PatientCreateDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SCREENING">Rastreio</SelectItem>
+                    <SelectItem value="NAVIGATION">Navegação</SelectItem>
                     <SelectItem value="DIAGNOSIS">Diagnóstico</SelectItem>
                     <SelectItem value="TREATMENT">Tratamento</SelectItem>
                     <SelectItem value="FOLLOW_UP">Seguimento</SelectItem>
@@ -337,10 +349,13 @@ export function PatientCreateDialog({
               {/* Tipo de Câncer — obrigatório quando em Tratamento ou Seguimento */}
               <div>
                 <label className="text-sm font-medium">
-                  Tipo de Câncer {needsDiagnosisFields && <span className="text-red-600">*</span>}
+                  Tipo de Câncer{' '}
+                  {needsDiagnosisFields && (
+                    <span className="text-red-600">*</span>
+                  )}
                 </label>
                 <Select
-                  value={watch('cancerType')}
+                  value={cancerType}
                   onValueChange={(value) => {
                     setValue('cancerType', value as any);
                     setValue('currentTreatment', '', { shouldValidate: true });
@@ -398,9 +413,9 @@ export function PatientCreateDialog({
                     </label>
                     <Select
                       value={
-                        watch('performanceStatus') !== null &&
-                        watch('performanceStatus') !== undefined
-                          ? String(watch('performanceStatus'))
+                        performanceStatus !== null &&
+                        performanceStatus !== undefined
+                          ? String(performanceStatus)
                           : ''
                       }
                       onValueChange={(value) => {
@@ -422,7 +437,9 @@ export function PatientCreateDialog({
                         <SelectValue placeholder="Selecione o ECOG" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">0 - Ativo, sem restrições</SelectItem>
+                        <SelectItem value="0">
+                          0 - Ativo, sem restrições
+                        </SelectItem>
                         <SelectItem value="1">
                           1 - Restrição a atividades extenuantes
                         </SelectItem>
@@ -454,7 +471,7 @@ export function PatientCreateDialog({
                     Tratamento atual *
                   </label>
                   <Select
-                    value={watch('currentTreatment') || ''}
+                    value={currentTreatment || ''}
                     onValueChange={(value) =>
                       setValue('currentTreatment', value, {
                         shouldValidate: true,
@@ -519,7 +536,7 @@ export function PatientCreateDialog({
 
                   <div>
                     <ComorbiditiesForm
-                      value={watch('comorbidities') as any}
+                      value={comorbidities as any}
                       onChange={(comorbidities) =>
                         setValue('comorbidities', comorbidities as any)
                       }
@@ -528,7 +545,7 @@ export function PatientCreateDialog({
 
                   <div>
                     <CurrentMedicationsForm
-                      value={watch('currentMedications') as any}
+                      value={currentMedications as any}
                       onChange={(currentMedications) =>
                         setValue(
                           'currentMedications',
@@ -540,7 +557,7 @@ export function PatientCreateDialog({
 
                   <div>
                     <FamilyHistoryForm
-                      value={watch('familyHistory') as any}
+                      value={familyHistory as any}
                       onChange={(familyHistory) =>
                         setValue('familyHistory', familyHistory as any)
                       }

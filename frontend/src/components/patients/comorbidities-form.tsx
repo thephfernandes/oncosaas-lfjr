@@ -17,25 +17,65 @@ const TYPE_OPTIONS: {
   label: string;
   riskFlags?: string[];
 }[] = [
-  { value: 'DIABETES_TYPE_1', label: 'Diabetes Mellitus tipo 1', riskFlags: ['Sepse'] },
-  { value: 'DIABETES_TYPE_2', label: 'Diabetes Mellitus tipo 2', riskFlags: ['Sepse'] },
+  {
+    value: 'DIABETES_TYPE_1',
+    label: 'Diabetes Mellitus tipo 1',
+    riskFlags: ['Sepse'],
+  },
+  {
+    value: 'DIABETES_TYPE_2',
+    label: 'Diabetes Mellitus tipo 2',
+    riskFlags: ['Sepse'],
+  },
   { value: 'HYPERTENSION', label: 'Hipertensão Arterial', riskFlags: [] },
-  { value: 'HEART_FAILURE', label: 'Insuficiência Cardíaca', riskFlags: ['Sepse', 'Reserva pulmonar'] },
-  { value: 'CORONARY_ARTERY_DISEASE', label: 'Doença Arterial Coronariana', riskFlags: [] },
-  { value: 'ATRIAL_FIBRILLATION', label: 'Fibrilação Atrial', riskFlags: ['Trombose'] },
+  {
+    value: 'HEART_FAILURE',
+    label: 'Insuficiência Cardíaca',
+    riskFlags: ['Sepse', 'Reserva pulmonar'],
+  },
+  {
+    value: 'CORONARY_ARTERY_DISEASE',
+    label: 'Doença Arterial Coronariana',
+    riskFlags: [],
+  },
+  {
+    value: 'ATRIAL_FIBRILLATION',
+    label: 'Fibrilação Atrial',
+    riskFlags: ['Trombose'],
+  },
   { value: 'COPD', label: 'DPOC', riskFlags: ['Reserva pulmonar'] },
   { value: 'ASTHMA', label: 'Asma', riskFlags: ['Reserva pulmonar'] },
-  { value: 'CHRONIC_KIDNEY_DISEASE', label: 'Doença Renal Crônica', riskFlags: ['Sepse', 'Clearance renal'] },
+  {
+    value: 'CHRONIC_KIDNEY_DISEASE',
+    label: 'Doença Renal Crônica',
+    riskFlags: ['Sepse', 'Clearance renal'],
+  },
   { value: 'LIVER_CIRRHOSIS', label: 'Cirrose Hepática', riskFlags: ['Sepse'] },
   { value: 'HIV_AIDS', label: 'HIV/AIDS', riskFlags: ['Sepse'] },
-  { value: 'AUTOIMMUNE_DISEASE', label: 'Doença Autoimune', riskFlags: ['Sepse'] },
+  {
+    value: 'AUTOIMMUNE_DISEASE',
+    label: 'Doença Autoimune',
+    riskFlags: ['Sepse'],
+  },
   { value: 'STROKE_HISTORY', label: 'AVC prévio', riskFlags: [] },
-  { value: 'DEEP_VEIN_THROMBOSIS', label: 'TVP prévia', riskFlags: ['Trombose'] },
+  {
+    value: 'DEEP_VEIN_THROMBOSIS',
+    label: 'TVP prévia',
+    riskFlags: ['Trombose'],
+  },
   { value: 'PULMONARY_EMBOLISM', label: 'TEP prévio', riskFlags: ['Trombose'] },
-  { value: 'PERIPHERAL_NEUROPATHY', label: 'Neuropatia Periférica', riskFlags: [] },
+  {
+    value: 'PERIPHERAL_NEUROPATHY',
+    label: 'Neuropatia Periférica',
+    riskFlags: [],
+  },
   { value: 'OBESITY', label: 'Obesidade', riskFlags: [] },
   { value: 'DEPRESSION', label: 'Depressão', riskFlags: [] },
-  { value: 'ANXIETY_DISORDER', label: 'Transtorno de Ansiedade', riskFlags: [] },
+  {
+    value: 'ANXIETY_DISORDER',
+    label: 'Transtorno de Ansiedade',
+    riskFlags: [],
+  },
   { value: 'OTHER', label: 'Outra', riskFlags: [] },
 ];
 
@@ -73,12 +113,21 @@ export function ComorbiditiesForm({
   const add = () => {
     const updated = [
       ...comorbidities,
-      { name: '', type: 'OTHER' as ComorbidityType, severity: 'MODERATE' as ComorbiditySeverity, controlled: false },
+      {
+        name: '',
+        type: 'OTHER' as ComorbidityType,
+        severity: 'MODERATE' as ComorbiditySeverity,
+        controlled: false,
+      },
     ];
     onChange(updated);
   };
 
-  const update = (index: number, field: keyof CreateComorbidityDto, val: unknown) => {
+  const update = (
+    index: number,
+    field: keyof CreateComorbidityDto,
+    val: unknown
+  ) => {
     const updated = [...comorbidities];
     updated[index] = { ...updated[index], [field]: val };
     // Auto-fill name when type is selected and name is still empty
@@ -90,8 +139,7 @@ export function ComorbiditiesForm({
   };
 
   const remove = (index: number) => {
-    const updated = comorbidities.filter((_, i) => i !== index);
-    onChange(updated);
+    onChange(comorbidities.filter((_, i) => i !== index));
   };
 
   return (
@@ -106,12 +154,15 @@ export function ComorbiditiesForm({
 
       {comorbidities.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nenhuma comorbidade adicionada. Clique em &quot;Adicionar&quot; para incluir.
+          Nenhuma comorbidade adicionada. Clique em &quot;Adicionar&quot; para
+          incluir.
         </p>
       ) : (
         <div className="space-y-3">
           {comorbidities.map((c, index) => {
-            const isHighRisk = HIGH_RISK_TYPES.includes(c.type as ComorbidityType);
+            const isHighRisk = HIGH_RISK_TYPES.includes(
+              c.type as ComorbidityType
+            );
             const typeInfo = TYPE_OPTIONS.find((o) => o.value === c.type);
 
             return (
@@ -126,7 +177,10 @@ export function ComorbiditiesForm({
                     <div>
                       <Label className="text-xs">Tipo *</Label>
                       <SearchableSelect
-                        options={TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                        options={TYPE_OPTIONS.map((o) => ({
+                          value: o.value,
+                          label: o.label,
+                        }))}
                         value={c.type ?? 'OTHER'}
                         onChange={(v) => update(index, 'type', v)}
                         placeholder="Buscar tipo de comorbidade..."
@@ -143,27 +197,32 @@ export function ComorbiditiesForm({
                     </div>
                   </div>
 
-                  {isHighRisk && typeInfo?.riskFlags && typeInfo.riskFlags.length > 0 && (
-                    <div className="flex items-center gap-1 text-red-700 text-xs flex-wrap">
-                      <AlertTriangle className="h-3 w-3 shrink-0" />
-                      <span>Risco aumentado:</span>
-                      {typeInfo.riskFlags.map((flag) => (
-                        <Badge
-                          key={flag}
-                          variant="outline"
-                          className="text-xs border-red-400 text-red-700"
-                        >
-                          {flag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                  {isHighRisk &&
+                    typeInfo?.riskFlags &&
+                    typeInfo.riskFlags.length > 0 && (
+                      <div className="flex items-center gap-1 text-red-700 text-xs flex-wrap">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        <span>Risco aumentado:</span>
+                        {typeInfo.riskFlags.map((flag) => (
+                          <Badge
+                            key={flag}
+                            variant="outline"
+                            className="text-xs border-red-400 text-red-700"
+                          >
+                            {flag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 items-end">
                     <div>
                       <Label className="text-xs">Gravidade</Label>
                       <SearchableSelect
-                        options={SEVERITY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                        options={SEVERITY_OPTIONS.map((o) => ({
+                          value: o.value,
+                          label: o.label,
+                        }))}
                         value={c.severity ?? 'MODERATE'}
                         onChange={(v) => update(index, 'severity', v)}
                         placeholder="Buscar gravidade..."
@@ -175,10 +234,15 @@ export function ComorbiditiesForm({
                         type="checkbox"
                         id={`controlled-${index}`}
                         checked={c.controlled ?? false}
-                        onChange={(e) => update(index, 'controlled', e.target.checked)}
+                        onChange={(e) =>
+                          update(index, 'controlled', e.target.checked)
+                        }
                         className="h-4 w-4"
                       />
-                      <Label htmlFor={`controlled-${index}`} className="text-xs cursor-pointer">
+                      <Label
+                        htmlFor={`controlled-${index}`}
+                        className="text-xs cursor-pointer"
+                      >
                         Controlada
                       </Label>
                     </div>

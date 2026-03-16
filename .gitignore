@@ -82,3 +82,6 @@ certs/openssl.conf
 # Other
 *.pem
 *.sh
+
+# Claude local settings
+.claude/settings.local.json
