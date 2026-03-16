@@ -11,10 +11,11 @@ import { Message } from '@/lib/api/messages';
  * @param patientId - ID do paciente para escutar mensagens especificas
  */
 export const useMessagesSocket = (patientId?: string) => {
-  const { socket, isConnected } = useSocket('/messages');
+  const { socketRef, isConnected } = useSocket('/messages');
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const socket = socketRef.current;
     if (!socket || !isConnected || !patientId) return;
 
     // Inscrever-se para receber mensagens do paciente especifico
@@ -147,7 +148,7 @@ export const useMessagesSocket = (patientId?: string) => {
       socket.off('message_sent', handleMessageSent);
       socket.emit('unsubscribe_patient_messages', { patientId });
     };
-  }, [socket, isConnected, patientId, queryClient]);
+  }, [socketRef, isConnected, patientId, queryClient]);
 
   return {
     isConnected,

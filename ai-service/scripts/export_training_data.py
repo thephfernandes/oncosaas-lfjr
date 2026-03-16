@@ -56,7 +56,7 @@ def export(backend_url: str, token: str, output_path: str, all_tenants: bool = F
 
     print(f"\nExported {len(data)} training samples → {output}")
     print(f"Label distribution: {dict(sorted(dist.items()))}")
-    print(f"\nTo retrain the model:")
+    print("\nTo retrain the model:")
     print(f"  python scripts/train_model.py --real {output}")
 
 

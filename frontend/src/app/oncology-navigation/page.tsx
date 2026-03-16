@@ -564,7 +564,7 @@ function PatientNavigationCard({
                   </div>
                   <div className="p-4 space-y-2">
                     {steps.map((step) => (
-                      <StepCard key={step.id} step={step} apiUrl={apiUrl} />
+                      <StepCard key={`${step.id}-${step.updatedAt}`} step={step} apiUrl={apiUrl} />
                     ))}
                   </div>
                 </div>
@@ -625,34 +625,6 @@ function StepCard({ step, apiUrl }: StepCardProps) {
   const files = ((step.metadata as { files?: FileMetadata[] })?.files ||
     []) as FileMetadata[];
 
-  // Atualizar estado quando step mudar
-  useEffect(() => {
-    setNotes(step.notes || '');
-    setIsCompleted(step.isCompleted);
-    setInstitutionName(step.institutionName || '');
-    setProfessionalName(step.professionalName || '');
-    setResult(step.result || '');
-    setFindings(step.findings || []);
-    setActualDate(
-      step.actualDate
-        ? new Date(step.actualDate).toISOString().split('T')[0]
-        : ''
-    );
-    setDueDate(
-      step.dueDate ? new Date(step.dueDate).toISOString().split('T')[0] : ''
-    );
-  }, [
-    step.id,
-    step.notes,
-    step.isCompleted,
-    step.status,
-    step.institutionName,
-    step.professionalName,
-    step.result,
-    step.findings,
-    step.actualDate,
-    step.dueDate,
-  ]);
 
   const handleSave = async (): Promise<void> => {
     try {

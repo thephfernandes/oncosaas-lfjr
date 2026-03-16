@@ -53,7 +53,7 @@ export class PerformanceStatusService {
       select: { ecogScore: true },
     });
 
-    if (history.length < 2) return null;
+    if (history.length < 2) {return null;}
     return history[0].ecogScore - history[1].ecogScore;
   }
 }

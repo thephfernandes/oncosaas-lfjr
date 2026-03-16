@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Dialog,
@@ -56,7 +56,6 @@ export function ChartDrillDownModal({
   description,
 }: ChartDrillDownModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
 
   // Buscar todos os pacientes
   const { data: allPatients, isLoading } = useQuery({
@@ -66,15 +65,11 @@ export function ChartDrillDownModal({
   });
 
   // Filtrar pacientes baseado no tipo de filtro
-  useEffect(() => {
-    if (!allPatients) {
-      setFilteredPatients([]);
-      return;
-    }
+  const filteredPatients = useMemo(() => {
+    if (!allPatients) return [];
 
     let filtered = [...allPatients];
 
-    // Aplicar filtro principal
     if (filterType && filterValue) {
       switch (filterType) {
         case 'priority':
@@ -89,13 +84,12 @@ export function ChartDrillDownModal({
       }
     }
 
-    // Aplicar busca por nome
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter((p) => p.name.toLowerCase().includes(term));
     }
 
-    setFilteredPatients(filtered);
+    return filtered;
   }, [allPatients, filterType, filterValue, searchTerm]);
 
   const handleExport = () => {

@@ -942,8 +942,7 @@ export function PatientEditPage({ patientId }: PatientEditPageProps) {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                O campo "Estágio" acima será calculado automaticamente a partir
-                dos campos TNM preenchidos.
+                {`O campo "Estágio" acima será calculado automaticamente a partir dos campos TNM preenchidos.`}
               </p>
 
               <div>

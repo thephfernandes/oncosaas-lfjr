@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,20 +74,13 @@ export function ComorbiditiesForm({
   value = [],
   onChange,
 }: ComorbiditiesFormProps) {
-  const [comorbidities, setComorbidities] = useState<CreateComorbidityDto[]>(
-    Array.isArray(value) ? value : []
-  );
-
-  useEffect(() => {
-    setComorbidities(Array.isArray(value) ? value : []);
-  }, [value]);
+  const comorbidities = Array.isArray(value) ? value : [];
 
   const add = () => {
     const updated = [
       ...comorbidities,
       { name: '', type: 'OTHER' as ComorbidityType, severity: 'MODERATE' as ComorbiditySeverity, controlled: false },
     ];
-    setComorbidities(updated);
     onChange(updated);
   };
 
@@ -100,14 +92,11 @@ export function ComorbiditiesForm({
       const opt = TYPE_OPTIONS.find((o) => o.value === val);
       if (opt) updated[index].name = opt.label;
     }
-    setComorbidities(updated);
     onChange(updated);
   };
 
   const remove = (index: number) => {
-    const updated = comorbidities.filter((_, i) => i !== index);
-    setComorbidities(updated);
-    onChange(updated);
+    onChange(comorbidities.filter((_, i) => i !== index));
   };
 
   return (

@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ignoreExpiration: false,
       secretOrKey: (() => {
         const secret = configService.get<string>('JWT_SECRET');
-        if (!secret) throw new Error('JWT_SECRET environment variable is not set');
+        if (!secret) {throw new Error('JWT_SECRET environment variable is not set');}
         return secret;
       })(),
     });

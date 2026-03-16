@@ -45,7 +45,7 @@ export default function TestePage() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
-  }, [messages?.length]);
+  }, [messages]);
 
   const selectedPatientData = patients?.find((p) => p.id === selectedPatient);
 

@@ -1,8 +1,3 @@
-"""
-AI Service - Plataforma Oncológica
-Serviço de IA para priorização de casos e agente conversacional
-"""
-
 import json
 import logging
 from pathlib import Path
@@ -11,6 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic_settings import BaseSettings
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from src.api.routes import router
+"""
+AI Service - Plataforma Oncológica
+Serviço de IA para priorização de casos e agente conversacional
+"""
+
 
 # Load environment variables early, before importing modules that may read os.getenv.
 # Priority order:
@@ -39,9 +40,6 @@ _handler = logging.StreamHandler()
 _handler.setFormatter(_JsonFormatter())
 logging.basicConfig(level=logging.INFO, handlers=[_handler])
 logger = logging.getLogger(__name__)
-
-from src.api.routes import router
-
 
 class Settings(BaseSettings):
     openai_api_key: str = ""

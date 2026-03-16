@@ -52,7 +52,7 @@ export function PatientTreatmentTab({ patient }: PatientTreatmentTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Buscar tratamentos para cada diagnóstico
-  const diagnoses = patient.cancerDiagnoses || [];
+  const diagnoses = useMemo(() => patient.cancerDiagnoses || [], [patient.cancerDiagnoses]);
   const treatmentQueries = useQueries({
     queries: diagnoses.map((diagnosis) => ({
       queryKey: ['treatments', diagnosis.id],

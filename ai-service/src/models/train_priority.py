@@ -1,3 +1,18 @@
+from __future__ import annotations
+from pathlib import Path
+from typing import Any, Dict, List
+from src.models.priority_model import (
+    FEATURE_COLUMNS,
+    DISPOSITION_TO_IDX,
+    extract_features,
+    priority_model,
+)
+from src.agent.clinical_rules import clinical_rules_engine
+import logging
+import sys
+import numpy as np
+import pandas as pd
+
 """
 Training pipeline for the Oncology Priority Ordinal Classifier (Phase 3).
 
@@ -10,31 +25,9 @@ Synthetic data generation strategy:
   - Stratified to ensure all 5 classes are well-represented
 """
 
-from __future__ import annotations
-
-import logging
-import sys
-from pathlib import Path
-from typing import Any, Dict, List
-
-import numpy as np
-import pandas as pd
-
 logger = logging.getLogger(__name__)
-
-MODEL_PATH = Path(__file__).parent / "priority_model.joblib"
-
-# Import from project
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from src.models.priority_model import (
-    FEATURE_COLUMNS,
-    DISPOSITION_TO_IDX,
-    extract_features,
-    priority_model,
-)
-from src.agent.clinical_rules import clinical_rules_engine
-from src.agent.clinical_scores import clinical_scores
-
+MODEL_PATH = Path(__file__).parent / "priority_model.joblib"
 
 # ─── Synthetic patient generators ─────────────────────────────────────────────
 
@@ -72,7 +65,7 @@ def _build_synthetic_patient(
     """
     from datetime import datetime, timezone, timedelta
 
-    p: Dict[str, Any] = {}
+    # p: Dict[str, Any] = {}
 
     cancer_type = _random_cancer_type(rng)
     stage = _random_stage(rng)
@@ -100,8 +93,8 @@ def _build_synthetic_patient(
     # Comorbidities
     has_sepsis_risk = int(rng.random() < 0.10)
     has_thrombosis_risk = int(rng.random() < 0.10)
-    has_pulmonary_risk = int(rng.random() < 0.08)
-    has_renal_risk = int(rng.random() < 0.12)
+    # has_pulmonary_risk = int(rng.random() < 0.08)
+    # has_renal_risk = int(rng.random() < 0.12)
 
     # Override defaults by scenario
     if scenario == "febrile_neutropenia":

@@ -86,7 +86,6 @@ def train(real_data_path: str | None = None, n_synthetic: int = 5000):
 
 def evaluate():
     """Evaluate the current model on a held-out synthetic test set."""
-    import pandas as pd
     from sklearn.metrics import classification_report, confusion_matrix
     from src.models.train_priority import generate_synthetic_dataset
     from src.models.priority_model import FEATURE_COLUMNS, DISPOSITION_CLASSES, priority_model, MODEL_PATH

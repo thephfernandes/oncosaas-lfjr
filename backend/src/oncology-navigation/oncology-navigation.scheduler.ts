@@ -114,7 +114,7 @@ export class OncologyNavigationScheduler {
             },
           });
 
-          if (patients.length === 0) continue;
+          if (patients.length === 0) {continue;}
 
           const items = patients.map((p) => {
             const age = p.birthDate
@@ -268,7 +268,7 @@ export class OncologyNavigationScheduler {
             },
           });
 
-          if (patients.length === 0) continue;
+          if (patients.length === 0) {continue;}
 
           const now = new Date();
 

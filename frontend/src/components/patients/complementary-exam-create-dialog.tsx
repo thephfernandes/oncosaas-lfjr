@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -73,7 +74,8 @@ export function ComplementaryExamCreateDialog({
   onSuccess,
 }: ComplementaryExamCreateDialogProps): React.ReactElement {
   const queryClient = useQueryClient();
-  const [comboboxOpen, setComboboxOpen] = useState(false);
+  const [comboboxOpenState, setComboboxOpen] = useState(false);
+  const comboboxOpen = open && comboboxOpenState;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateComplementaryExamFormData>({
@@ -94,8 +96,8 @@ export function ComplementaryExamCreateDialog({
     },
   });
 
-  const examType = form.watch('type');
-  const searchQuery = form.watch('name');
+  const examType = useWatch({ control: form.control, name: 'type' });
+  const searchQuery = useWatch({ control: form.control, name: 'name' });
   const catalogOptions = filterCatalogByTypeAndSearch(examType, searchQuery ?? '');
 
   const createMutation = useMutation({
@@ -141,7 +143,7 @@ export function ComplementaryExamCreateDialog({
     },
   });
 
-  function resetForm() {
+  const resetForm = useCallback(() => {
     form.reset({
       type: 'LABORATORY',
       name: '',
@@ -156,12 +158,11 @@ export function ComplementaryExamCreateDialog({
         report: '',
       },
     });
-  }
+  }, [form]);
 
   useEffect(() => {
     if (!open) {
       resetForm();
-      setComboboxOpen(false);
     } else {
       const current = form.getValues('initialResult.performedAt');
       if (!current || (typeof current === 'string' && current.trim() === '')) {
@@ -171,7 +172,7 @@ export function ComplementaryExamCreateDialog({
         );
       }
     }
-  }, [open, form]);
+  }, [open, form, resetForm]);
 
   const onSelectCatalogEntry = (entry: CatalogExamEntry) => {
     form.setValue('name', entry.name);

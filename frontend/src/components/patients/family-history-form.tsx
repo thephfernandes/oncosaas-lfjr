@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,43 +15,24 @@ export function FamilyHistoryForm({
   value = [],
   onChange,
 }: FamilyHistoryFormProps) {
-  const [familyHistory, setFamilyHistory] = useState<FamilyHistory[]>(
-    value || []
-  );
-
-  // Sincronizar com value quando mudar externamente
-  useEffect(() => {
-    // Sempre atualizar quando value mudar, mesmo se for array vazio
-    setFamilyHistory(Array.isArray(value) ? value : []);
-  }, [value]);
+  const familyHistory = Array.isArray(value) ? value : [];
 
   const addFamilyMember = () => {
-    const newMember: FamilyHistory = {
-      relationship: '',
-      cancerType: '',
-    };
-    const updated = [...familyHistory, newMember];
-    setFamilyHistory(updated);
-    onChange(updated);
+    onChange([...familyHistory, { relationship: '', cancerType: '' }]);
   };
 
   const updateFamilyMember = (
     index: number,
     field: keyof FamilyHistory,
-    value: any
+    fieldValue: FamilyHistory[typeof field]
   ) => {
     const updated = [...familyHistory];
-    updated[index] = { ...updated[index], [field]: value };
-    setFamilyHistory(updated);
-    // Enviar todos os históricos (incluindo parcialmente preenchidos)
-    // A filtragem de itens vazios será feita no submit do formulário
+    updated[index] = { ...updated[index], [field]: fieldValue };
     onChange(updated);
   };
 
   const removeFamilyMember = (index: number) => {
-    const updated = familyHistory.filter((_, i) => i !== index);
-    setFamilyHistory(updated);
-    onChange(updated);
+    onChange(familyHistory.filter((_, i) => i !== index));
   };
 
   return (
@@ -72,8 +52,7 @@ export function FamilyHistoryForm({
 
       {familyHistory.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nenhum histórico familiar adicionado. Clique em "Adicionar" para
-          incluir.
+          {`Nenhum histórico familiar adicionado. Clique em "Adicionar" para incluir.`}
         </p>
       ) : (
         <div className="space-y-3">

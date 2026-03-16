@@ -398,7 +398,7 @@ export class OncologyNavigationService {
       where: { id: patientId, tenantId },
       select: { currentStage: true },
     });
-    if (!patient?.currentStage) return 0;
+    if (!patient?.currentStage) {return 0;}
 
     const currentStage = patient.currentStage as JourneyStage;
     const steps = await this.prisma.navigationStep.findMany({
@@ -409,7 +409,7 @@ export class OncologyNavigationService {
     const toClear = steps.filter((s) =>
       this.isFutureStage(s.journeyStage as JourneyStage, currentStage)
     );
-    if (toClear.length === 0) return 0;
+    if (toClear.length === 0) {return 0;}
 
     await this.prisma.navigationStep.updateMany({
       where: {
