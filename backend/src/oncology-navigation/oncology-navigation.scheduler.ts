@@ -247,7 +247,6 @@ export class OncologyNavigationScheduler {
               priorityScore: true,
               lastInteraction: true,
               createdAt: true,
-              maxDaysWithoutInteractionAlert: true,
               navigationSteps: {
                 select: {
                   stepKey: true,
@@ -265,40 +264,21 @@ export class OncologyNavigationScheduler {
                 take: 3,
                 select: { completedAt: true, scores: true },
               },
-              messages: {
-                where: { direction: 'INBOUND' },
-                orderBy: { whatsappTimestamp: 'desc' },
-                take: 1,
-                select: { whatsappTimestamp: true },
-              },
-              _count: { select: { messages: true } },
+              messages: { select: { id: true } },
             },
           });
 
           if (patients.length === 0) {continue;}
 
           const now = new Date();
-          const MS_PER_DAY = 86400000;
-
-          const DEFAULT_MAX_DAYS_NO_INTERACTION = 7;
 
           const riskPayload = patients.map((p) => {
-            // Última interação real = mais recente entre Patient.lastInteraction e última mensagem INBOUND do paciente.
-            // Patient.lastInteraction pode estar desatualizado; a última mensagem INBOUND é a fonte fidedigna.
-            const lastMsgFromPatient = p.messages[0]?.whatsappTimestamp
-              ? new Date(p.messages[0].whatsappTimestamp).getTime()
-              : 0;
-            const lastInteractionTime = p.lastInteraction
-              ? new Date(p.lastInteraction).getTime()
-              : 0;
-            const effectiveLastInteractionMs = Math.max(lastMsgFromPatient, lastInteractionTime);
-            const hasInteracted = effectiveLastInteractionMs > 0;
-            const lastInteractionDays = hasInteracted
-              ? Math.floor((now.getTime() - effectiveLastInteractionMs) / MS_PER_DAY)
-              : 0;
+            const lastInteractionDays = p.lastInteraction
+              ? Math.floor((now.getTime() - new Date(p.lastInteraction).getTime()) / (86400000))
+              : 999;
 
             const daysSinceRegistration = Math.floor(
-              (now.getTime() - new Date(p.createdAt).getTime()) / MS_PER_DAY,
+              (now.getTime() - new Date(p.createdAt).getTime()) / 86400000,
             );
 
             return {
@@ -309,9 +289,6 @@ export class OncologyNavigationScheduler {
               performance_status: p.performanceStatus ?? undefined,
               priority_score: p.priorityScore,
               last_interaction_days: lastInteractionDays,
-              has_interacted: hasInteracted,
-              min_days_no_interaction_alert:
-                p.maxDaysWithoutInteractionAlert ?? DEFAULT_MAX_DAYS_NO_INTERACTION,
               navigation_steps: p.navigationSteps.map((s) => ({
                 step_key: s.stepKey,
                 step_name: s.stepName,
@@ -325,7 +302,7 @@ export class OncologyNavigationScheduler {
                 completed_at: qr.completedAt.toISOString(),
                 scores: (qr.scores as Record<string, any>) ?? {},
               })),
-              total_messages: p._count.messages,
+              total_messages: p.messages.length,
               days_since_registration: daysSinceRegistration,
             };
           });
@@ -363,16 +340,11 @@ export class OncologyNavigationScheduler {
               };
 
               for (const result of data.results) {
-                // Alertas CRITICAL/HIGH sempre são criados.
-                // Para NO_RESPONSE, também criar alertas MEDIUM (severidade rebaixada).
-                const actionableRisks = result.risks.filter(
-                  (r) =>
-                    r.severity === 'CRITICAL' ||
-                    r.severity === 'HIGH' ||
-                    (r.severity === 'MEDIUM' && r.risk_type === 'NO_RESPONSE'),
+                const highRisks = result.risks.filter(
+                  (r) => r.severity === 'CRITICAL' || r.severity === 'HIGH',
                 );
 
-                for (const risk of actionableRisks) {
+                for (const risk of highRisks) {
                   try {
                     await this.alertsService.create(
                       {

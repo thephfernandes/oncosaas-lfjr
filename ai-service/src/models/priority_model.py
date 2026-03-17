@@ -1,3 +1,12 @@
+import logging
+import os
+from typing import Any, Dict, Optional
+import joblib
+import numpy as np
+import pandas as pd
+from lightgbm import LGBMClassifier
+from __future__ import annotations
+
 """
 Oncology Priority Model — Ordinal Classifier (Phase 3).
 
@@ -22,17 +31,6 @@ Model: LightGBM ordinal classifier via cross-entropy on ordered classes.
 Asymmetric penalty: under-triaging (predicting lower class) is penalized
 more heavily than over-triaging.
 """
-
-from __future__ import annotations
-
-import logging
-import os
-from typing import Any, Dict, Optional, Tuple
-
-import joblib
-import numpy as np
-import pandas as pd
-from lightgbm import LGBMClassifier
 
 logger = logging.getLogger(__name__)
 

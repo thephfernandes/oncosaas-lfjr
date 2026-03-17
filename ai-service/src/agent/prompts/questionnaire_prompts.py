@@ -1,9 +1,8 @@
+from typing import Dict, Any, Optional
+
 """
 Questionnaire prompts for LLM-assisted answer extraction and scoring interpretation.
 """
-
-from typing import Dict, Any, Optional
-
 
 # System prompt for extracting numeric answers from natural language
 EXTRACT_NUMBER_PROMPT = """Você é um assistente especializado em interpretar respostas de pacientes oncológicos em questionários clínicos.

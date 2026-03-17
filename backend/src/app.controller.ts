@@ -10,7 +10,7 @@ export class AppController {
   @Get()
   getHello() {
     return {
-      message: 'ONCONAV Backend API',
+      message: 'Oncosaas Backend API',
       version: '0.1.0',
       status: 'running',
       endpoints: {
@@ -33,7 +33,7 @@ export class AppController {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      service: 'ONCONAV-backend',
+      service: 'oncosaas-backend',
       version: '0.1.0',
     };
   }

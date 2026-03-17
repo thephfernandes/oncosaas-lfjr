@@ -1,16 +1,17 @@
-"""
-AI Service - Plataforma Oncológica
-Serviço de IA para priorização de casos e agente conversacional
-"""
-
 import json
 import logging
 from pathlib import Path
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic_settings import BaseSettings
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from src.api.routes import router
+
+"""
+AI Service - Plataforma Oncológica
+Serviço de IA para priorização de casos e agente conversacional
+"""
 
 # Load environment variables early, before importing modules that may read os.getenv.
 # Priority order:

@@ -1,15 +1,14 @@
+import re
+import logging
+from typing import Dict, List, Optional, Any, Tuple
+from .llm_provider import llm_provider
+
 """
 Questionnaire Engine.
 Applies clinical questionnaires (PRO-CTCAE, ESAS) in conversational format.
 The agent asks one question at a time, interprets free-form responses,
 and extracts structured answers.
 """
-
-from typing import Dict, List, Optional, Any, Tuple
-import re
-import logging
-
-from .llm_provider import llm_provider
 
 logger = logging.getLogger(__name__)
 

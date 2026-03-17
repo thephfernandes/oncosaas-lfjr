@@ -1,17 +1,16 @@
-"""
-Multi-LLM provider abstraction.
-Supports Anthropic (Claude) and OpenAI (GPT-4), configurable per tenant.
-"""
-
 import json
 import logging
 from typing import Dict, List, Optional, Any
-
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 import os
 from pathlib import Path
 from dotenv import dotenv_values
+
+"""
+Multi-LLM provider abstraction.
+Supports Anthropic (Claude) and OpenAI (GPT-4), configurable per tenant.
+"""
 
 logger = logging.getLogger(__name__)
 

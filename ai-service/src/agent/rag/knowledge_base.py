@@ -1,16 +1,18 @@
+import json
+import logging
+import os
+import numpy as np
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 """
 RAG (Retrieval-Augmented Generation) module for oncology knowledge.
 Uses sentence-transformers for embeddings and FAISS for vector search
 to retrieve relevant oncology knowledge before calling the LLM.
 """
 
-import json
-import logging
-import os
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 
-import numpy as np
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +32,7 @@ def _get_index_dir() -> Path:
             return Path(base) / "OncoNav" / "rag_index_cache"
     return default
 
-
 _INDEX_DIR = _get_index_dir()
-
 _MODEL_NAME = os.getenv("RAG_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 

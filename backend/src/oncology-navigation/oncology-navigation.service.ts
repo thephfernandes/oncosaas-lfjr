@@ -18,9 +18,10 @@ import { AlertType, AlertSeverity } from '@prisma/client';
 /** Ordem dos estágios da jornada (para comparar "fase atual" vs "fase futura") */
 const JOURNEY_STAGE_ORDER: Record<JourneyStage, number> = {
   [JourneyStage.SCREENING]: 0,
-  [JourneyStage.DIAGNOSIS]: 1,
-  [JourneyStage.TREATMENT]: 2,
-  [JourneyStage.FOLLOW_UP]: 3,
+  [JourneyStage.NAVIGATION]: 1,
+  [JourneyStage.DIAGNOSIS]: 2,
+  [JourneyStage.TREATMENT]: 3,
+  [JourneyStage.FOLLOW_UP]: 4,
 };
 
 @Injectable()

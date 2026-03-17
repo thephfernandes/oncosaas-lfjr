@@ -1,12 +1,11 @@
+from typing import Any, Dict, List
+
 """
 Orchestrator prompts and routing tool definitions for the multi-agent pipeline.
 
 The orchestrator uses Claude Opus with adaptive thinking to route patient messages
 to specialized subagents, then synthesizes their analyses into a final patient response.
 """
-
-from typing import Any, Dict, List
-
 
 # Routing tools: each tool represents a specialized subagent
 ORCHESTRATOR_ROUTING_TOOLS: List[Dict[str, Any]] = [

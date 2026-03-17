@@ -1,22 +1,6 @@
-"""
-Rotas da API do AI Service
-"""
-
-import json
 import logging
 from typing import Dict, List, Optional
-
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-
-logger = logging.getLogger(__name__)
-from ..models.priority_model import (
-    priority_model,
-    FEATURE_COLUMNS,
-    extract_features,
-    CANCER_TYPE_MAP as PRIORITY_CANCER_MAP,
-    STAGE_MAP as PRIORITY_STAGE_MAP,
-)
+from ..models.priority_model import priority_model, FEATURE_COLUMNS, extract_features
 from ..models.schemas import (
     AgentProcessRequest,
     AgentProcessResponse,
@@ -52,15 +36,15 @@ from ..agent.context_builder import context_builder
 from ..agent.symptom_analyzer import symptom_analyzer
 from ..agent.questionnaire_engine import questionnaire_engine
 from ..agent.protocol_engine import protocol_engine
-from ..agent.tracer import tracer
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
-
 
 # ============================================
 # Models de requisição/resposta (legacy)
 # ============================================
-
 
 @router.get("/debug/llm-status")
 async def debug_llm_status():

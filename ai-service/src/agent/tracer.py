@@ -1,14 +1,14 @@
-"""
-Agent Observability Tracer.
-Collects pipeline execution traces in a ring buffer for debugging and monitoring.
-"""
-
 import threading
 import time
 import uuid
 from collections import deque
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+"""
+Agent Observability Tracer.
+Collects pipeline execution traces in a ring buffer for debugging and monitoring.
+"""
 
 MAX_TRACES = 500
 

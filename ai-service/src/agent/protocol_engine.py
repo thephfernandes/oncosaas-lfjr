@@ -1,11 +1,11 @@
+from typing import Dict, List, Optional, Any
+import logging
+from datetime import datetime, date
+
 """
 Protocol Engine.
 Evaluates clinical protocol rules and generates protocol-driven actions.
 """
-
-from typing import Dict, List, Optional, Any
-import logging
-from datetime import datetime, date
 
 logger = logging.getLogger(__name__)
 

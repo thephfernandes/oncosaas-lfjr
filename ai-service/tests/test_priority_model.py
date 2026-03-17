@@ -1,12 +1,12 @@
-"""
-Tests for the PriorityModel class.
-"""
-
 import pytest
 import numpy as np
 import pandas as pd
 import sys
 import os
+
+"""
+Tests for the PriorityModel class.
+"""
 
 # Add the ai-service root to path so imports work
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))

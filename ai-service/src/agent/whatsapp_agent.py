@@ -1,13 +1,12 @@
-"""
-Agente conversacional de IA para WhatsApp
-"""
-
 from typing import Dict, List, Optional
 from openai import OpenAI
 from anthropic import Anthropic
 import logging
 import os
 
+"""
+Agente conversacional de IA para WhatsApp
+"""
 
 class WhatsAppAgent:
     """

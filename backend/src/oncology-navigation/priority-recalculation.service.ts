@@ -152,13 +152,9 @@ export class PriorityRecalculationService {
       };
 
       const categoryMap: Record<string, string> = {
-        CRITICAL: 'CRITICAL',
         critical: 'CRITICAL',
-        HIGH: 'HIGH',
         high: 'HIGH',
-        MEDIUM: 'MEDIUM',
         medium: 'MEDIUM',
-        LOW: 'LOW',
         low: 'LOW',
       };
 

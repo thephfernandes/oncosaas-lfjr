@@ -1,15 +1,8 @@
-"""
-Agent Orchestrator.
-Main processing pipeline for the oncology navigation agent.
-Receives message + context → returns response + actions.
-"""
-
 import json
 import time
+import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
-import logging
-
 from .llm_provider import llm_provider
 from .context_builder import context_builder
 from .symptom_analyzer import symptom_analyzer
@@ -23,6 +16,12 @@ from .subagents import SymptomAgent, NavigationAgent, QuestionnaireAgent, Emotio
 from .clinical_rules import clinical_rules_engine, ER_IMMEDIATE, ER_DAYS
 from .clinical_scores import clinical_scores
 from .tracer import tracer
+
+"""
+Agent Orchestrator.
+Main processing pipeline for the oncology navigation agent.
+Receives message + context → returns response + actions.
+"""
 
 logger = logging.getLogger(__name__)
 
