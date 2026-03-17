@@ -88,11 +88,6 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.5.4"
   },
-  "lint-staged": {
-    "*.{ts}": [
-      "eslint --fix"
-    ]
-  },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   }
