@@ -109,7 +109,7 @@ export class DashboardController {
     @CurrentUser() user: any,
     @Query('maxResults') maxResults?: string
   ): Promise<PendingAlertDto[]> {
-    if (!user?.tenantId) return [];
+    if (!user?.tenantId) {return [];}
     const parsed = maxResults
       ? Math.min(Math.max(1, parseInt(maxResults, 10) || 100), 200)
       : 100;

@@ -986,7 +986,7 @@ export class PatientsService {
    * Derives comorbidity risk flags from type.
    */
   private resolveComorbidityRiskFlags(type?: ComorbidityType) {
-    if (!type) return {};
+    if (!type) {return {};}
     const sepsisRisk: ComorbidityType[] = [
       ComorbidityType.DIABETES_TYPE_1,
       ComorbidityType.DIABETES_TYPE_2,
@@ -1020,7 +1020,7 @@ export class PatientsService {
    * Derives medication clinical flags from category.
    */
   private resolveMedicationRiskFlags(category?: MedicationCategory) {
-    if (!category) return {};
+    if (!category) {return {};}
     return {
       isAnticoagulant: category === MedicationCategory.ANTICOAGULANT,
       isAntiplatelet: category === MedicationCategory.ANTIPLATELET,
@@ -1588,9 +1588,9 @@ export class PatientsService {
         step.dueDate ??
         step.expectedDate ??
         null;
-      if (stepDate == null) continue; // Etapa sem data não aparece na timeline
+      if (stepDate === null) {continue;} // Etapa sem data não aparece na timeline
       // Excluir eventos com data no futuro
-      if (stepDate > now) continue;
+      if (stepDate > now) {continue;}
       const isConsultation = consultationKeys.some(
         (k) =>
           step.stepKey.toLowerCase().includes(k) ||
@@ -1601,7 +1601,7 @@ export class PatientsService {
           ? 'consultation'
           : 'navigation_step';
 
-      if (!shouldInclude(eventType)) continue;
+      if (!shouldInclude(eventType)) {continue;}
 
       events.push({
         type: eventType,

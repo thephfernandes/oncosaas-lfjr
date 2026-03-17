@@ -679,7 +679,7 @@ export class AgentService {
       'PALLIATIVE_PSYCHOSOCIAL',
       'QUESTIONNAIRE_ALERT',
     ];
-    if (validTypes.includes(agentType)) return agentType;
+    if (validTypes.includes(agentType)) {return agentType;}
     return mapping[agentType] || 'CRITICAL_SYMPTOM';
   }
 
