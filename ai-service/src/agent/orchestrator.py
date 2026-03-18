@@ -604,6 +604,13 @@ class AgentOrchestrator:
             "response": response,
             "actions": actions,
             "symptom_analysis": symptom_analysis,
+            # Emergency path always escalates to ER_IMMEDIATE — populated so the
+            # backend can update the patient record and display triage to nurses.
+            "clinical_disposition": ER_IMMEDIATE,
+            "clinical_disposition_reason": (
+                "Intent classifier detected emergency message — ER_IMMEDIATE escalation."
+            ),
+            "clinical_rules_findings": [],
             "new_state": agent_state,
             "decisions": decisions,
         }
