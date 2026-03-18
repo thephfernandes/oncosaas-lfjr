@@ -2,16 +2,14 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: pg-database
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-ONCONAV}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ONCONAV_dev}
-      POSTGRES_DB: ${POSTGRES_DB:-ONCONAV_development}
+    env_file:
+      - ./backend/.env
     ports:
       - '127.0.0.1:5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-ONCONAV} -d ${POSTGRES_DB:-ONCONAV_development}']
+      test: ['CMD-SHELL', 'pg_isready -U ONCONAV -d ONCONAV_development']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,9 +30,8 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: msg-service
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-ONCONAV}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-ONCONAV_dev}
+    env_file:
+      - ./backend/.env
     ports:
       - '127.0.0.1:5672:5672'
       - '127.0.0.1:15672:15672'

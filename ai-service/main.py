@@ -13,22 +13,16 @@ Serviço de IA para priorização de casos e agente conversacional
 """
 
 # Load environment variables early, before importing modules that may read os.getenv.
-# Priority order:
-# 1) Project root .env (../.env) for shared local dev config
-# 2) ai-service/.env for service-specific overrides
+# Source: ai-service/.env only (service-local configuration).
 BASE_DIR = Path(__file__).resolve().parent
-ROOT_ENV_PATH = BASE_DIR.parent / ".env"
 LOCAL_ENV_PATH = BASE_DIR / ".env"
 
 _env_loaded = []
-if ROOT_ENV_PATH.exists():
-    load_dotenv(ROOT_ENV_PATH, override=True)
-    _env_loaded.append(str(ROOT_ENV_PATH))
-else:
-    _env_loaded.append(f"(root not found: {ROOT_ENV_PATH})")
 if LOCAL_ENV_PATH.exists():
     load_dotenv(LOCAL_ENV_PATH, override=True)
     _env_loaded.append(str(LOCAL_ENV_PATH))
+else:
+    _env_loaded.append(f"(not found: {LOCAL_ENV_PATH})")
 
 
 class _JsonFormatter(logging.Formatter):
