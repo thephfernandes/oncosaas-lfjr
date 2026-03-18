@@ -81,14 +81,8 @@ export class AuthService {
       );
     }
 
-    if (!tenantId) {
-      throw new UnauthorizedException(
-        'tenantId é obrigatório para autenticação'
-      );
-    }
-
     const user = await this.prisma.user.findFirst({
-      where: { tenantId, email },
+      where: tenantId ? { tenantId, email } : { email },
       include: { tenant: true },
     });
 
