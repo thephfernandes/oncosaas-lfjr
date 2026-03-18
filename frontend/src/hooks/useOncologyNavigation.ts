@@ -15,7 +15,6 @@ export const useStepsByStage = (
   patientId: string | null,
   journeyStage:
     | 'SCREENING'
-    | 'NAVIGATION'
     | 'DIAGNOSIS'
     | 'TREATMENT'
     | 'FOLLOW_UP'
@@ -43,7 +42,6 @@ export const useInitializeNavigationSteps = () => {
       cancerType: string;
       currentStage:
         | 'SCREENING'
-        | 'NAVIGATION'
         | 'DIAGNOSIS'
         | 'TREATMENT'
         | 'FOLLOW_UP';

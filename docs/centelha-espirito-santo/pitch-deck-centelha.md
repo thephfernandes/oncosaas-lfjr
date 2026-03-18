@@ -3,8 +3,9 @@ Pitch Deck - Centelha Espírito Santo
 OncoSaas - Plataforma de Otimização Oncológica com IA
 
 Versão: 1.0
-Data: 2024
+Data: 2025
 Formato: Documento para conversão em PDF/Slides
+Edital de referência: 18/2025 – Centelha 3 ES (submissão Fase 2 jan–mar 2026)
 
 ---
 
@@ -240,10 +241,10 @@ Product Discovery:
 Dores validadas: falta de coordenação, priorização manual, sobrecarga
 Features priorizadas: navegação, priorização IA, agente WhatsApp
 
-Pilotos Planejados:
+Pilotos:
 
-3-5 hospitais oncológicos (Q2 2024)
-Duração: 3-6 meses
+Em planejamento com instituições pioneiras
+Duração prevista: 3-6 meses
 Validação de valor e ROI
 
 Metas de Métricas:

@@ -79,7 +79,6 @@ const JOURNEY_STAGE_ORDER = [
 
 const JOURNEY_STAGE_LABELS: Record<string, string> = {
   SCREENING: '🔍 Rastreio',
-  NAVIGATION: '🧭 Navegação',
   DIAGNOSIS: '📋 Diagnóstico',
   TREATMENT: '💊 Tratamento',
   FOLLOW_UP: '📅 Seguimento',
@@ -415,7 +414,6 @@ function PatientNavigationCard({
 
     const grouped: Record<string, NavigationStep[]> = {
       SCREENING: [],
-      NAVIGATION: [],
       DIAGNOSIS: [],
       TREATMENT: [],
       FOLLOW_UP: [],
@@ -491,14 +489,20 @@ function PatientNavigationCard({
       {isExpanded && (
         <div className="mt-4 ml-8 space-y-4">
           <div className="flex justify-end">
-            <Popover open={addStepPopoverOpen} onOpenChange={setAddStepPopoverOpen}>
+            <Popover
+              open={addStepPopoverOpen}
+              onOpenChange={setAddStepPopoverOpen}
+            >
               <PopoverTrigger asChild>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar etapa
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-56 p-2 bg-background z-[100]">
+              <PopoverContent
+                align="end"
+                className="w-56 p-2 bg-background z-[100]"
+              >
                 <p className="text-sm font-medium text-muted-foreground px-2 py-1 mb-1">
                   Escolha a fase
                 </p>
@@ -564,7 +568,11 @@ function PatientNavigationCard({
                   </div>
                   <div className="p-4 space-y-2">
                     {steps.map((step) => (
-                      <StepCard key={`${step.id}-${step.updatedAt}`} step={step} apiUrl={apiUrl} />
+                      <StepCard
+                        key={`${step.id}-${step.updatedAt}`}
+                        step={step}
+                        apiUrl={apiUrl}
+                      />
                     ))}
                   </div>
                 </div>
@@ -576,7 +584,7 @@ function PatientNavigationCard({
             onOpenChange={(open) => !open && setCreateStage(null)}
             patientId={patient.id ?? ''}
             cancerType={cancerType}
-            journeyStage={createStage ?? 'NAVIGATION'}
+            journeyStage={createStage ?? 'SCREENING'}
             diagnosisId={undefined}
             onSuccess={() => {
               queryClient.invalidateQueries({
@@ -624,7 +632,6 @@ function StepCard({ step, apiUrl }: StepCardProps) {
 
   const files = ((step.metadata as { files?: FileMetadata[] })?.files ||
     []) as FileMetadata[];
-
 
   const handleSave = async (): Promise<void> => {
     try {

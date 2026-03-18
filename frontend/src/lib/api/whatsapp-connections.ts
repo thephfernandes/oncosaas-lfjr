@@ -142,15 +142,33 @@ export const whatsappConnectionsApi = {
   },
 
   /**
-   * Processar código do Embedded Signup
-   * O código será trocado por business token no servidor
+   * Executar testes de API do Meta App Review.
+   * Dispara as chamadas necessárias para registrar uso das permissões:
+   * email, business_management, whatsapp_business_manage_events, manage_app_solution.
+   * Requer conexão OAuth (Embedded Signup).
    */
-  processEmbeddedSignupCode: async (
-    code: string
+  runMetaTests: async (
+    id: string
+  ): Promise<{
+    results: Record<string, { success: boolean; detail?: string }>;
+    summary: string;
+  }> => {
+    return apiClient.post(
+      `/whatsapp-connections/${id}/run-meta-tests`
+    );
+  },
+
+  /**
+   * Processar código do Embedded Signup.
+   * @param redirect_uri URL exata da página (origin + pathname) para a troca de código com a Meta.
+   */
+  processEmbeddedSignup: async (
+    code: string,
+    redirect_uri?: string
   ): Promise<EmbeddedSignupCodeResponse> => {
     return apiClient.post<EmbeddedSignupCodeResponse>(
       '/whatsapp-connections/embedded-signup/process',
-      { code }
+      { code, redirect_uri }
     );
   },
 };

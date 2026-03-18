@@ -1,7 +1,7 @@
-import json
 import logging
 from typing import Dict, List, Optional
-from ..models.priority_model import priority_model, FEATURE_COLUMNS, extract_features
+from ..models.priority_model import priority_model, FEATURE_COLUMNS, extract_features, STAGE_MAP as PRIORITY_STAGE_MAP, CANCER_TYPE_MAP as PRIORITY_CANCER_MAP
+from ..agent.tracer import tracer
 from ..models.schemas import (
     AgentProcessRequest,
     AgentProcessResponse,
@@ -46,17 +46,45 @@ router = APIRouter()
 # ============================================
 # Models de requisição/resposta (legacy)
 # ============================================
+
+@router.get("/debug/llm-status")
+async def debug_llm_status():
+    """Diagnostic endpoint: check if LLM keys are available."""
+    import os
+    from ..agent.llm_provider import llm_provider
+
+    has_any = llm_provider.has_any_llm_key({})
+    has_anthropic = llm_provider.has_anthropic_key({})
+
+    anthropic_env = os.getenv("ANTHROPIC_API_KEY", "")
+    openai_env = os.getenv("OPENAI_API_KEY", "")
+
+    def mask(k: str) -> str:
+        if not k or len(k) < 8:
+            return f"(len={len(k)})"
+        return f"{k[:6]}...{k[-4:]} (len={len(k)})"
+
+    return {
+        "has_any_llm_key": has_any,
+        "has_anthropic_key": has_anthropic,
+        "anthropic_from_env": mask(anthropic_env),
+        "openai_from_env": mask(openai_env),
+        "anthropic_from_dotenv": mask(llm_provider._resolve_api_key("ANTHROPIC_API_KEY", None) or ""),
+        "openai_from_dotenv": mask(llm_provider._resolve_api_key("OPENAI_API_KEY", None) or ""),
+    }
+
+
 class PriorityRequest(BaseModel):
     patient_id: Optional[str] = None
-    cancer_type: str
-    stage: str
-    performance_status: int
-    age: int
+    cancer_type: Optional[str] = "other"
+    stage: Optional[str] = "II"
+    performance_status: Optional[int] = 1
+    age: Optional[int] = 60
     pain_score: Optional[int] = 0
     nausea_score: Optional[int] = 0
     fatigue_score: Optional[int] = 0
     has_fever: Optional[bool] = False
-    days_since_last_visit: int
+    days_since_last_visit: Optional[int] = 30
     treatment_cycle: Optional[int] = 0
 
 
@@ -93,53 +121,70 @@ class AgentMessageResponse(BaseModel):
 # Priority endpoint
 # ============================================
 
-CANCER_TYPE_MAP = {
-    "mama": 0,
-    "breast": 0,
-    "pulmao": 1,
-    "lung": 1,
-    "colorectal": 2,
-    "colon": 2,
-    "prostata": 3,
-    "prostate": 3,
-    "kidney": 4,
-    "renal": 4,
-    "bladder": 5,
-    "bexiga": 5,
-    "testicular": 6,
+# Mapeamento disposição → score 0-100 (legado) para resposta do /prioritize
+DISPOSITION_TO_SCORE = {
+    "REMOTE_NURSING": 12.5,
+    "SCHEDULED_CONSULT": 37.5,
+    "ADVANCE_CONSULT": 62.5,
+    "ER_DAYS": 87.5,
+    "ER_IMMEDIATE": 100.0,
 }
 
-STAGE_MAP = {"I": 1, "II": 2, "III": 3, "IV": 4, "1": 1, "2": 2, "3": 3, "4": 4}
 
+def _build_features(req: PriorityRequest) -> Dict[str, float]:
+    """Monta dict com as 32 features do modelo; faltando = 0 (compatível com predict_single)."""
+    ct = (req.cancer_type or "").lower().strip()
+    st = (req.stage or "").upper().strip()
+    stage_num = PRIORITY_STAGE_MAP.get(st, 2)
+    age = req.age if req.age is not None else 60
+    ecog = req.performance_status if req.performance_status is not None else 0
+    pain = req.pain_score or 0
+    nausea = req.nausea_score or 0
+    fatigue = req.fatigue_score or 0
+    fever = 1 if req.has_fever else 0
+    days_visit = req.days_since_last_visit if req.days_since_last_visit is not None else 0
+    cycle = req.treatment_cycle or 0
 
-def _build_features(req: PriorityRequest):
-    import pandas as pd
-
-    row = {
-        "cancer_type": CANCER_TYPE_MAP.get(req.cancer_type.lower(), 0),
-        "stage": STAGE_MAP.get(req.stage.upper().strip(), 2),
-        "performance_status": req.performance_status,
-        "age": req.age,
-        "pain_score": req.pain_score or 0,
-        "nausea_score": req.nausea_score or 0,
-        "fatigue_score": req.fatigue_score or 0,
-        "days_since_last_visit": req.days_since_last_visit,
-        "treatment_cycle": req.treatment_cycle or 0,
-    }
-    return pd.DataFrame([row])[FEATURE_COLUMNS]
+    features = {col: 0 for col in FEATURE_COLUMNS}
+    features["age"] = age
+    features["is_elderly"] = 1 if age >= 70 else 0
+    features["cancer_type_code"] = PRIORITY_CANCER_MAP.get(ct, 0)
+    features["stage_num"] = stage_num
+    features["is_palliative"] = 1 if stage_num >= 4 else 0
+    features["days_since_last_chemo"] = 999
+    features["in_nadir_window"] = 0
+    features["in_risk_window"] = 0
+    features["treatment_cycle"] = cycle
+    features["ecog_score"] = min(4, max(0, ecog))
+    features["ecog_delta"] = 0
+    features["pain_score"] = pain
+    features["nausea_score"] = nausea
+    features["fatigue_score"] = fatigue
+    features["dyspnea_score"] = 0
+    features["temperature"] = 0
+    features["has_fever"] = fever
+    features["spo2"] = 0
+    features["days_since_last_visit"] = days_visit
+    features["is_alone"] = 0
+    features["symptom_critical_count"] = 0
+    features["symptom_high_count"] = 0
+    return features
 
 
 def _build_reason(req: PriorityRequest) -> str:
     reasons = []
+    stage_str = (req.stage or "II").upper().strip()
+    perf = req.performance_status if req.performance_status is not None else 0
+    days_visit = req.days_since_last_visit if req.days_since_last_visit is not None else 0
     if req.has_fever:
         reasons.append("Febre reportada")
     if (req.pain_score or 0) >= 7:
         reasons.append("Dor intensa reportada")
-    if req.stage.upper().strip() in ("IV", "4"):
+    if stage_str in ("IV", "4"):
         reasons.append("Estadiamento avançado")
-    if req.performance_status >= 3:
+    if perf >= 3:
         reasons.append("Performance status comprometido")
-    if req.days_since_last_visit > 45:
+    if days_visit > 45:
         reasons.append("Longo período sem consulta")
     if (req.fatigue_score or 0) >= 7:
         reasons.append("Fadiga severa")
@@ -154,44 +199,67 @@ def _build_reason(req: PriorityRequest) -> str:
 
 def _fallback_score(req: PriorityRequest) -> float:
     score = 0.0
+    stage_str = (req.stage or "II").upper().strip()
+    perf = req.performance_status if req.performance_status is not None else 0
+    days_visit = req.days_since_last_visit if req.days_since_last_visit is not None else 0
     if req.has_fever:
         score += 40  # Febre em paciente oncológico = prioridade alta
     if (req.pain_score or 0) >= 8:
         score += 30
-    if req.stage.upper().strip() in ("IV", "4"):
+    if stage_str in ("IV", "4"):
         score += 20
-    if req.performance_status >= 3:
+    if perf >= 3:
         score += 25
-    if req.days_since_last_visit > 60:
+    if days_visit > 60:
         score += 15
     if (req.fatigue_score or 0) >= 7:
         score += 10
     return min(100.0, score)
 
 
-@router.post("/prioritize", response_model=PriorityResponse)
+@router.post("/prioritize")
 async def prioritize_patient(request: PriorityRequest):
     """Calculate priority score for a single patient."""
     try:
-        if priority_model.is_trained:
-            features = _build_features(request)
-            predictions = priority_model.predict(features)
-            score = float(predictions[0])
-        else:
-            score = _fallback_score(request)
+        score = 50.0
+        try:
+            if priority_model.is_trained:
+                features = _build_features(request)
+                out = priority_model.predict_single(features)
+                disposition = out.get("disposition", "SCHEDULED_CONSULT")
+                score = DISPOSITION_TO_SCORE.get(disposition, 50.0)
+            else:
+                score = _fallback_score(request)
+        except Exception as e:
+            logger.warning("Prioritize ML/fallback failed, using heuristic: %s", e, exc_info=True)
+            try:
+                score = _fallback_score(request)
+            except Exception:
+                score = 50.0
 
-        category = priority_model.categorize_priority(score)
-        reason = _build_reason(request)
+        try:
+            category = priority_model.categorize_priority(score)
+        except Exception:
+            category = "MEDIUM"
+
+        try:
+            reason = _build_reason(request)
+        except Exception:
+            reason = "Priorização baseada em múltiplos fatores clínicos"
 
         return PriorityResponse(
             patient_id=request.patient_id,
-            priority_score=round(score, 1),
+            priority_score=round(float(score), 1),
             priority_category=category,
             reason=reason,
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Erro ao calcular prioridade: {str(e)}"
+        logger.error("Prioritize endpoint unexpected error: %s", e, exc_info=True)
+        return PriorityResponse(
+            patient_id=getattr(request, "patient_id", None),
+            priority_score=50.0,
+            priority_category="MEDIUM",
+            reason="Priorização baseada em múltiplos fatores clínicos",
         )
 
 
@@ -204,10 +272,9 @@ async def prioritize_patients_bulk(request: BulkPriorityRequest):
         results: List[PriorityResponse] = []
 
         if priority_model.is_trained and request.patients:
-            all_features = pd.concat(
-                [_build_features(p) for p in request.patients], ignore_index=True
-            )
-            predictions = priority_model.predict(all_features)
+            feature_list = [_build_features(p) for p in request.patients]
+            df = pd.DataFrame(feature_list)[FEATURE_COLUMNS]
+            predictions = priority_model.predict(df)
 
             for i, patient_req in enumerate(request.patients):
                 score = float(predictions[i])
@@ -729,15 +796,17 @@ def _analyze_patient_risk(req: PredictRiskRequest) -> List[RiskPrediction]:
                 )
 
     # --- 3. No-response risk ---
-    if req.last_interaction_days >= 5:
-        if req.last_interaction_days >= 14:
-            prob = min(1.0, 0.85 + (req.last_interaction_days - 14) * 0.01)
-            sev = "CRITICAL"
-        elif req.last_interaction_days >= 7:
-            prob = round(0.6 + (req.last_interaction_days - 7) * 0.03, 2)
+    # Só avaliar se o paciente já interagiu alguma vez (has_interacted).
+    # Threshold personalizável por paciente (min_days_no_interaction_alert); padrão = 7.
+    # Severidade nunca CRITICAL para NO_RESPONSE — no máximo HIGH.
+    no_response_threshold = req.min_days_no_interaction_alert or 7
+
+    if req.has_interacted and req.last_interaction_days >= no_response_threshold:
+        if req.last_interaction_days >= no_response_threshold * 2:
+            prob = min(1.0, 0.85 + (req.last_interaction_days - no_response_threshold * 2) * 0.01)
             sev = "HIGH"
         else:
-            prob = round(0.3 + (req.last_interaction_days - 5) * 0.1, 2)
+            prob = round(0.4 + (req.last_interaction_days - no_response_threshold) * 0.04, 2)
             sev = "MEDIUM"
 
         risks.append(
@@ -746,7 +815,10 @@ def _analyze_patient_risk(req: PredictRiskRequest) -> List[RiskPrediction]:
                 probability=min(1.0, prob),
                 severity=sev,
                 message=f"Paciente sem interação há {req.last_interaction_days} dias",
-                details={"last_interaction_days": req.last_interaction_days},
+                details={
+                    "last_interaction_days": req.last_interaction_days,
+                    "threshold_days": no_response_threshold,
+                },
             )
         )
 
@@ -819,7 +891,7 @@ def _highest_severity(risks: List[RiskPrediction]) -> str:
 
 
 @router.post("/agent/predict-risk", response_model=PredictRiskResponse)
-async def agent_predict_risk(request: PredictRiskRequest):
+async def predict_risk_agent(request: PredictRiskRequest):
     """Predict risk factors for a single patient (delays, worsening, abandonment)."""
     try:
         risks = _analyze_patient_risk(request)
@@ -833,7 +905,7 @@ async def agent_predict_risk(request: PredictRiskRequest):
 
 
 @router.post("/agent/predict-risk-bulk", response_model=BulkPredictRiskResponse)
-async def agent_predict_risk_bulk(request: BulkPredictRiskRequest):
+async def predict_risk_bulk(request: BulkPredictRiskRequest):
     """Predict risk factors for multiple patients at once (daily scheduler)."""
     try:
         results: List[PredictRiskResponse] = []
@@ -948,12 +1020,6 @@ def _build_nurse_assist_fallback(request: NurseAssistRequest) -> NurseAssistResp
 
     summary = ". ".join(parts) + "."
 
-    # last_msgs = (
-    #     request.conversation_history[-3:] if request.conversation_history else []
-    # )
-    # patient_msgs = [m for m in last_msgs if m.role == "patient"]
-    # last_patient = patient_msgs[-1].content if patient_msgs else ""
-
     replies = [
         SuggestedReply(
             label="Empática",
@@ -1010,12 +1076,13 @@ async def nurse_assist(request: NurseAssistRequest):
     AI assistant for nurses: generates conversation summary,
     suggested replies, and recommended clinical actions.
     """
+    import json
     import logging
     from ..agent.llm_provider import llm_provider
 
     logger = logging.getLogger(__name__)
 
-    if not llm_provider.api_key:
+    if not llm_provider.has_any_llm_key(None):
         return _build_nurse_assist_fallback(request)
 
     try:
@@ -1315,6 +1382,7 @@ async def patient_summary(request: PatientSummaryRequest):
     Generates an intelligent patient summary using LLM tool calling.
     Falls back to rule-based generation if LLM is unavailable.
     """
+    import json
     from ..agent.llm_provider import llm_provider
 
     steps_desc = []
@@ -1448,3 +1516,28 @@ async def health():
             "protocol_engine",
         ],
     }
+
+
+# ============================================
+# Observability
+# ============================================
+
+
+@router.get("/observability/traces")
+async def get_traces(limit: int = 50):
+    """Return the most recent agent execution traces (last N, newest first)."""
+    limit = max(1, min(limit, 500))
+    return {"traces": tracer.get_traces(limit=limit)}
+
+
+@router.get("/observability/stats")
+async def get_stats():
+    """Return aggregate statistics over all stored traces."""
+    return tracer.get_stats()
+
+
+@router.delete("/observability/traces")
+async def clear_traces():
+    """Clear all stored traces (useful for resetting during testing)."""
+    tracer._traces.clear()
+    return {"cleared": True}

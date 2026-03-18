@@ -14,16 +14,14 @@ export function ROISection({ metrics, statistics }: ROISectionProps) {
   const roiMetrics = useMemo(() => {
     // Estimativas baseadas em dados reais
     // Cada mensagem respondida pode evitar uma consulta presencial
-    const totalMessages =
-      metrics.unassumedMessagesCount + metrics.resolvedTodayCount;
+    const totalMessages = metrics.unassumedMessagesCount;
     const estimatedConsultationsAvoided = Math.floor(totalMessages * 0.3); // 30% das mensagens evitam consulta
 
-    // Tempo economizado: baseado em tempo médio de resposta
-    // Assumindo que cada alerta resolvido economiza tempo de deslocamento + espera
+    // Tempo economizado: baseado em tempo médio de resposta e alertas pendentes
     const avgResponseTimeHours = metrics.averageResponseTimeMinutes
       ? metrics.averageResponseTimeMinutes / 60
       : 0;
-    const timeSavedHours = metrics.resolvedTodayCount * avgResponseTimeHours;
+    const timeSavedHours = metrics.totalPendingAlerts * avgResponseTimeHours;
 
     // Economia estimada: cada consulta presencial custa ~R$ 150-300
     // Usando média conservadora de R$ 200 por consulta evitada

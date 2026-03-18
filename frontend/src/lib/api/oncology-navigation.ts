@@ -8,7 +8,6 @@ export interface NavigationStep {
   cancerType: string;
   journeyStage:
     | 'SCREENING'
-    | 'NAVIGATION'
     | 'DIAGNOSIS'
     | 'TREATMENT'
     | 'FOLLOW_UP';
@@ -43,7 +42,6 @@ export interface CreateNavigationStepDto {
   cancerType: string;
   journeyStage:
     | 'SCREENING'
-    | 'NAVIGATION'
     | 'DIAGNOSIS'
     | 'TREATMENT'
     | 'FOLLOW_UP';
@@ -83,9 +81,10 @@ export const oncologyNavigationApi = {
    * Obtém todas as etapas de navegação de um paciente
    */
   getPatientSteps: async (patientId: string): Promise<NavigationStep[]> => {
-    return apiClient.get<NavigationStep[]>(
+    const data = await apiClient.get<NavigationStep[] | null>(
       `/oncology-navigation/patients/${patientId}/steps`
     );
+    return data ?? [];
   },
 
   /**
@@ -95,14 +94,14 @@ export const oncologyNavigationApi = {
     patientId: string,
     journeyStage:
       | 'SCREENING'
-      | 'NAVIGATION'
       | 'DIAGNOSIS'
       | 'TREATMENT'
       | 'FOLLOW_UP'
   ): Promise<NavigationStep[]> => {
-    return apiClient.get<NavigationStep[]>(
+    const data = await apiClient.get<NavigationStep[] | null>(
       `/oncology-navigation/patients/${patientId}/steps/${journeyStage}`
     );
+    return data ?? [];
   },
 
   /**
@@ -113,7 +112,6 @@ export const oncologyNavigationApi = {
     cancerType: string,
     currentStage:
       | 'SCREENING'
-      | 'NAVIGATION'
       | 'DIAGNOSIS'
       | 'TREATMENT'
       | 'FOLLOW_UP'

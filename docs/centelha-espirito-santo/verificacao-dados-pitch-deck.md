@@ -2,8 +2,10 @@ Verificação de Dados - Pitch Deck Centelha Espírito Santo
 
 OncoSaas - Plataforma de Otimização Oncológica com IA
 
-Data da Verificação: 2024
+Data da Verificação: 2025
 Status: Análise Completa e Correções Aplicadas
+
+**Nota:** A correção WhatsApp (120+ milhões de usuários ativos no Brasil) deve estar refletida em todos os materiais de pitch e proposta.
 
 RESUMO DAS CORREÇÕES APLICADAS:
 
@@ -141,11 +143,11 @@ Fonte: Registros internos do projeto
 Observação: Depende de ter sido realizado. Se ainda não foi, qualificar como "planejado"
 Ação: Verificar se foi realizado. Se sim, OK. Se não, qualificar como "planejado" ou "em andamento"
 
-5.2. Pilotos planejados: 3-5 hospitais (Q2 2024)
+5.2. Pilotos em planejamento com instituições pioneiras
 Status: PLANEJAMENTO (precisa qualificar)
 Fonte: Roadmap do projeto
-Observação: Planejamento futuro, não realizado ainda
-Ação: Qualificar como "planejado" ou "em negociação"
+Observação: Validação com 10+ entrevistas; pilotos em planejamento/negociação
+Ação: Usar redação atual em todos os materiais (sem referência a Q2 2024)
 
 5.3. Métricas esperadas (taxa de resposta ≥60%, detecção ≥90%, etc.)
 Status: PROJEÇÕES (precisa qualificar claramente)

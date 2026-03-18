@@ -51,7 +51,7 @@ Plataforma inovadora que democratiza o acesso ao cuidado coordenado via WhatsApp
 
 - ✅ 10+ entrevistas com oncologistas, enfermeiros e gestores
 - ✅ Dores validadas: falta de coordenação, priorização manual, sobrecarga
-- 🎯 Pilotos planejados: 3-5 hospitais (Q2 2024)
+- 🎯 Validação: 10+ entrevistas; pilotos em planejamento com instituições pioneiras
 
 ## Equipe
 
@@ -62,9 +62,11 @@ Plataforma inovadora que democratiza o acesso ao cuidado coordenado via WhatsApp
 
 ## Roadmap
 
-- **Fase 1 (6 meses):** MVP + 3-5 pilotos
+- **Fase 1 (6 meses):** MVP + pilotos com instituições pioneiras
 - **Fase 2 (6 meses):** 20-30 clientes
 - **Fase 3 (6 meses):** 50-100 clientes + Certificação ANVISA
+
+*(Cronograma alinhado ao Edital 18/2025 – submissão Fase 2 jan–mar 2026.)*
 
 ## Por Que o Centelha?
 

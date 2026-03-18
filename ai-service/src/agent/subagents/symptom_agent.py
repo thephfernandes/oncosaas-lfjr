@@ -29,7 +29,7 @@ e tomar as ações clínicas adequadas.
 
 ### CRITICAL — Escalar IMEDIATAMENTE
 - Febre ≥38°C em paciente em quimioterapia (febre neutropênica)
-- Dispneia severa / dificuldade respiratória aguda
+- Dispneia severa / dificuldade respiratória aguda / Falta de ar 7/10
 - Sangramento ativo significativo
 - Dor intensa (8-10/10) não controlada
 - Vômitos incoercíveis (>24h)

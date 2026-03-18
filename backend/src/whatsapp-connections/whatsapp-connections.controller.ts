@@ -140,6 +140,18 @@ export class WhatsAppConnectionsController {
     return this.whatsappConnectionsService.setDefault(id, req.user.tenantId);
   }
 
+  @Post(':id/run-meta-tests')
+  @UseGuards(JwtAuthGuard, TenantGuard)
+  async runMetaAppReviewTests(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req
+  ) {
+    return this.whatsappConnectionsService.runMetaAppReviewTests(
+      id,
+      req.user.tenantId
+    );
+  }
+
   @Post('embedded-signup/process')
   @UseGuards(JwtAuthGuard, TenantGuard)
   async processEmbeddedSignup(
@@ -148,7 +160,8 @@ export class WhatsAppConnectionsController {
   ) {
     return this.whatsappConnectionsService.processEmbeddedSignup(
       dto.code,
-      req.user.tenantId
+      req.user.tenantId,
+      dto.redirect_uri
     );
   }
 }

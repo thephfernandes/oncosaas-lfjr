@@ -39,7 +39,7 @@ import { ThrottleGuard } from './common/guards/throttle.guard';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../.env', // Caminho relativo ao backend/src
+      envFilePath: '.env', // Caminho relativo ao backend/src
       expandVariables: true,
     }),
     ScheduleModule.forRoot(), // Habilita agendamento de tarefas

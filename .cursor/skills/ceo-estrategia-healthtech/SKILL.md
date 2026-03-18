@@ -1,5 +1,5 @@
 ---
-alwaysApply: false
+name: ceo-estrategia-healthtech
 description: CEO e estrategista de startup SaaS de healthtech. Define visão, modelos de negócio, fundraising (angel, seed, série A), parcerias estratégicas, estratégia de mercado (B2B vs B2C) e governança/compliance organizacional.
 ---
 

@@ -254,6 +254,10 @@ class PredictRiskRequest(BaseModel):
     performance_status: Optional[int] = None
     priority_score: Optional[int] = 0
     last_interaction_days: int = Field(0, description="Days since last patient interaction")
+    has_interacted: bool = Field(True, description="Whether the patient has ever interacted")
+    min_days_no_interaction_alert: Optional[int] = Field(
+        None, description="Per-patient threshold for NO_RESPONSE alert (days). Defaults to 7 if not set."
+    )
     navigation_steps: List[NavigationStepInfo] = Field(default_factory=list)
     esas_history: List[ESASScoreEntry] = Field(
         default_factory=list,

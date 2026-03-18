@@ -8,7 +8,7 @@ alwaysApply: true
 
 - **Navegação Oncológica**: Processo sistemático de coordenação e facilitação do cuidado oncológico ao longo da jornada do paciente
 - **Patient Navigation**: Modelo de cuidado onde profissional dedicado ajuda paciente a navegar pelo sistema de saúde
-- **JourneyStage**: Estágio da jornada oncológica (SCREENING, NAVIGATION, DIAGNOSIS, TREATMENT, FOLLOW_UP)
+- **JourneyStage**: Estágio da jornada oncológica (SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP). A navegação/coordenação é atividade contínua em todas as fases, não uma fase específica.
 - **NavigationStep**: Etapa específica da navegação oncológica (exame, consulta, procedimento) com prazo e status
 - **Barreiras ao Cuidado**: Obstáculos que impedem acesso ou continuidade do tratamento (financeira, transporte, conhecimento, emocional, sistema)
 - **Coordenação de Cuidados**: Integração e organização de múltiplos serviços e profissionais envolvidos no cuidado
@@ -51,12 +51,7 @@ alwaysApply: true
 - Encaminhamento para exames quando indicado
 - Acompanhamento de resultados e comunicação ao paciente
 
-**NAVIGATION (Navegação):**
-
-- Coordenação de consultas entre especialidades
-- Facilitação de segunda opinião quando solicitada
-- Navegação entre diferentes instituições de saúde
-- Resolução de problemas de acesso e agendamento
+**Em todas as fases (navegação/coordenação):** Coordenação entre especialidades, facilitação de segunda opinião, resolução de problemas de acesso e agendamento são atividades contínuas do navegador, não uma fase isolada.
 
 **DIAGNOSIS (Diagnóstico):**
 
@@ -221,7 +216,7 @@ alwaysApply: true
 **Sequência Estruturada:**
 
 1. **Avaliar Estágio Atual da Jornada:**
-   - Identificar fase atual (SCREENING, NAVIGATION, DIAGNOSIS, TREATMENT, FOLLOW_UP)
+   - Identificar fase atual (SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP)
    - Revisar histórico de etapas já concluídas
    - Identificar etapa atual e próximas etapas necessárias
 
@@ -256,7 +251,7 @@ alwaysApply: true
 PACIENTE COM SUSPEITA/CONFIRMAÇÃO DE CÂNCER
          ↓
 [AVALIAR ESTÁGIO ATUAL DA JORNADA]
-    SCREENING? NAVIGATION? DIAGNOSIS? TREATMENT? FOLLOW_UP?
+    SCREENING? DIAGNOSIS? TREATMENT? FOLLOW_UP?
          ↓
 [REVISAR ETAPAS DE NAVEGAÇÃO]
     Quais já foram concluídas?
@@ -306,14 +301,7 @@ PACIENTE COM SUSPEITA/CONFIRMAÇÃO DE CÂNCER
 - Barreiras para realizar rastreio? (financeira, acesso, medo)
 - **Buscar em @md/**: "Rastreio [tipo de câncer] indicações", "Rastreio [tipo de câncer] protocolo"
 
-**PACIENTE EM NAVIGATION (Navegação entre Especialidades):**
-
-- Qual especialidade necessária? (cirurgião, radioterapeuta, patologista)
-- Consulta já agendada? Quando?
-- Documentos necessários preparados? (exames, laudos, autorização)
-- Barreiras para consulta? (transporte, financeira, tempo de espera)
-- Segunda opinião solicitada? Como coordenar?
-- **Buscar em @md/**: "[Tipo de câncer] especialidades necessárias", "Coordenação multidisciplinar"
+**Coordenação entre especialidades (em qualquer fase):** Qual especialidade necessária? Consulta agendada? Documentos preparados? Barreiras? Segunda opinião? **Buscar em @md/**: "[Tipo de câncer] especialidades necessárias", "Coordenação multidisciplinar"
 
 **PACIENTE EM DIAGNOSIS (Diagnóstico):**
 

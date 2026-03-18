@@ -25,6 +25,8 @@ const AUTO_APPROVED_ACTIONS = new Set([
   'PROTOCOL_ALERT', // Protocol alerts go to nursing dashboard
   // Saudações: resposta rápida pré-definida, sem riscos clínicos
   'GREETING_RESPONSE',
+  // Resposta sobre próximos exames/consultas
+  'APPOINTMENT_RESPONSE',
 ]);
 
 /**
@@ -40,6 +42,9 @@ const NEEDS_APPROVAL_ACTIONS = new Set([
 
 const DECISION_TYPE_ALIASES: Record<string, AgentDecisionType> = {
   APPLY_QUESTIONNAIRE: AgentDecisionType.QUESTIONNAIRE_STARTED,
+  GREETING_HANDLED: AgentDecisionType.RESPONSE_GENERATED,
+  PRIORITY_RECALCULATED: AgentDecisionType.PRIORITY_UPDATED,
+  APPOINTMENT_QUERY_HANDLED: AgentDecisionType.RESPONSE_GENERATED,
 };
 
 const VALID_DECISION_TYPES = new Set<AgentDecisionType>(

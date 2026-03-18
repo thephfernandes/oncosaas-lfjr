@@ -3,34 +3,71 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, AlertTriangle } from 'lucide-react';
-import { type CreateMedicationDto, type MedicationCategory } from '@/lib/api/patients';
+import {
+  type CreateMedicationDto,
+  type MedicationCategory,
+} from '@/lib/api/patients';
 
-const CATEGORY_OPTIONS: { value: MedicationCategory; label: string; riskBadge?: string }[] = [
+const CATEGORY_OPTIONS: {
+  value: MedicationCategory;
+  label: string;
+  riskBadge?: string;
+}[] = [
   { value: 'ANTICOAGULANT', label: 'Anticoagulante', riskBadge: 'Sangramento' },
   { value: 'ANTIPLATELET', label: 'Antiplaquetário', riskBadge: 'Sangramento' },
-  { value: 'CORTICOSTEROID', label: 'Corticosteroide', riskBadge: 'Mascara febre' },
-  { value: 'IMMUNOSUPPRESSANT', label: 'Imunossupressor', riskBadge: 'Infecção' },
-  { value: 'NSAID', label: 'AINE (anti-inflamatório)', riskBadge: 'Sangramento GI' },
-  { value: 'OPIOID_ANALGESIC', label: 'Opioide analgésico', riskBadge: 'Sedação' },
-  { value: 'NON_OPIOID_ANALGESIC', label: 'Analgésico não-opioide', riskBadge: undefined },
+  {
+    value: 'CORTICOSTEROID',
+    label: 'Corticosteroide',
+    riskBadge: 'Mascara febre',
+  },
+  {
+    value: 'IMMUNOSUPPRESSANT',
+    label: 'Imunossupressor',
+    riskBadge: 'Infecção',
+  },
+  {
+    value: 'NSAID',
+    label: 'AINE (anti-inflamatório)',
+    riskBadge: 'Sangramento GI',
+  },
+  {
+    value: 'OPIOID_ANALGESIC',
+    label: 'Opioide analgésico',
+    riskBadge: 'Sedação',
+  },
+  {
+    value: 'NON_OPIOID_ANALGESIC',
+    label: 'Analgésico não-opioide',
+    riskBadge: undefined,
+  },
   { value: 'ANTIEMETIC', label: 'Antiemético', riskBadge: undefined },
   { value: 'ANTIBIOTIC', label: 'Antibiótico', riskBadge: undefined },
   { value: 'ANTIFUNGAL', label: 'Antifúngico', riskBadge: undefined },
   { value: 'ANTIVIRAL', label: 'Antiviral', riskBadge: undefined },
-  { value: 'ANTIHYPERTENSIVE', label: 'Anti-hipertensivo', riskBadge: undefined },
+  {
+    value: 'ANTIHYPERTENSIVE',
+    label: 'Anti-hipertensivo',
+    riskBadge: undefined,
+  },
   { value: 'ANTIDIABETIC', label: 'Antidiabético', riskBadge: undefined },
-  { value: 'BISPHOSPHONATE', label: 'Bisfosfonato / RANK-L', riskBadge: undefined },
-  { value: 'GROWTH_FACTOR', label: 'Fator de crescimento (G-CSF)', riskBadge: undefined },
-  { value: 'PROTON_PUMP_INHIBITOR', label: 'Inibidor de bomba (IBP)', riskBadge: undefined },
+  {
+    value: 'BISPHOSPHONATE',
+    label: 'Bisfosfonato / RANK-L',
+    riskBadge: undefined,
+  },
+  {
+    value: 'GROWTH_FACTOR',
+    label: 'Fator de crescimento (G-CSF)',
+    riskBadge: undefined,
+  },
+  {
+    value: 'PROTON_PUMP_INHIBITOR',
+    label: 'Inibidor de bomba (IBP)',
+    riskBadge: undefined,
+  },
   { value: 'LAXATIVE', label: 'Laxante', riskBadge: undefined },
   { value: 'OTHER', label: 'Outro', riskBadge: undefined },
 ];
@@ -56,25 +93,36 @@ export function CurrentMedicationsForm({
   const medications = Array.isArray(value) ? value : [];
 
   const addMedication = () => {
-    onChange([...medications, { name: '', category: 'OTHER' as MedicationCategory }]);
+    onChange([
+      ...medications,
+      { name: '', category: 'OTHER' as MedicationCategory },
+    ]);
   };
 
-  const update = (index: number, field: keyof CreateMedicationDto, val: string) => {
+  const update = (
+    index: number,
+    field: keyof CreateMedicationDto,
+    val: string
+  ) => {
     const updated = [...medications];
     updated[index] = { ...updated[index], [field]: val };
     onChange(updated);
   };
 
   const remove = (index: number) => {
-    const updated = medications.filter((_, i) => i !== index);
-    onChange(updated);
+    onChange(medications.filter((_, i) => i !== index));
   };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label>Medicamentos em uso</Label>
-        <Button type="button" variant="outline" size="sm" onClick={addMedication}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addMedication}
+        >
           <Plus className="h-4 w-4 mr-1" />
           Adicionar
         </Button>
@@ -82,13 +130,18 @@ export function CurrentMedicationsForm({
 
       {medications.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nenhum medicamento adicionado. Clique em &quot;Adicionar&quot; para incluir.
+          Nenhum medicamento adicionado. Clique em &quot;Adicionar&quot; para
+          incluir.
         </p>
       ) : (
         <div className="space-y-3">
           {medications.map((med, index) => {
-            const isRisky = RISK_CATEGORIES.includes(med.category as MedicationCategory);
-            const categoryInfo = CATEGORY_OPTIONS.find((c) => c.value === med.category);
+            const isRisky = RISK_CATEGORIES.includes(
+              med.category as MedicationCategory
+            );
+            const categoryInfo = CATEGORY_OPTIONS.find(
+              (c) => c.value === med.category
+            );
 
             return (
               <div
@@ -109,21 +162,16 @@ export function CurrentMedicationsForm({
                     </div>
                     <div>
                       <Label className="text-xs">Categoria clínica *</Label>
-                      <Select
+                      <SearchableSelect
+                        options={CATEGORY_OPTIONS.map((o) => ({
+                          value: o.value,
+                          label: o.label,
+                        }))}
                         value={med.category ?? 'OTHER'}
-                        onValueChange={(v) => update(index, 'category', v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORY_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => update(index, 'category', v)}
+                        placeholder="Buscar categoria..."
+                        aria-label="Categoria clínica do medicamento"
+                      />
                     </div>
                   </div>
 
@@ -131,7 +179,10 @@ export function CurrentMedicationsForm({
                     <div className="flex items-center gap-1 text-amber-700 text-xs">
                       <AlertTriangle className="h-3 w-3" />
                       <span>Risco clínico: {categoryInfo.riskBadge}</span>
-                      <Badge variant="outline" className="text-xs ml-1 border-amber-400 text-amber-700">
+                      <Badge
+                        variant="outline"
+                        className="text-xs ml-1 border-amber-400 text-amber-700"
+                      >
                         Sinalizado para algoritmo de risco
                       </Badge>
                     </div>
@@ -143,7 +194,9 @@ export function CurrentMedicationsForm({
                       <Input
                         placeholder="Ex: 50 mg"
                         value={med.dosage ?? ''}
-                        onChange={(e) => update(index, 'dosage', e.target.value)}
+                        onChange={(e) =>
+                          update(index, 'dosage', e.target.value)
+                        }
                       />
                     </div>
                     <div>
@@ -151,7 +204,9 @@ export function CurrentMedicationsForm({
                       <Input
                         placeholder="Ex: 1x/dia, 12/12h"
                         value={med.frequency ?? ''}
-                        onChange={(e) => update(index, 'frequency', e.target.value)}
+                        onChange={(e) =>
+                          update(index, 'frequency', e.target.value)
+                        }
                       />
                     </div>
                     <div>
@@ -159,7 +214,9 @@ export function CurrentMedicationsForm({
                       <Input
                         placeholder="Ex: HAS, DM2, Dor"
                         value={med.indication ?? ''}
-                        onChange={(e) => update(index, 'indication', e.target.value)}
+                        onChange={(e) =>
+                          update(index, 'indication', e.target.value)
+                        }
                       />
                     </div>
                   </div>

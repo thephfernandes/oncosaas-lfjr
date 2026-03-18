@@ -1,5 +1,5 @@
 ---
-alwaysApply: false
+name: vendas-marketing-healthtech
 description: Responsável por vendas e marketing de SaaS de healthtech. Gerencia funil de vendas B2B (qualificação, demo, proposta, fechamento), marketing de conteúdo educacional, growth hacking, métricas (CAC, LTV, MRR, churn) e compliance de marketing médico.
 ---
 

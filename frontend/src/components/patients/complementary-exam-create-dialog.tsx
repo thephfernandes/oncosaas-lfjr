@@ -98,7 +98,10 @@ export function ComplementaryExamCreateDialog({
 
   const examType = useWatch({ control: form.control, name: 'type' });
   const searchQuery = useWatch({ control: form.control, name: 'name' });
-  const catalogOptions = filterCatalogByTypeAndSearch(examType, searchQuery ?? '');
+  const catalogOptions = filterCatalogByTypeAndSearch(
+    examType,
+    searchQuery ?? ''
+  );
 
   const createMutation = useMutation({
     mutationFn: async (data: CreateComplementaryExamFormData) => {
@@ -119,7 +122,7 @@ export function ComplementaryExamCreateDialog({
       if (hasInitialResult && ir) {
         const performedAt =
           (ir.performedAt ?? '').trim() !== ''
-            ? new Date(ir.performedAt).toISOString()
+            ? new Date(ir.performedAt!).toISOString()
             : new Date().toISOString();
         await patientsApi.createComplementaryExamResult(patientId, exam.id, {
           performedAt,
@@ -241,9 +244,9 @@ export function ComplementaryExamCreateDialog({
                       <FormControl>
                         <div className="relative">
                           <Input
-                            ref={inputRef}
                             placeholder="Pesquisar por nome ou código..."
                             {...field}
+                            ref={inputRef}
                             onChange={(e) => field.onChange(e.target.value)}
                             onFocus={() => setComboboxOpen(true)}
                             className="pr-8"
@@ -260,11 +263,14 @@ export function ComplementaryExamCreateDialog({
                       <ul className="max-h-48 overflow-auto py-1">
                         {catalogOptions.length === 0 ? (
                           <li className="px-3 py-2 text-sm text-muted-foreground">
-                            Nenhum exame encontrado. Digite para buscar ou use um nome livre.
+                            Nenhum exame encontrado. Digite para buscar ou use
+                            um nome livre.
                           </li>
                         ) : (
                           catalogOptions.map((entry) => (
-                            <li key={`${entry.type}-${entry.name}-${entry.code ?? ''}`}>
+                            <li
+                              key={`${entry.type}-${entry.name}-${entry.code ?? ''}`}
+                            >
                               <button
                                 type="button"
                                 className={cn(
@@ -275,7 +281,9 @@ export function ComplementaryExamCreateDialog({
                                 {catalogDisplayLabel(entry)}
                                 {(entry.unit || entry.referenceRange) && (
                                   <span className="block text-xs text-muted-foreground mt-0.5">
-                                    {[entry.unit, entry.referenceRange].filter(Boolean).join(' · ')}
+                                    {[entry.unit, entry.referenceRange]
+                                      .filter(Boolean)
+                                      .join(' · ')}
                                   </span>
                                 )}
                               </button>
@@ -319,7 +327,9 @@ export function ComplementaryExamCreateDialog({
 
             {/* Resultado inicial (opcional) */}
             <div className="space-y-3 pt-2 border-t">
-              <h4 className="text-sm font-medium">Resultado inicial (opcional)</h4>
+              <h4 className="text-sm font-medium">
+                Resultado inicial (opcional)
+              </h4>
               <FormField
                 control={form.control}
                 name="initialResult.performedAt"

@@ -37,7 +37,7 @@ O banco utiliza uma abordagem **híbrida** de multi-tenancy:
 - Campos principais:
   - Dados básicos: nome, CPF, data nascimento, telefone, email
   - Dados oncológicos: tipo de câncer, estágio, data diagnóstico
-  - Jornada: `currentStage` (SCREENING, NAVIGATION, DIAGNOSIS, TREATMENT, FOLLOW_UP)
+  - Jornada: `currentStage` (SCREENING, DIAGNOSIS, TREATMENT, FOLLOW_UP)
   - Priorização IA: `priorityScore` (0-100), `priorityCategory` (CRITICAL, HIGH, MEDIUM, LOW)
   - Status: `ACTIVE`, `IN_TREATMENT`, `FOLLOW_UP`, `COMPLETED`, `DECEASED`, `INACTIVE`
 

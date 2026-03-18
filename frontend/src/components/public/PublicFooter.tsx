@@ -61,7 +61,7 @@ export const PublicFooter: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Phone className="h-4 w-4 shrink-0" />
-                  <span>(27) 99999-0000</span>
+                  <span>(27) 99611-5345</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4 shrink-0" />

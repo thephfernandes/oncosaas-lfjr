@@ -22,9 +22,68 @@ import { Button } from '@/components/ui/button';
 interface PatientDetailsProps {
   patient: Patient | null;
   isLoading?: boolean;
+  /** Oculta a secção de score de priorização (para usar noutro lugar, ex.: painel lateral do chat) */
+  hidePrioritySection?: boolean;
+  /** Oculta o painel de etapas da navegação oncológica */
+  hideNavigationPanel?: boolean;
 }
 
-export function PatientDetails({ patient, isLoading }: PatientDetailsProps) {
+const getPriorityColor = (category: string) => {
+  switch (category?.toUpperCase()) {
+    case 'CRITICAL':
+      return 'text-red-600 bg-red-50 border-red-200';
+    case 'HIGH':
+      return 'text-orange-600 bg-orange-50 border-orange-200';
+    case 'MEDIUM':
+      return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+    case 'LOW':
+      return 'text-green-600 bg-green-50 border-green-200';
+    default:
+      return 'text-gray-600 bg-gray-50 border-gray-200';
+  }
+};
+
+/** Secção de priorização (score + categoria + razão) para uso em accordions ou painéis */
+export function PatientPrioritySection({ patient }: { patient: Patient | null }) {
+  if (!patient) return null;
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Score de Prioridade</span>
+          <span className="font-bold text-lg">{patient.priorityScore || 0}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Categoria</span>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(
+              patient.priorityCategory || 'MEDIUM'
+            )}`}
+          >
+            {(patient.priorityCategory || 'MEDIUM').toUpperCase()}
+          </span>
+        </div>
+      </div>
+      {patient.priorityReason && (
+        <div className="border-t pt-4">
+          <h3 className="font-semibold text-gray-700 mb-2">
+            Razão da Priorização
+          </h3>
+          <p className="text-sm text-gray-600 whitespace-pre-wrap">
+            {patient.priorityReason}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function PatientDetails({
+  patient,
+  isLoading,
+  hidePrioritySection = false,
+  hideNavigationPanel = false,
+}: PatientDetailsProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   if (isLoading) {
     return (
@@ -49,21 +108,6 @@ export function PatientDetails({ patient, isLoading }: PatientDetailsProps) {
       </div>
     );
   }
-
-  const getPriorityColor = (category: string) => {
-    switch (category?.toUpperCase()) {
-      case 'CRITICAL':
-        return 'text-red-600 bg-red-50 border-red-200';
-      case 'HIGH':
-        return 'text-orange-600 bg-orange-50 border-orange-200';
-      case 'MEDIUM':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'LOW':
-        return 'text-green-600 bg-green-50 border-green-200';
-      default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
 
   const calculateAge = (birthDate: string | null) => {
     if (!birthDate) return '—';
@@ -167,13 +211,11 @@ export function PatientDetails({ patient, isLoading }: PatientDetailsProps) {
           <p className="text-sm text-gray-500">Fase Atual</p>
           <p className="font-semibold capitalize">
             {patient.currentStage === 'SCREENING' && '🔍 Em Rastreio'}
-            {patient.currentStage === 'NAVIGATION' && '🧭 Navegação'}
             {patient.currentStage === 'DIAGNOSIS' && '📋 Diagnóstico'}
             {patient.currentStage === 'TREATMENT' && '💊 Tratamento'}
             {patient.currentStage === 'FOLLOW_UP' && '📅 Seguimento'}
             {![
               'SCREENING',
-              'NAVIGATION',
               'DIAGNOSIS',
               'TREATMENT',
               'FOLLOW_UP',
@@ -362,61 +404,35 @@ export function PatientDetails({ patient, isLoading }: PatientDetailsProps) {
         )}
       </div>
 
-      {/* Score de Prioridade */}
-      <div className="border-t pt-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-gray-700 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            Priorização
-          </h3>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Score de Prioridade</span>
-            <span className="font-bold text-lg">
-              {patient.priorityScore || 0}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Categoria</span>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(
-                patient.priorityCategory || 'MEDIUM'
-              )}`}
-            >
-              {(patient.priorityCategory || 'MEDIUM').toUpperCase()}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Informações Adicionais */}
-      {patient.priorityReason && (
+      {/* Score de Prioridade (opcional) */}
+      {!hidePrioritySection && (
         <div className="border-t pt-4">
-          <h3 className="font-semibold text-gray-700 mb-2">
-            Razão da Priorização
-          </h3>
-          <p className="text-sm text-gray-600 whitespace-pre-wrap">
-            {patient.priorityReason}
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Priorização
+            </h3>
+          </div>
+          <PatientPrioritySection patient={patient} />
         </div>
       )}
 
-      {/* Painel de Navegação Oncológica */}
-      {(patient.cancerType ||
-        (patient.cancerDiagnoses && patient.cancerDiagnoses.length > 0)) && (
-        <div id="oncology-navigation-panel" className="border-t pt-4">
-          <OncologyNavigationPanel
-            patientId={patient.id}
-            cancerType={
-              patient.cancerDiagnoses && patient.cancerDiagnoses.length > 0
-                ? patient.cancerDiagnoses[0].cancerType.toLowerCase()
-                : patient.cancerType?.toLowerCase() || null
-            }
-            currentStage={patient.currentStage}
-          />
-        </div>
-      )}
+      {/* Painel de Navegação Oncológica (opcional) */}
+      {!hideNavigationPanel &&
+        (patient.cancerType ||
+          (patient.cancerDiagnoses && patient.cancerDiagnoses.length > 0)) && (
+          <div id="oncology-navigation-panel" className="border-t pt-4">
+            <OncologyNavigationPanel
+              patientId={patient.id}
+              cancerType={
+                patient.cancerDiagnoses && patient.cancerDiagnoses.length > 0
+                  ? patient.cancerDiagnoses[0].cancerType.toLowerCase()
+                  : patient.cancerType?.toLowerCase() || null
+              }
+              currentStage={patient.currentStage}
+            />
+          </div>
+        )}
 
       <PatientEditDialog
         open={isEditDialogOpen}

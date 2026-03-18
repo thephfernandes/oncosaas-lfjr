@@ -22,7 +22,7 @@ export const csvRowSchema = z.object({
   oncologistaResponsavel: z.string().optional(),
   // Campo opcional para especificar o estágio da jornada
   currentStage: z
-    .enum(['SCREENING', 'NAVIGATION', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'])
+    .enum(['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'])
     .optional(),
 });
 

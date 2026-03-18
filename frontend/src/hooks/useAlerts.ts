@@ -1,10 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { alertsApi, Alert, CreateAlertDto } from '@/lib/api/alerts';
 
-export const useAlerts = (status?: Alert['status']) => {
+export const useAlerts = (
+  status?: Alert['status'],
+  patientId?: string | null
+) => {
   return useQuery({
-    queryKey: ['alerts', status],
-    queryFn: () => alertsApi.getAll(status),
+    queryKey: ['alerts', status, patientId ?? undefined],
+    queryFn: () => alertsApi.getAll(status, patientId ?? undefined),
+    // Sem patientId: busca todos. Com patientId: só busca se for string (paciente selecionado).
+    enabled: patientId === undefined ? true : !!patientId,
     staleTime: 1 * 60 * 1000, // 1 minuto (dados mais dinâmicos)
   });
 };

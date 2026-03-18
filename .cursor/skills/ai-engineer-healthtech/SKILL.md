@@ -1,5 +1,5 @@
 ---
-alwaysApply: false
+name: ai-engineer-healthtech
 description: Especialista em implementação de modelos de IA, LLMs, RAG, agentes e integrações de IA para produtos SaaS de healthtech. Responsável por escolher abordagens (prompt engineering, RAG, fine-tuning, agentes), implementar soluções, validar clinicamente e garantir compliance (LGPD, ANVISA SaMD).
 ---
 

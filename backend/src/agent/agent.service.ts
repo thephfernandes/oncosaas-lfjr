@@ -180,12 +180,47 @@ export class AgentService {
     }
 
     // 11. Send response to patient
-    if (aiResponse.response) {
+    const responseText =
+      aiResponse.response && aiResponse.response.trim().length > 0
+        ? aiResponse.response
+        : 'Sua mensagem foi registrada. Um membro da equipe de enfermagem será notificado para dar continuidade ao seu atendimento.';
+
+    if (!aiResponse.response || aiResponse.response.trim().length === 0) {
+      this.logger.warn(
+        `AI service returned empty response for conversation ${conversationId}. Using fallback.`
+      );
+    }
+
+    try {
       const symptomAnalysis = aiResponse.symptomAnalysis as
         | { structuredData?: unknown; structured_data?: unknown }
         | undefined;
+      const baseStructured = (symptomAnalysis?.structuredData ??
+        symptomAnalysis?.structured_data ?? {}) as Record<string, any>;
+
+      // Enrich structuredData with symptoms from RECORD_SYMPTOM decisions
+      const symptoms: Record<string, number> = {
+        ...(baseStructured.symptoms || {}),
+      };
+      for (const d of autoApproved) {
+        if (d?.outputAction?.type === 'RECORD_SYMPTOM') {
+          const { display, value } = d.outputAction.payload || {};
+          if (display) {
+            const severityMap: Record<string, number> = {
+              LOW: 3,
+              MEDIUM: 5,
+              HIGH: 8,
+              CRITICAL: 10,
+            };
+            symptoms[display] = severityMap[value] || 5;
+          }
+        }
+      }
       const structuredData =
-        symptomAnalysis?.structuredData ?? symptomAnalysis?.structured_data;
+        Object.keys(symptoms).length > 0
+          ? { ...baseStructured, symptoms }
+          : baseStructured;
+
       const alertTriggered = autoApproved.some(
         (d) =>
           d?.outputAction?.type === 'CREATE_LOW_ALERT' ||
@@ -194,7 +229,7 @@ export class AgentService {
       await this.channelGateway.sendMessage(
         patientId,
         tenantId,
-        aiResponse.response,
+        responseText,
         conversation.channel,
         conversationId,
         {
@@ -202,6 +237,11 @@ export class AgentService {
           structuredData: structuredData as unknown,
           alertTriggered,
         }
+      );
+    } catch (sendError) {
+      this.logger.error(
+        `Failed to send agent response for conversation ${conversationId}`,
+        sendError instanceof Error ? sendError.stack : String(sendError)
       );
     }
 
@@ -384,7 +424,7 @@ export class AgentService {
               }
             : null,
         }),
-        signal: AbortSignal.timeout(30000), // 30s timeout
+        signal: AbortSignal.timeout(120_000), // 120s timeout — multi-agent pipeline can be slow
       });
 
       if (!response.ok) {
@@ -544,6 +584,7 @@ export class AgentService {
         case 'CONTINUE_QUESTIONNAIRE':
         case 'PROTOCOL_ALERT':
         case 'RESPOND_TO_QUESTION':
+        case 'GREETING_RESPONSE':
           // These are handled by the orchestrator response or are informational
           this.logger.debug(`Action handled by orchestrator: ${actionType}`);
           break;
@@ -612,6 +653,36 @@ export class AgentService {
     this.priorityRecalculationService.triggerRecalculation(patientId, tenantId);
   }
 
+  private mapToAlertType(agentType: string): string {
+    const mapping: Record<string, string> = {
+      AI_DETECTED_ALERT: 'CRITICAL_SYMPTOM',
+      NURSING_ESCALATION: 'SYMPTOM_WORSENING',
+      SYMPTOM_ALERT: 'CRITICAL_SYMPTOM',
+      PAIN_ALERT: 'CRITICAL_SYMPTOM',
+      EMERGENCY_ALERT: 'CRITICAL_SYMPTOM',
+    };
+    // If the agent already returns a valid AlertType, use it directly
+    const validTypes = [
+      'CRITICAL_SYMPTOM',
+      'NO_RESPONSE',
+      'DELAYED_APPOINTMENT',
+      'SCORE_CHANGE',
+      'SYMPTOM_WORSENING',
+      'NAVIGATION_DELAY',
+      'MISSING_EXAM',
+      'STAGING_INCOMPLETE',
+      'TREATMENT_DELAY',
+      'FOLLOW_UP_OVERDUE',
+      'PALLIATIVE_SYMPTOM_WORSENING',
+      'PALLIATIVE_MEDICATION_ADJUSTMENT',
+      'PALLIATIVE_FAMILY_SUPPORT',
+      'PALLIATIVE_PSYCHOSOCIAL',
+      'QUESTIONNAIRE_ALERT',
+    ];
+    if (validTypes.includes(agentType)) {return agentType;}
+    return mapping[agentType] || 'CRITICAL_SYMPTOM';
+  }
+
   private async createAlert(
     decision: any,
     tenantId: string,
@@ -625,15 +696,16 @@ export class AgentService {
       return;
     }
 
+    const mappedType = this.mapToAlertType(type);
     this.logger.log(
-      `Creating alert: type=${type} severity=${severity} patientId=${patientId}`
+      `Creating alert: type=${type} → ${mappedType} severity=${severity} patientId=${patientId}`
     );
 
     const alert = await this.prisma.alert.create({
       data: {
         tenantId,
         patientId,
-        type,
+        type: mappedType as any,
         severity,
         message,
         context: decision.inputData,
@@ -714,7 +786,7 @@ export class AgentService {
     }
 
     await this.prisma.treatment.update({
-      where: { id: treatmentId },
+      where: { id: treatmentId, tenantId },
       data: {
         status: newStatus,
         notes: reason
@@ -781,7 +853,7 @@ export class AgentService {
 
     // Escalate the conversation to nursing/specialist
     await this.prisma.conversation.update({
-      where: { id: conversationId },
+      where: { id: conversationId, tenantId },
       data: {
         handledBy: 'NURSING',
         status: 'WAITING',
@@ -1353,5 +1425,46 @@ export class AgentService {
       })),
       used_llm: false,
     };
+  }
+
+  // ==========================================
+  // OBSERVABILITY PROXY
+  // ==========================================
+
+  private getAiServiceUrl(): string {
+    return this.configService.get<string>('AI_SERVICE_URL') || 'http://localhost:8001';
+  }
+
+  async getObservabilityTraces(limit = 50): Promise<any> {
+    try {
+      const url = `${this.getAiServiceUrl()}/api/v1/observability/traces?limit=${limit}`;
+      const response = await fetch(url);
+      return response.json();
+    } catch (error) {
+      this.logger.error(`Failed to fetch observability traces: ${error.message}`);
+      return { traces: [] };
+    }
+  }
+
+  async getObservabilityStats(): Promise<any> {
+    try {
+      const url = `${this.getAiServiceUrl()}/api/v1/observability/stats`;
+      const response = await fetch(url);
+      return response.json();
+    } catch (error) {
+      this.logger.error(`Failed to fetch observability stats: ${error.message}`);
+      return { total_traces: 0 };
+    }
+  }
+
+  async clearObservabilityTraces(): Promise<any> {
+    try {
+      const url = `${this.getAiServiceUrl()}/api/v1/observability/traces`;
+      const response = await fetch(url, { method: 'DELETE' });
+      return response.json();
+    } catch (error) {
+      this.logger.error(`Failed to clear observability traces: ${error.message}`);
+      return { cleared: false };
+    }
   }
 }

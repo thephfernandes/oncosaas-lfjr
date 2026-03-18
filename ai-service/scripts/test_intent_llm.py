@@ -3,8 +3,8 @@ import logging
 import os
 import sys
 from pathlib import Path
-from src.agent.intent_classifier import intent_classifier, CONFIDENCE_THRESHOLD_LLM
 from dotenv import load_dotenv
+from src.agent.intent_classifier import intent_classifier, CONFIDENCE_THRESHOLD_LLM
 
 """
 Script para testar se o Intent Classifier chama a LLM no fallback.
@@ -14,14 +14,12 @@ Mensagens ambíguas (baixa confiança no regex) devem acionar a LLM.
 AI_SERVICE_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = AI_SERVICE_ROOT.parent
 sys.path.insert(0, str(AI_SERVICE_ROOT))
-
 load_dotenv(REPO_ROOT / ".env")
 load_dotenv(AI_SERVICE_ROOT / ".env")
 
 # Logs visíveis para ver "Intent LLM fallback"
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
-
 
 def build_agent_config() -> dict:
     anthropic_key = os.getenv("ANTHROPIC_API_KEY", "").strip()

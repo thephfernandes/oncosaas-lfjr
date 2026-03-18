@@ -1,12 +1,12 @@
+"""CLI interativa para conversar com o agente como se fosse um paciente."""
+
 import asyncio
 import json
 import os
 import sys
 from pathlib import Path
-from src.agent.orchestrator import orchestrator
-from dotenv import load_dotenv
 
-"""CLI interativa para conversar com o agente como se fosse um paciente."""
+from dotenv import load_dotenv
 
 # Permite executar via `python ai-service/scripts/chat_patient_agent.py`
 AI_SERVICE_ROOT = Path(__file__).resolve().parents[1]
@@ -16,7 +16,7 @@ sys.path.insert(0, str(AI_SERVICE_ROOT))
 # Carrega variáveis do .env da raiz do repositório
 load_dotenv(REPO_ROOT / ".env")
 
-
+from src.agent.orchestrator import orchestrator
 
 
 def resolve_llm_config() -> dict:

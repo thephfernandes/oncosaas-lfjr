@@ -23,7 +23,12 @@ import {
   createPatientSchema,
   CreatePatientFormData,
 } from '@/lib/validations/patient';
-import { patientsApi, CreatePatientDto } from '@/lib/api/patients';
+import {
+  patientsApi,
+  CreatePatientDto,
+  type ComorbiditySeverity,
+} from '@/lib/api/patients';
+import { getTreatmentOptionsForCancerType } from '@/lib/utils/patient-cancer-type';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -63,6 +68,7 @@ export function PatientCreateDialog({
       cancerType: undefined,
       currentStage: 'SCREENING',
       performanceStatus: undefined,
+      currentTreatment: '',
       phone: '',
     },
   });
@@ -74,6 +80,16 @@ export function PatientCreateDialog({
   const comorbidities = useWatch({ control, name: 'comorbidities' });
   const currentMedications = useWatch({ control, name: 'currentMedications' });
   const familyHistory = useWatch({ control, name: 'familyHistory' });
+  const currentTreatment = useWatch({ control, name: 'currentTreatment' });
+
+  const needsDiagnosisFields =
+    currentStage === 'TREATMENT' || currentStage === 'FOLLOW_UP';
+  const needsTreatmentField =
+    currentStage === 'TREATMENT' || currentStage === 'FOLLOW_UP';
+  const treatmentOptions = getTreatmentOptionsForCancerType(
+    cancerType ?? null,
+    currentStage === 'TREATMENT'
+  );
 
   const createPatientMutation = useMutation({
     mutationFn: (data: CreatePatientDto) => patientsApi.create(data),
@@ -90,49 +106,67 @@ export function PatientCreateDialog({
   });
 
   const onSubmit = (data: CreatePatientFormData) => {
+    // Helper: filtra array e retorna undefined se vazio
+    const filterNonEmpty = <T,>(
+      arr: T[] | undefined,
+      predicate: (item: T) => boolean
+    ): T[] | undefined => {
+      if (!arr || arr.length === 0) return undefined;
+      const filtered = arr.filter(predicate);
+      return filtered.length > 0 ? filtered : undefined;
+    };
+
+    const filteredFamilyHistory = filterNonEmpty(
+      data.familyHistory,
+      (h) =>
+        (h.relationship?.trim().length ?? 0) > 0 &&
+        (h.cancerType?.trim().length ?? 0) > 0
+    )?.map((h) => ({
+      relationship: h.relationship!,
+      cancerType: h.cancerType!,
+      ageAtDiagnosis: h.ageAtDiagnosis,
+    }));
+
     // Mapear dados do formulário para o formato esperado pelo backend
-    const patientData = {
+    const patientData: CreatePatientDto = {
       name: data.name,
-      cpf: data.cpf,
+      cpf: data.cpf || undefined,
       birthDate: data.birthDate,
       gender: data.gender,
       phone: data.phone,
       email: data.email || undefined,
       cancerType: data.cancerType,
-      stage: data.stage,
+      stage: data.stage || undefined,
+      diagnosisDate: data.diagnosisDate || undefined,
       currentStage: data.currentStage || 'SCREENING',
       smokingHistory: data.smokingHistory || undefined,
       alcoholHistory: data.alcoholHistory || undefined,
       occupationalExposure: data.occupationalExposure || undefined,
-      comorbidities:
-        data.comorbidities && data.comorbidities.length > 0
-          ? data.comorbidities.filter(
-              (c: any) => c.name && c.name.trim().length > 0
-            )
-          : undefined,
-      familyHistory:
-        data.familyHistory && data.familyHistory.length > 0
-          ? data.familyHistory.filter(
-              (h: any) =>
-                h.relationship &&
-                h.relationship.trim().length > 0 &&
-                h.cancerType &&
-                h.cancerType.trim().length > 0
-            )
-          : undefined,
-      currentMedications:
-        data.currentMedications && data.currentMedications.length > 0
-          ? data.currentMedications.filter(
-              (m: any) => m.name && m.name.trim().length > 0
-            )
-          : undefined,
+      familyHistory: filteredFamilyHistory,
+      comorbidities: filterNonEmpty(
+        data.comorbidities,
+        (c) => (c.name?.trim().length ?? 0) > 0
+      )?.map((c) => ({
+        name: c.name!,
+        severity: c.severity as ComorbiditySeverity | undefined,
+        controlled: c.controlled,
+      })),
+      currentMedications: filterNonEmpty(
+        data.currentMedications,
+        (m) => (m.name?.trim().length ?? 0) > 0
+      )?.map((m) => ({
+        name: m.name!,
+        dosage: m.dosage,
+        frequency: m.frequency,
+      })),
       performanceStatus:
         data.performanceStatus !== undefined && data.performanceStatus !== null
           ? data.performanceStatus
           : undefined,
-      ehrId: data.ehrPatientId,
+      currentTreatment: data.currentTreatment?.trim() || undefined,
+      ehrId: data.ehrPatientId || undefined,
     };
-    createPatientMutation.mutate(patientData as unknown as CreatePatientDto);
+    createPatientMutation.mutate(patientData);
   };
 
   const handleNext = () => {
@@ -283,13 +317,48 @@ export function PatientCreateDialog({
           {/* Etapa 2: Dados Oncológicos */}
           {currentStep === 2 && (
             <div className="space-y-4">
+              {/* Estágio da Jornada primeiro — define quais campos aparecem */}
               <div>
-                <label className="text-sm font-medium">Tipo de Câncer *</label>
+                <label className="text-sm font-medium">
+                  Estágio da Jornada *
+                </label>
+                <Select
+                  value={currentStage}
+                  onValueChange={(value) => {
+                    setValue('currentStage', value as any);
+                    if (value !== 'TREATMENT' && value !== 'FOLLOW_UP') {
+                      setValue('currentTreatment', '', {
+                        shouldValidate: true,
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o estágio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SCREENING">Rastreio</SelectItem>
+                    <SelectItem value="DIAGNOSIS">Diagnóstico</SelectItem>
+                    <SelectItem value="TREATMENT">Tratamento</SelectItem>
+                    <SelectItem value="FOLLOW_UP">Seguimento</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Tipo de Câncer — obrigatório quando em Tratamento ou Seguimento */}
+              <div>
+                <label className="text-sm font-medium">
+                  Tipo de Câncer{' '}
+                  {needsDiagnosisFields && (
+                    <span className="text-red-600">*</span>
+                  )}
+                </label>
                 <Select
                   value={cancerType}
-                  onValueChange={(value) =>
-                    setValue('cancerType', value as any)
-                  }
+                  onValueChange={(value) => {
+                    setValue('cancerType', value as any);
+                    setValue('currentTreatment', '', { shouldValidate: true });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo de câncer" />
@@ -312,115 +381,120 @@ export function PatientCreateDialog({
                 )}
               </div>
 
-              <div>
-                <label className="text-sm font-medium">
-                  Estágio TNM ou Estágio
-                </label>
-                <Input
-                  {...register('stage')}
-                  placeholder="Ex: T2N1M0 ou Estágio II"
-                />
-              </div>
+              {/* Campos de diagnóstico: só em Tratamento ou Seguimento */}
+              {needsDiagnosisFields && (
+                <>
+                  <div>
+                    <label className="text-sm font-medium">
+                      Estágio TNM ou Estágio *
+                    </label>
+                    <Input
+                      {...register('stage')}
+                      placeholder="Ex: T2N1M0 ou Estágio II"
+                    />
+                  </div>
 
-              <div>
-                <label className="text-sm font-medium">
-                  Data do Diagnóstico{' '}
-                  {currentStage !== 'SCREENING' && (
-                    <span className="text-red-600">*</span>
-                  )}
-                </label>
-                <Input
-                  type="date"
-                  {...register('diagnosisDate')}
-                  required={currentStage !== 'SCREENING'}
-                />
-                {errors.diagnosisDate && (
-                  <p className="text-sm text-destructive mt-1">
-                    {errors.diagnosisDate.message}
-                  </p>
-                )}
-                {currentStage === 'SCREENING' && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Opcional para pacientes em rastreio
-                  </p>
-                )}
-              </div>
+                  <div>
+                    <label className="text-sm font-medium">
+                      Data do Diagnóstico *
+                    </label>
+                    <Input type="date" {...register('diagnosisDate')} />
+                    {errors.diagnosisDate && (
+                      <p className="text-sm text-destructive mt-1">
+                        {errors.diagnosisDate.message}
+                      </p>
+                    )}
+                  </div>
 
-              <div>
-                <label className="text-sm font-medium">
-                  Performance Status - ECOG (0-4)
-                </label>
-                <Select
-                  value={
-                    performanceStatus !== null &&
-                    performanceStatus !== undefined
-                      ? String(performanceStatus)
-                      : ''
-                  }
-                  onValueChange={(value) => {
-                    if (value === '' || value === undefined) {
-                      setValue('performanceStatus', undefined, {
-                        shouldValidate: true,
-                      });
-                    } else {
-                      const numValue = parseInt(value, 10);
-                      if (!isNaN(numValue)) {
-                        setValue('performanceStatus', numValue, {
-                          shouldValidate: true,
-                        });
+                  <div>
+                    <label className="text-sm font-medium">
+                      Performance Status - ECOG (0-4) *
+                    </label>
+                    <Select
+                      value={
+                        performanceStatus !== null &&
+                        performanceStatus !== undefined
+                          ? String(performanceStatus)
+                          : ''
                       }
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o ECOG" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">0 - Ativo, sem restrições</SelectItem>
-                    <SelectItem value="1">
-                      1 - Restrição a atividades extenuantes
-                    </SelectItem>
-                    <SelectItem value="2">
-                      2 - Capaz de autocuidado, incapaz de trabalhar
-                    </SelectItem>
-                    <SelectItem value="3">
-                      3 - Autocuidado limitado, confinado ao leito/cadeira
-                      &gt;50%
-                    </SelectItem>
-                    <SelectItem value="4">
-                      4 - Completamente incapaz, confinado ao leito
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.performanceStatus && (
-                  <p className="text-sm text-destructive mt-1">
-                    {errors.performanceStatus.message}
-                  </p>
-                )}
-              </div>
+                      onValueChange={(value) => {
+                        if (value === '' || value === undefined) {
+                          setValue('performanceStatus', undefined, {
+                            shouldValidate: true,
+                          });
+                        } else {
+                          const numValue = parseInt(value, 10);
+                          if (!isNaN(numValue)) {
+                            setValue('performanceStatus', numValue, {
+                              shouldValidate: true,
+                            });
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o ECOG" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">
+                          0 - Ativo, sem restrições
+                        </SelectItem>
+                        <SelectItem value="1">
+                          1 - Restrição a atividades extenuantes
+                        </SelectItem>
+                        <SelectItem value="2">
+                          2 - Capaz de autocuidado, incapaz de trabalhar
+                        </SelectItem>
+                        <SelectItem value="3">
+                          3 - Autocuidado limitado, confinado ao leito/cadeira
+                          &gt;50%
+                        </SelectItem>
+                        <SelectItem value="4">
+                          4 - Completamente incapaz, confinado ao leito
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.performanceStatus && (
+                      <p className="text-sm text-destructive mt-1">
+                        {errors.performanceStatus.message}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
 
-              <div>
-                <label className="text-sm font-medium">
-                  Estágio da Jornada
-                </label>
-                <Select
-                  value={currentStage}
-                  onValueChange={(value) =>
-                    setValue('currentStage', value as any)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SCREENING">Rastreio</SelectItem>
-                    <SelectItem value="NAVIGATION">Navegação</SelectItem>
-                    <SelectItem value="DIAGNOSIS">Diagnóstico</SelectItem>
-                    <SelectItem value="TREATMENT">Tratamento</SelectItem>
-                    <SelectItem value="FOLLOW_UP">Seguimento</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Tratamento atual: em Tratamento (com opção "A definir") ou Seguimento */}
+              {needsTreatmentField && (
+                <div>
+                  <label className="text-sm font-medium">
+                    Tratamento atual *
+                  </label>
+                  <Select
+                    value={currentTreatment || ''}
+                    onValueChange={(value) =>
+                      setValue('currentTreatment', value, {
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tratamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {treatmentOptions.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.currentTreatment && (
+                    <p className="text-sm text-destructive mt-1">
+                      {errors.currentTreatment.message}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Comorbidades e Fatores de Risco */}
               <div className="border-t pt-4 mt-4">

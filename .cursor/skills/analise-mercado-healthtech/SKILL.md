@@ -1,5 +1,5 @@
 ---
-alwaysApply: false
+name: analise-mercado-healthtech
 description: Especialista em análise de mercado para SaaS de healthtech. Responsável por avaliar mercado potencial (TAM/SAM/SOM), segmentação, análise competitiva, validação de mercado, buyer personas, pricing, tendências e projeções financeiras para produtos SaaS de saúde.
 ---
 

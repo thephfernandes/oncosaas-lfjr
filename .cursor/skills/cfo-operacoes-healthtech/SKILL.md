@@ -1,5 +1,5 @@
 ---
-alwaysApply: false
+name: cfo-operacoes-healthtech
 description: CFO e responsável por operações de startup SaaS de healthtech. Analisa unit economics (CAC, LTV, margem), financial modeling, pricing strategy, contratos legais (SLAs, termos), operações (suporte, onboarding) e compliance financeiro.
 ---
 

@@ -1,14 +1,8 @@
-"""
-Agent Orchestrator.
-Main processing pipeline for the oncology navigation agent.
-Receives message + context → returns response + actions.
-"""
-
 import json
+import time
+import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
-import logging
-
 from .llm_provider import llm_provider
 from .context_builder import context_builder
 from .symptom_analyzer import symptom_analyzer
@@ -19,6 +13,13 @@ from .prompts.system_prompt import build_system_prompt
 from .prompts.orchestrator_prompt import build_orchestrator_prompt, ORCHESTRATOR_ROUTING_TOOLS
 from .subagents import SymptomAgent, NavigationAgent, QuestionnaireAgent, EmotionalSupportAgent
 from .clinical_rules import clinical_rules_engine, ER_IMMEDIATE
+from .tracer import tracer
+
+"""
+Agent Orchestrator.
+Main processing pipeline for the oncology navigation agent.
+Receives message + context → returns response + actions.
+"""
 
 logger = logging.getLogger(__name__)
 
@@ -54,20 +55,61 @@ class AgentOrchestrator:
         agent_state = request.get("agent_state", {})
         agent_config = request.get("agent_config") or {}
 
+        patient_id = request.get("patient_id", "")
+        tenant_id = request.get("tenant_id", "")
+        trace = tracer.start_trace(patient_id, tenant_id)
+
+        try:
+            result = await self._process_with_trace(
+                trace, message, clinical_context, protocol,
+                conversation_history, agent_state, agent_config,
+            )
+        except Exception as exc:
+            tracer.finish_trace(trace, error=str(exc))
+            raise
+        else:
+            tracer.finish_trace(trace)
+            return result
+
+    async def _process_with_trace(
+        self,
+        trace,
+        message: str,
+        clinical_context: Dict[str, Any],
+        protocol,
+        conversation_history: List[Dict[str, str]],
+        agent_state: Dict[str, Any],
+        agent_config: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Inner implementation of process(), called with an active trace."""
+
         # 1. Check if we're in a questionnaire flow
         if agent_state.get("active_questionnaire"):
-            return await self._process_questionnaire_answer(request)
+            trace.pipeline_path = "questionnaire"
+            return await self._process_questionnaire_answer({
+                "message": message,
+                "clinical_context": clinical_context,
+                "protocol": protocol,
+                "conversation_history": conversation_history,
+                "agent_state": agent_state,
+                "agent_config": agent_config,
+            })
 
         # 1.5. Classify intent for differentiated handling (with LLM fallback for ambiguous)
+        span_intent = tracer.start_span(trace, "intent_classification")
         intent_result = await intent_classifier.classify_async(
             message, agent_state, agent_config
         )
         intent = intent_result["intent"]
+        span_intent.finish(intent=intent, confidence=intent_result.get("confidence"))
+        trace.intent = intent
+        trace.intent_confidence = intent_result.get("confidence")
         logger.info(f"Intent classified: {intent} (confidence={intent_result['confidence']:.2f})")
 
         if intent == INTENT_EMERGENCY:
             emergency_meta = intent_result.get("metadata", {})
             if emergency_meta.get("escalate_immediately"):
+                trace.pipeline_path = "emergency"
                 # Run symptom analysis even for emergency path to register the symptom
                 cancer_type = clinical_context.get("patient", {}).get("cancerType")
                 has_llm_keys = llm_provider.has_any_llm_key(agent_config)
@@ -84,16 +126,28 @@ class AgentOrchestrator:
                 )
 
         if intent == INTENT_GREETING and intent_result.get("skip_full_pipeline"):
+            trace.pipeline_path = "greeting"
             return self._build_greeting_response(clinical_context, agent_state)
 
         if intent == INTENT_APPOINTMENT_QUERY and intent_result.get("skip_full_pipeline"):
+            trace.pipeline_path = "appointment_query"
             return self._build_appointment_response(clinical_context, agent_state)
+
+        trace.pipeline_path = "main"
 
         # 2. Analyze symptoms (keyword + optional LLM for nuanced detection)
         cancer_type = clinical_context.get("patient", {}).get("cancerType")
         journey_stage = clinical_context.get("patient", {}).get("currentStage")
         has_llm_keys = llm_provider.has_any_llm_key(agent_config)
+        has_anthropic = llm_provider.has_anthropic_key(agent_config)
+        logger.info(
+            "LLM key check: has_any=%s has_anthropic=%s agent_config_keys=%s",
+            has_llm_keys, has_anthropic,
+            [k for k in (agent_config or {}).keys()],
+        )
         use_llm_analysis = agent_config.get("use_llm_symptom_analysis", True) and has_llm_keys
+
+        span_symptoms = tracer.start_span(trace, "symptom_analysis")
         symptom_analysis = await symptom_analyzer.analyze(
             message=message,
             clinical_context=clinical_context,
@@ -101,12 +155,22 @@ class AgentOrchestrator:
             use_llm=use_llm_analysis,
             llm_config=agent_config,
         )
+        detected = symptom_analysis.get("detectedSymptoms", []) if isinstance(symptom_analysis, dict) else getattr(symptom_analysis, "detectedSymptoms", [])
+        severity = symptom_analysis.get("overallSeverity") if isinstance(symptom_analysis, dict) else getattr(symptom_analysis, "overallSeverity", None)
+        span_symptoms.finish(symptoms_count=len(detected), overall_severity=severity)
+        trace.symptoms_detected = len(detected)
+        trace.overall_severity = severity
 
         # 2.5. Layer 1: deterministic clinical rules (pre-ML, cannot be overridden)
+        span_rules = tracer.start_span(trace, "clinical_rules")
         clinical_rules_result = clinical_rules_engine.evaluate(
             symptom_analysis=symptom_analysis,
             clinical_context=clinical_context,
         )
+        rules_fired = [f.rule_id for f in clinical_rules_result.findings]
+        span_rules.finish(disposition=clinical_rules_result.disposition, rules_fired=rules_fired)
+        trace.clinical_disposition = clinical_rules_result.disposition
+        trace.clinical_rules_fired = rules_fired
         if clinical_rules_result.is_immediate:
             logger.warning(
                 f"ClinicalRules ER_IMMEDIATE: {clinical_rules_result.reasoning[:120]}"
@@ -117,6 +181,7 @@ class AgentOrchestrator:
             )
 
         # 3. Evaluate protocol rules (check-ins, questionnaire triggers, critical symptoms)
+        span_protocol = tracer.start_span(trace, "protocol_evaluation")
         protocol_actions = protocol_engine.evaluate(
             cancer_type=cancer_type,
             journey_stage=journey_stage,
@@ -124,8 +189,10 @@ class AgentOrchestrator:
             agent_state=agent_state,
             protocol=protocol,
         )
+        span_protocol.finish(actions_count=len(protocol_actions))
 
         # 4. Build clinical context for the prompt (RAG with knowledge retrieval)
+        span_rag = tracer.start_span(trace, "rag_context_build")
         rag_context = context_builder.build_with_rag(
             patient_message=message,
             clinical_context=clinical_context,
@@ -134,6 +201,7 @@ class AgentOrchestrator:
             conversation_history=conversation_history,
             agent_state=agent_state,
         )
+        span_rag.finish()
 
         # 5. Build protocol context string
         protocol_context = None
@@ -142,7 +210,7 @@ class AgentOrchestrator:
 
         # 6. Build system prompt
         language = agent_config.get("agent_language", "pt-BR")
-        system_prompt = build_system_prompt(
+        build_system_prompt(
             clinical_context=rag_context,
             protocol_context=protocol_context,
             language=language,
@@ -160,13 +228,21 @@ class AgentOrchestrator:
 
         final_message = f"{intent_hint}{message}" if intent_hint else message
 
+        # Multi-agent pipeline: Anthropic preferred, OpenAI fallback (handled inside run_agentic_loop).
         if has_llm_keys:
+            span_llm = tracer.start_span(trace, "multi_agent_pipeline")
+            llm_start = time.monotonic()
             response_text, all_tool_calls = await self._run_multi_agent_pipeline(
                 message=final_message,
                 rag_context=rag_context,
                 conversation_history=conversation_history,
                 agent_config=agent_config,
+                trace=trace,
             )
+            llm_dur = (time.monotonic() - llm_start) * 1000
+            span_llm.finish(tool_calls=len(all_tool_calls))
+            model = agent_config.get("orchestrator_model", "claude-opus-4-6")
+            tracer.record_llm_call(trace, "orchestrator", "anthropic", model, llm_dur)
             if all_tool_calls:
                 llm_actions, llm_decisions = self._parse_tool_calls_to_actions(all_tool_calls)
                 logger.info(
@@ -174,11 +250,7 @@ class AgentOrchestrator:
                     f"{[tc['name'] for tc in all_tool_calls]}"
                 )
         else:
-            response_text = await llm_provider.generate(
-                system_prompt=system_prompt,
-                messages=conversation_history + [{"role": "user", "content": final_message}],
-                config=agent_config,
-            )
+            response_text = llm_provider._fallback_response()
 
         # 8. Check if a questionnaire should start (from protocol or LLM tool calls)
         questionnaire_to_start = next(
@@ -223,6 +295,8 @@ class AgentOrchestrator:
                 questionnaire_to_start["questionnaire_type"]
             ) if questionnaire_to_start else None,
         )
+
+        trace.actions_generated = [a.get("type", "UNKNOWN") for a in actions]
 
         return {
             "response": response_text,
@@ -350,6 +424,7 @@ class AgentOrchestrator:
         rag_context: str,
         conversation_history: List[Dict[str, str]],
         agent_config: Dict[str, Any],
+        trace=None,
     ) -> tuple:
         """
         Run the multi-agent pipeline:
@@ -399,6 +474,9 @@ class AgentOrchestrator:
             if result.error:
                 logger.error(f"Subagent {tool_name} error: {result.error}")
 
+            if trace is not None:
+                trace.subagents_called.append(tool_name)
+
             logger.info(
                 f"Subagent {result.agent_name} completed: "
                 f"{len(result.tool_calls)} tool calls, {result.iterations} iterations"
@@ -424,6 +502,9 @@ class AgentOrchestrator:
 
             response_text = orch_result.get("response", "").strip()
             if not response_text:
+                logger.warning(
+                    "Multi-agent pipeline returned empty response, using fallback message"
+                )
                 response_text = llm_provider._fallback_response()
 
             logger.info(
@@ -433,7 +514,9 @@ class AgentOrchestrator:
             )
 
         except Exception as e:
-            logger.error(f"Multi-agent pipeline failed: {e}")
+            logger.error(
+                "Multi-agent pipeline failed: %s (type=%s)", e, type(e).__name__, exc_info=True
+            )
             response_text = llm_provider._fallback_response()
 
         return response_text, all_tool_calls
@@ -519,6 +602,13 @@ class AgentOrchestrator:
             "response": response,
             "actions": actions,
             "symptom_analysis": symptom_analysis,
+            # Emergency path always escalates to ER_IMMEDIATE — populated so the
+            # backend can update the patient record and display triage to nurses.
+            "clinical_disposition": ER_IMMEDIATE,
+            "clinical_disposition_reason": (
+                "Intent classifier detected emergency message — ER_IMMEDIATE escalation."
+            ),
+            "clinical_rules_findings": [],
             "new_state": agent_state,
             "decisions": decisions,
         }

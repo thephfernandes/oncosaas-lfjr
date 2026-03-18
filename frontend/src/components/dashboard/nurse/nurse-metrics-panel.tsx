@@ -3,13 +3,7 @@
 import { useNurseMetrics } from '@/hooks/useNurseMetrics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  AlertCircle,
-  Clock,
-  Users,
-  MessageSquare,
-  TrendingUp,
-} from 'lucide-react';
+import { AlertCircle, Clock, Users, TrendingUp } from 'lucide-react';
 
 export function NurseMetricsPanel() {
   const { data: metrics, isLoading, error } = useNurseMetrics();
@@ -101,62 +95,39 @@ export function NurseMetricsPanel() {
         </Card>
       </div>
 
-      {/* Gráficos compactos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Taxa de Resposta ao Agente
-            </CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.agentResponseRate}%
-            </div>
-            <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-indigo-600 h-2 rounded-full"
-                style={{ width: `${metrics.agentResponseRate}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Sintomas Mais Reportados
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {metrics.topReportedSymptoms.length > 0 ? (
-              <div className="space-y-2">
-                {metrics.topReportedSymptoms.slice(0, 3).map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between"
-                  >
-                    <span className="text-sm">{item.symptom}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{item.count}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({item.percentage}%)
-                      </span>
-                    </div>
+      {/* Sintomas Mais Reportados */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            Sintomas Mais Reportados
+          </CardTitle>
+          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {metrics.topReportedSymptoms.length > 0 ? (
+            <div className="space-y-2">
+              {metrics.topReportedSymptoms.slice(0, 5).map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between"
+                >
+                  <span className="text-sm">{item.symptom}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{item.count}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({item.percentage}%)
+                    </span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Nenhum sintoma reportado nos últimos 30 dias
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Nenhum sintoma reportado nos últimos 30 dias
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -63,7 +63,7 @@ O ngrok fornecerá uma URL HTTPS como: `https://abc123.ngrok-free.app`
 4. Adicione o domínio do ngrok em **Allowed domains**:
    - Exemplo: `abc123.ngrok-free.app` (sem `https://`)
 5. Adicione a URL completa em **Valid OAuth redirect URIs**:
-   - Exemplo: `https://abc123.ngrok-free.app/dashboard/integrations`
+   - Exemplo: `https://abc123.ngrok-free.app/integrations`
 
 ### 6. Atualizar variáveis de ambiente
 
@@ -79,7 +79,10 @@ NEXT_PUBLIC_API_URL=https://abc123.ngrok-free.app:3002
 
 ```env
 FRONTEND_URL=https://abc123.ngrok-free.app
-META_OAUTH_REDIRECT_URI=https://abc123.ngrok-free.app/api/v1/whatsapp-connections/oauth/callback
+# Para Embedded Signup: URL da página /integrations (deve ser idêntica à cadastrada no App Meta)
+META_EMBEDDED_SIGNUP_REDIRECT_URI=https://abc123.ngrok-free.app/integrations
+# Para fluxo OAuth manual (se usar):
+# META_OAUTH_REDIRECT_URI=https://abc123.ngrok-free.app/api/v1/whatsapp-connections/oauth/callback
 ```
 
 ### 7. Reiniciar servidores
@@ -96,7 +99,7 @@ npm run start:dev
 
 ### 8. Acessar via URL do ngrok
 
-Acesse: `https://abc123.ngrok-free.app/dashboard/integrations`
+Acesse: `https://abc123.ngrok-free.app/integrations`
 
 ## Alternativa: Cloudflare Tunnel
 

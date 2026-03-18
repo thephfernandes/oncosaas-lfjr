@@ -24,7 +24,6 @@ export const PublicHeader: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-
   return (
     <header
       className={cn(

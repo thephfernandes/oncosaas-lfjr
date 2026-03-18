@@ -42,13 +42,7 @@ const patientQuickEditSchema = z.object({
   phone: z.string().min(10, 'Telefone é obrigatório (mín. 10 dígitos)'),
   birthDate: z.string().min(1, 'Data de nascimento é obrigatória'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
-  currentStage: z.enum([
-    'SCREENING',
-    'NAVIGATION',
-    'DIAGNOSIS',
-    'TREATMENT',
-    'FOLLOW_UP',
-  ]),
+  currentStage: z.enum(['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP']),
   cancerType: z
     .enum([
       'breast',
@@ -66,9 +60,11 @@ const patientQuickEditSchema = z.object({
 
 type PatientQuickEditFormData = z.infer<typeof patientQuickEditSchema>;
 
-const CURRENT_STAGE_OPTIONS: { value: PatientQuickEditFormData['currentStage']; label: string }[] = [
+const CURRENT_STAGE_OPTIONS: {
+  value: PatientQuickEditFormData['currentStage'];
+  label: string;
+}[] = [
   { value: 'SCREENING', label: 'Em Rastreio' },
-  { value: 'NAVIGATION', label: 'Navegação' },
   { value: 'DIAGNOSIS', label: 'Diagnóstico' },
   { value: 'TREATMENT', label: 'Tratamento' },
   { value: 'FOLLOW_UP', label: 'Seguimento' },
@@ -131,10 +127,12 @@ export function PatientEditDialog({
         phone: patient.phone ?? '',
         birthDate: formatBirthDateForInput(patient.birthDate),
         email: patient.email ?? '',
-        currentStage: (patient.currentStage as PatientQuickEditFormData['currentStage']) ?? 'SCREENING',
-        cancerType:
-          (getCancerTypeKey(getPatientCancerType(patient) ?? undefined) ??
-          undefined) as PatientQuickEditFormData['cancerType'],
+        currentStage:
+          (patient.currentStage as PatientQuickEditFormData['currentStage']) ??
+          'SCREENING',
+        cancerType: (getCancerTypeKey(
+          getPatientCancerType(patient) ?? undefined
+        ) ?? undefined) as PatientQuickEditFormData['cancerType'],
       });
     }
   }, [patient, open, form]);
@@ -168,7 +166,8 @@ export function PatientEditDialog({
         <DialogHeader>
           <DialogTitle>Editar dados do paciente</DialogTitle>
           <DialogDescription>
-            Altere os dados exibidos no painel. As alterações são salvas no prontuário.
+            Altere os dados exibidos no painel. As alterações são salvas no
+            prontuário.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -232,7 +231,11 @@ export function PatientEditDialog({
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" {...field} placeholder="email@exemplo.com" />
+                    <Input
+                      type="email"
+                      {...field}
+                      placeholder="email@exemplo.com"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -270,7 +273,9 @@ export function PatientEditDialog({
                   <FormLabel>Tipo de câncer</FormLabel>
                   <Select
                     onValueChange={(v) =>
-                      field.onChange(v === CANCER_TYPE_NONE_VALUE ? undefined : v)
+                      field.onChange(
+                        v === CANCER_TYPE_NONE_VALUE ? undefined : v
+                      )
                     }
                     value={field.value ?? CANCER_TYPE_NONE_VALUE}
                   >

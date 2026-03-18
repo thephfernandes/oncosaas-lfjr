@@ -1,16 +1,18 @@
+import json
+import logging
+import os
+import numpy as np
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 """
 RAG (Retrieval-Augmented Generation) module for oncology knowledge.
 Uses sentence-transformers for embeddings and FAISS for vector search
 to retrieve relevant oncology knowledge before calling the LLM.
 """
 
-import json
-import logging
-import os
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 
-import numpy as np
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +32,7 @@ def _get_index_dir() -> Path:
             return Path(base) / "OncoNav" / "rag_index_cache"
     return default
 
-
 _INDEX_DIR = _get_index_dir()
-
 _MODEL_NAME = os.getenv("RAG_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 
@@ -47,6 +47,8 @@ class _FastEmbedWrapper:
         # fastembed yields per-document numpy arrays; stack into a 2-D array
         embeddings = list(self._model.embed(texts))
         return np.array(embeddings, dtype=np.float32)
+
+
 _TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 _SCORE_THRESHOLD = float(os.getenv("RAG_SCORE_THRESHOLD", "0.30"))
 
@@ -181,16 +183,29 @@ class OncologyKnowledgeRAG:
         return data
 
     def _load_embedding_model(self):
+        # Try fastembed first (lighter, used in production Docker image)
         try:
             from fastembed import TextEmbedding
 
             model = TextEmbedding(_MODEL_NAME)
-            logger.info(f"Embedding model loaded: {_MODEL_NAME}")
+            logger.info(f"Embedding model loaded (fastembed): {_MODEL_NAME}")
             return _FastEmbedWrapper(model)
         except ImportError:
+            logger.info("fastembed not installed, trying sentence-transformers...")
+        except Exception as exc:
+            logger.warning(f"fastembed failed: {exc}, trying sentence-transformers...")
+
+        # Fallback to sentence-transformers (dev environment)
+        try:
+            from sentence_transformers import SentenceTransformer
+
+            model = SentenceTransformer(_MODEL_NAME)
+            logger.info(f"Embedding model loaded (sentence-transformers): {_MODEL_NAME}")
+            return model
+        except ImportError:
             logger.error(
-                "fastembed not installed. "
-                "Install with: pip install fastembed"
+                "Neither fastembed nor sentence-transformers is installed. "
+                "Install with: pip install fastembed  OR  pip install sentence-transformers"
             )
             return None
         except Exception as exc:

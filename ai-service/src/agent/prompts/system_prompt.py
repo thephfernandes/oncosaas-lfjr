@@ -1,9 +1,8 @@
+from typing import Optional
+
 """
 System prompt templates for the oncology navigation agent.
 """
-
-from typing import Optional
-
 
 def build_system_prompt(
     clinical_context: str,

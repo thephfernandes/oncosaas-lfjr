@@ -14,8 +14,8 @@ import {
  * Usa evento customizado para sincronizar navbar e chat.
  */
 export function useReadPatients() {
-  const [readPatientIds, setReadPatientIds] = useState<Set<string>>(
-    () => (typeof window !== 'undefined' ? getReadPatientIds() : new Set())
+  const [readPatientIds, setReadPatientIds] = useState<Set<string>>(() =>
+    typeof window !== 'undefined' ? getReadPatientIds() : new Set()
   );
 
   const markAsRead = useCallback((patientId: string) => {
@@ -28,11 +28,12 @@ export function useReadPatients() {
     });
   }, []);
 
-  // Sincronizar com localStorage quando outro componente atualizar
+  // Sincronizar quando outro componente atualizar via evento customizado
   useEffect(() => {
     const handler = () => setReadPatientIds(getReadPatientIds());
     window.addEventListener(READ_PATIENTS_UPDATED_EVENT, handler);
-    return () => window.removeEventListener(READ_PATIENTS_UPDATED_EVENT, handler);
+    return () =>
+      window.removeEventListener(READ_PATIENTS_UPDATED_EVENT, handler);
   }, []);
 
   return { readPatientIds, markAsRead };

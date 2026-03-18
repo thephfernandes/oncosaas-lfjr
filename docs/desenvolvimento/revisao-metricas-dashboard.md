@@ -2,142 +2,74 @@
 
 ## Resumo Executivo
 
-O dashboard do OncoNav possui métricas em **3 níveis**: KPIs principais, métricas clínicas críticas e distribuições. Este documento identifica inconsistências, possíveis bugs e sugestões de melhoria.
+O dashboard do OncoNav foi simplificado para manter apenas os indicadores essenciais para uso diário da equipe. Este documento descreve as métricas mantidas, o que foi removido e os motivos da simplificação.
 
 ---
 
-## 1. Métricas Atuais
+## 1. Métricas Essenciais (pós-simplificação)
 
-### 1.1 KPIs Principais (`/dashboard/metrics`)
+### 1.1 KPIs Operacionais (`/dashboard/metrics`)
 
 | Métrica | Descrição | Fonte |
 |---------|-----------|-------|
 | `totalActivePatients` | Pacientes com status ACTIVE, IN_TREATMENT ou FOLLOW_UP | Patient |
 | `criticalPatientsCount` | Pacientes com priorityScore >= 75 e status ativo | Patient |
 | `totalPendingAlerts` | Soma de alertas não RESOLVED por severidade | Alert |
-| `criticalAlertsCount`, `highAlertsCount`, etc. | Alertas por severidade | Alert |
+| `criticalAlertsCount`, `highAlertsCount` | Alertas por severidade (breakdown principal) | Alert |
+| `mediumAlertsCount`, `lowAlertsCount` | Alertas de menor prioridade (breakdown complementar) | Alert |
 | `unassumedMessagesCount` | Mensagens INBOUND sem `assumedBy` | Message |
-| `resolvedTodayCount` | Alertas RESOLVED com `resolvedAt` >= hoje 00:00 | Alert |
 | `averageResponseTimeMinutes` | Média (resolvedAt - createdAt) de alertas resolvidos | Alert |
 | `overdueStepsCount` | Etapas com status OVERDUE e não concluídas | NavigationStep |
+| `pendingBiomarkersCount` | Pacientes com etapas de biomarcadores pendentes | NavigationStep |
+| `treatmentAdherencePercentage` | % que completaram >=80% dos ciclos planejados | PatientJourney |
 
-### 1.2 Métricas Clínicas Críticas
+### 1.2 Métricas Clínicas de Tempo
 
 | Métrica | Descrição | Meta | Cálculo |
 |---------|-----------|------|---------|
-| `averageTimeToTreatmentDays` | Diagnóstico → Início tratamento | <30 dias | PatientJourney (diagnosisDate, treatmentStartDate) |
-| `averageTimeToDiagnosisDays` | 1ª etapa DIAGNOSIS → diagnóstico confirmado | <60 dias | NavigationStep + PatientJourney |
-| `stagingCompletePercentage` | % com estadiamento antes de tratamento | Alto | stagingDate <= treatmentStartDate |
-| `pendingBiomarkersCount` | Pacientes com etapas de biomarcadores pendentes | Baixo | NavigationStep (stepKey em lista de 14 keys) |
-| `treatmentAdherencePercentage` | % que completaram >=80% dos ciclos planejados | >=80% | currentCycle >= 80% de totalCycles |
+| `averageTimeToTreatmentDays` | Diagnóstico -> Início tratamento | <30 dias | PatientJourney (diagnosisDate, treatmentStartDate) |
+| `averageTimeToDiagnosisDays` | 1a etapa DIAGNOSIS -> diagnóstico confirmado | <60 dias | NavigationStep + PatientJourney |
 
-### 1.3 Distribuições
+### 1.3 Distribuição
 
-- **priorityDistribution**: CRITICAL, HIGH, MEDIUM, LOW (Patient.priorityCategory)
-- **cancerTypeDistribution**: Top 10 tipos de câncer
-- **journeyStageDistribution**: SCREENING, NAVIGATION, DIAGNOSIS, TREATMENT, FOLLOW_UP
-- **statusDistribution**: Todos os status (ACTIVE, INACTIVE, etc.)
+| Distribuição | Descrição |
+|-------------|-----------|
+| `priorityDistribution` | CRITICAL, HIGH, MEDIUM, LOW (Patient.priorityCategory) |
 
 ---
 
-## 2. Inconsistências e Possíveis Bugs
+## 2. Métricas Descontinuadas
 
-### 2.1 ~~🔴~~ ✅ `statusDistribution` — Base de cálculo incorreta **(CORRIGIDO)**
+As seguintes métricas foram removidas do endpoint `/dashboard/metrics` por não serem essenciais para operação diária:
 
-**Arquivo:** `backend/src/dashboard/dashboard.service.ts` (linhas 205-220)
+| Métrica removida | Motivo |
+|-----------------|--------|
+| `resolvedTodayCount` | Informação pontual de baixo valor operacional; tendência de alertas disponível via `/dashboard/statistics` |
+| `stagingCompletePercentage` | Métrica clínica acessória; estadiamento pode ser acompanhado via navegação oncológica |
+| `cancerTypeDistribution` | Distribuição estática que muda lentamente; não necessária para triagem diária |
+| `criticalTimelines` (endpoint) | Prazos críticos por tipo de câncer — seção e endpoint `/dashboard/critical-timelines` removidos; DTO e componente excluídos |
+| `journeyStageDistribution` | Distribuição por jornada disponível em outros relatórios; não essencial no dashboard principal |
+| `statusDistribution` | Redundante com `totalActivePatients` para operação diária |
 
-**Problema original:** `statusDistribution` inclui **todos** os pacientes, mas o percentual usava `totalActivePatients` como denominador, fazendo a soma ultrapassar 100%.
+### Impacto nos componentes
 
-**Correção aplicada:** Usa o total geral de pacientes como denominador:
-```typescript
-const totalPatients = statusDistribution.reduce((sum, i) => sum + i._count, 0);
-percentage: totalPatients > 0 ? Math.round((item._count / totalPatients) * 100 * 10) / 10 : 0
-```
-
----
-
-### 2.2 🟡 `patientStatistics` em getStatistics — Status histórico
-
-**Arquivo:** `dashboard.service.ts` (linhas 389-408)
-
-O filtro de "pacientes ativos na data" usa o **status atual** do paciente:
-```typescript
-const activeOnDate = patients.filter(
-  (p) =>
-    new Date(p.createdAt) <= date &&
-    ['ACTIVE', 'IN_TREATMENT', 'FOLLOW_UP'].includes(p.status)  // status ATUAL
-);
-```
-
-**Problema:** Pacientes que foram INACTIVE em uma data mas depois viraram ACTIVE aparecem como ativos em todas as datas passadas. Para métricas históricas precisas, seria necessário um modelo de histórico de status (que não existe atualmente).
-
-**Impacto:** Baixo — aceitável para visão operacional atual.
+- **KPI Cards**: Removidos os cards "Casos Resolvidos Hoje" e "Estadiamento Completo"
+- **Gráficos**: Removidos gráficos "Top 5 Tipos de Cancer" e "Distribuicao por Jornada"
+- **Prazos Críticos por Tipo de Câncer**: Seção `CriticalTimelinesSection` removida do dashboard; endpoint `GET /dashboard/critical-timelines` e DTO `critical-timelines.dto.ts` excluídos
+- **Executive View**: Simplificada para usar apenas dados ainda disponíveis (taxa de pacientes críticos, variação de alertas, benchmarks de time-to-treatment/diagnosis)
+- **ROI Section**: Ajustada para não depender de `resolvedTodayCount`
 
 ---
 
-### 2.3 ~~🟡~~ ✅ `treatmentAdherencePercentage` **(CORRIGIDO)** — Definição de “aderente”
+## 3. Observações Pendentes
 
-**Problema original:** Pacientes no ciclo 1 de 12 eram considerados não aderentes indevidamente.
-
-**Correção aplicada (opção B):** Apenas pacientes com `currentCycle >= totalCycles * 0.8` entram no denominador. Pacientes em ciclo 1/12 deixam de ser contados. `patientsOnTrack` = quem completou tratamento (`currentCycle >= totalCycles`).
-
----
-
-### 2.4 🟡 `unassumedMessagesCount` — Escopo
-
-**Código atual:** Conta **todas** as mensagens INBOUND sem `assumedBy` no tenant.
-
-**Consideração:** Mensagens muito antigas (ex: 1 ano) podem inflar o número. Avaliar:
-- Filtrar por data (ex: últimas 24h ou 7 dias)?
-- Agrupar por conversa e contar conversas com mensagens não assumidas?
-
----
-
-### 2.5 ~~🟢~~ ✅ `biopsy_to_pathology` em getCriticalTimelines — Case sensitivity **(CORRIGIDO)**
-
-**Arquivo:** `dashboard.service.ts` — queries de Critical Timelines
-
-**Problema original:** O filtro `cancerType` comparava de forma case-sensitive, podendo retornar `NO_DATA` com "Colorectal" vs "colorectal".
-
-**Correção aplicada:** Comparação case-insensitive em 5 pontos (`{ equals: cancerType, mode: 'insensitive' }`): `time_to_diagnosis`, `time_to_treatment`, `biopsy_to_pathology`, `diagnosis_to_surgery`, `surgery_to_adjuvant_chemotherapy`.
-
----
-
-## 3. Sugestões de Novas Métricas
-
-Com base nas guidelines de navegação oncológica:
-
-| Métrica | Descrição | Prioridade |
-|---------|-----------|------------|
-| **Tempo médio biópsia → laudo** | Já existe em Critical Timelines; poderia ser KPI no dashboard principal | Média |
-| **Taxa de resposta ao agente** | % de mensagens respondidas pela equipe (já existe em NurseMetrics) | Média |
-| **Pacientes em risco de atraso** | Etapas com dueDate nos próximos 7 dias e status PENDING/IN_PROGRESS | Alta |
-| **SLA de primeiro contato** | Tempo desde primeira mensagem até primeira resposta da equipe | Média |
-
----
-
-## 4. Performance
-
-O `getMetrics` executa **mais de 15 queries** ao banco. Para tenants com muitos pacientes, considerar:
-
-1. **Cache** (Redis): TTL de 1-2 minutos para métricas agregadas
-2. **Batch queries**: Algumas contagens poderiam ser consolidadas
-3. **Background job**: Pré-calcular métricas pesadas (ex: getCriticalTimelines)
-
----
-
-## 5. Checklist de Revisão
-
-- [x] Corrigir `statusDistribution` (percentual com base no total correto)
-- [x] Revisar definição de `treatmentAdherencePercentage` (opção B aplicada)
-- [ ] Avaliar filtro temporal em `unassumedMessagesCount`
-- [x] Normalizar `cancerType` em queries de Critical Timelines
+- [ ] Avaliar filtro temporal em `unassumedMessagesCount` (mensagens antigas podem inflar o número)
 - [ ] Documentar metas (limites verde/laranja/vermelho) em constantes
-- [ ] Considerar cache para `getMetrics` em produção
+- [ ] Considerar cache (Redis, TTL 1-2min) para `getMetrics` em produção
 
 ---
 
-## 6. Arquivos Envolvidos
+## 4. Arquivos Envolvidos
 
 | Arquivo | Função |
 |---------|--------|
@@ -148,10 +80,12 @@ O `getMetrics` executa **mais de 15 queries** ao banco. Para tenants com muitos 
 | `frontend/src/lib/api/dashboard.ts` | Interface TypeScript |
 | `frontend/src/components/dashboard/oncologist/kpi-cards.tsx` | Exibição dos KPIs |
 | `frontend/src/components/dashboard/oncologist/metrics-charts.tsx` | Gráficos |
+| `frontend/src/components/dashboard/oncologist/executive-view.tsx` | Visão executiva |
+| `frontend/src/components/dashboard/oncologist/roi-section.tsx` | Seção de ROI |
 
 ---
 
-## 7. Verificação Automatizada
+## 5. Verificação Automatizada
 
 Executar após `npm run prisma:seed`:
 
@@ -159,8 +93,8 @@ Executar após `npm run prisma:seed`:
 cd backend && npm run verify-dashboard
 ```
 
-O script valida: soma de `statusDistribution` entre 99,5 e 100,5; percentuais ≤ 100; ausência de valores negativos; médias nulas ou ≥ 0.
+O script valida: ausência de valores negativos ou NaN; médias nulas ou >= 0; percentuais válidos.
 
 ---
 
-*Documento gerado em revisão das métricas do dashboard — março 2025*
+*Documento atualizado em março 2026 — simplificação do dashboard*

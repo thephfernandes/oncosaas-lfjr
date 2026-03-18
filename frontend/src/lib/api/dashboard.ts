@@ -9,13 +9,11 @@ export interface DashboardMetrics {
   mediumAlertsCount: number;
   lowAlertsCount: number;
   unassumedMessagesCount: number;
-  resolvedTodayCount: number;
   averageResponseTimeMinutes: number | null;
   overdueStepsCount: number;
-  // Métricas Clínicas Críticas
+  // Métricas Clínicas
   averageTimeToTreatmentDays: number | null;
   averageTimeToDiagnosisDays: number | null;
-  stagingCompletePercentage: number;
   pendingBiomarkersCount: number;
   treatmentAdherencePercentage: number;
   priorityDistribution: {
@@ -24,21 +22,6 @@ export interface DashboardMetrics {
     medium: number;
     low: number;
   };
-  cancerTypeDistribution: Array<{
-    cancerType: string;
-    count: number;
-    percentage: number;
-  }>;
-  journeyStageDistribution: Array<{
-    stage: string;
-    count: number;
-    percentage: number;
-  }>;
-  statusDistribution: Array<{
-    status: string;
-    count: number;
-    percentage: number;
-  }>;
 }
 
 export interface AlertStatisticsPoint {
@@ -94,33 +77,19 @@ export interface PatientWithCriticalStep {
   navigationAlertsCount: number;
 }
 
-export interface CriticalTimelineBenchmark {
-  cancerType: string;
-  metric: string;
-  idealDays: number;
-  acceptableDays: number;
-  criticalDays: number;
-}
-
-export interface CriticalTimelineMetric {
-  cancerType: string;
-  metric: string;
-  metricLabel: string;
-  currentAverageDays: number | null;
-  benchmark: CriticalTimelineBenchmark;
-  status: 'IDEAL' | 'ACCEPTABLE' | 'CRITICAL' | 'NO_DATA';
-  patientsCount: number;
-  patientsAtRisk: number;
-}
-
-export interface CriticalTimelines {
-  metrics: CriticalTimelineMetric[];
-  summary: {
-    totalMetrics: number;
-    metricsInIdealRange: number;
-    metricsInAcceptableRange: number;
-    metricsInCriticalRange: number;
-    metricsWithNoData: number;
+/** Alerta pendente para drill-down do indicador "Alertas Pendentes". */
+export interface PendingAlert {
+  id: string;
+  type: string;
+  severity: string;
+  message: string;
+  status: string;
+  createdAt: string;
+  patientId: string;
+  patient: {
+    id: string;
+    name: string;
+    phone: string | null;
   };
 }
 
@@ -141,6 +110,8 @@ export const dashboardApi = {
     journeyStage?: string;
     cancerType?: string;
     maxResults?: number;
+    /** Quando true, retorna apenas pacientes com etapas já atrasadas (não "vence em X dias"). */
+    overdueOnly?: boolean;
   }): Promise<PatientWithCriticalStep[]> {
     const queryParams = new URLSearchParams();
     if (params?.journeyStage)
@@ -148,6 +119,8 @@ export const dashboardApi = {
     if (params?.cancerType) queryParams.append('cancerType', params.cancerType);
     if (params?.maxResults)
       queryParams.append('maxResults', params.maxResults.toString());
+    if (params?.overdueOnly === true)
+      queryParams.append('overdueOnly', 'true');
 
     const queryString = queryParams.toString();
     return apiClient.get<PatientWithCriticalStep[]>(
@@ -155,7 +128,31 @@ export const dashboardApi = {
     );
   },
 
-  async getCriticalTimelines(): Promise<CriticalTimelines> {
-    return apiClient.get<CriticalTimelines>('/dashboard/critical-timelines');
+  /**
+   * Lista alertas pendentes para o drill-down do indicador "Alertas Pendentes".
+   * Retorna os alertas (com dados do paciente), não a lista de pacientes.
+   */
+  async getPendingAlerts(maxResults: number = 100): Promise<PendingAlert[]> {
+    const params = new URLSearchParams();
+    if (maxResults) params.append('maxResults', maxResults.toString());
+    return apiClient.get<PendingAlert[]>(
+      `/dashboard/pending-alerts?${params.toString()}`
+    );
+  },
+
+  /**
+   * Lista pacientes filtrados por indicador (mensagens não assumidas, biomarcadores pendentes).
+   * Para alertas use getPendingAlerts.
+   */
+  async getPatientsByIndicator(
+    indicator: 'messages' | 'biomarkers',
+    maxResults: number = 100
+  ): Promise<import('./patients').Patient[]> {
+    const params = new URLSearchParams();
+    params.append('indicator', indicator);
+    if (maxResults) params.append('maxResults', maxResults.toString());
+    return apiClient.get<import('./patients').Patient[]>(
+      `/dashboard/patients-by-indicator?${params.toString()}`
+    );
   },
 };

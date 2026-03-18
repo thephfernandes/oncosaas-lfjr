@@ -3,11 +3,12 @@ import {
   UnauthorizedException,
   ForbiddenException,
   ConflictException,
+  NotImplementedException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import * as bcrypt from 'bcrypt';
@@ -80,10 +81,14 @@ export class AuthService {
       );
     }
 
-    const where = tenantId ? { tenantId, email } : { email };
+    if (!tenantId) {
+      throw new UnauthorizedException(
+        'tenantId é obrigatório para autenticação'
+      );
+    }
 
     const user = await this.prisma.user.findFirst({
-      where,
+      where: { tenantId, email },
       include: { tenant: true },
     });
 
@@ -278,6 +283,15 @@ export class AuthService {
   // ─── Password Reset ──────────────────────────────────────────────────────────
 
   async forgotPassword(email: string): Promise<void> {
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+
+    if (isProduction) {
+      // Email service not yet implemented — fail explicitly rather than silently
+      throw new NotImplementedException(
+        'Password reset via email is not yet available. Please contact your system administrator.'
+      );
+    }
+
     const user = await this.prisma.user.findFirst({ where: { email } });
 
     // Always return success to avoid user enumeration
@@ -293,7 +307,6 @@ export class AuthService {
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const resetLink = `${frontendUrl}/reset-password/${token}`;
 
-    // Em produção, enviar por email. Em dev, logar no console.
     this.logger.log(`[DEV] Password reset link for ${email}: ${resetLink}`);
   }
 
@@ -348,7 +361,7 @@ export class AuthService {
         email: registerDto.email,
         password: hashedPassword,
         name: registerDto.name,
-        role: registerDto.role,
+        role: UserRole.NURSE,
         tenantId: registerDto.tenantId,
       },
       include: { tenant: true },

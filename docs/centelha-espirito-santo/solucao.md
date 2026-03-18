@@ -48,9 +48,9 @@ Diferenciais: WhatsApp (sem necessidade de app), IA conversacional (coleta natur
 
 Plataforma SaaS multi-tenant integrando IA e WhatsApp Business API para transformar o cuidado oncológico. Três pilares: (1) Navegação Inteligente - dashboard rastreando pacientes em tempo real; (2) Priorização com IA - scoring automático (XGBoost) identificando casos críticos; (3) Agente de IA Conversacional - coleta dados via WhatsApp, detecta sintomas críticos e alerta equipe.
 
-Viabilidade técnica: Stack validado (Next.js, NestJS, Python FastAPI, PostgreSQL), integração HL7/FHIR, arquitetura multi-tenant escalável. Validação: 10+ entrevistas com oncologistas/enfermeiros confirmaram dores e necessidade da solução. Pilotos planejados com 3-5 hospitais (Q2 2024).
+Viabilidade técnica: Stack validado (Next.js, NestJS, Python FastAPI, PostgreSQL), integração HL7/FHIR, arquitetura multi-tenant escalável. Validação: 10+ entrevistas com oncologistas/enfermeiros confirmaram dores e necessidade da solução. Pilotos em planejamento com instituições pioneiras.
 
-Mercado: 500 hospitais e 2.000 clínicas oncológicas (R$ 15 bilhões em saúde digital). Clientes potenciais: hospitais oncológicos, clínicas especializadas, planos de saúde. Escalabilidade: arquitetura multi-tenant permite crescimento sem custos proporcionais. Resultados esperados: redução de 30% em tempo de diagnóstico, 20-30% em readmissões, 40% em ligações telefônicas.
+Mercado: TAM USD 2,76 bi (2025) → USD 5,71 bi (2030). 359 instituições oncológicas habilitadas (CACONs/UNACONs). Clientes potenciais: hospitais oncológicos, clínicas especializadas, planos de saúde. Escalabilidade: arquitetura multi-tenant permite crescimento sem custos proporcionais. Resultados esperados: redução de 30% em tempo de diagnóstico, 20-30% em readmissões, 40% em ligações telefônicas.
 
 **Caracteres:** 998 caracteres ✅
 
@@ -62,10 +62,10 @@ Mercado: 500 hospitais e 2.000 clínicas oncológicas (R$ 15 bilhões em saúde 
 
 - ✅ Produto/serviço objetivo (Plataforma SaaS com 3 pilares)
 - ✅ Viabilidade técnica (Stack validado, tecnologias específicas)
-- ✅ Resultados de validação (10+ entrevistas, pilotos planejados)
+- ✅ Resultados de validação (10+ entrevistas, pilotos em planejamento)
 - ✅ Escalabilidade (arquitetura multi-tenant)
-- ✅ Potencial do negócio (mercado de R$ 15 bilhões)
-- ✅ Estimativa de mercados (500 hospitais, 2.000 clínicas)
+- ✅ Potencial do negócio (TAM USD 2,76bi → 5,71bi)
+- ✅ Estimativa de mercados (359 instituições habilitadas)
 - ✅ Clientes potenciais (hospitais, clínicas, planos de saúde)
 - ✅ Resultados esperados (redução de tempo, readmissões, ligações)
 - ✅ Pesquisas de validação (entrevistas com profissionais)

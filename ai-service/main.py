@@ -2,16 +2,15 @@ import json
 import logging
 from pathlib import Path
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic_settings import BaseSettings
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from src.api.routes import router
+
 """
 AI Service - Plataforma Oncológica
 Serviço de IA para priorização de casos e agente conversacional
 """
-
 
 # Load environment variables early, before importing modules that may read os.getenv.
 # Priority order:
@@ -21,10 +20,16 @@ BASE_DIR = Path(__file__).resolve().parent
 ROOT_ENV_PATH = BASE_DIR.parent / ".env"
 LOCAL_ENV_PATH = BASE_DIR / ".env"
 
+_env_loaded = []
 if ROOT_ENV_PATH.exists():
     load_dotenv(ROOT_ENV_PATH, override=True)
+    _env_loaded.append(str(ROOT_ENV_PATH))
+else:
+    _env_loaded.append(f"(root not found: {ROOT_ENV_PATH})")
 if LOCAL_ENV_PATH.exists():
     load_dotenv(LOCAL_ENV_PATH, override=True)
+    _env_loaded.append(str(LOCAL_ENV_PATH))
+
 
 class _JsonFormatter(logging.Formatter):
     """Emit log records as single-line JSON for structured log ingestion."""
@@ -41,15 +46,24 @@ _handler.setFormatter(_JsonFormatter())
 logging.basicConfig(level=logging.INFO, handlers=[_handler])
 logger = logging.getLogger(__name__)
 
+# Load priority model BEFORE routes (ensures routes.py gets trained instance)
+try:
+    from src.models.train_priority import load_or_train
+    load_or_train()
+    from src.models.priority_model import priority_model
+    logger.info("Priority model loaded at startup: is_trained=%s", priority_model.is_trained)
+except Exception as e:
+    logger.warning("Priority model initialization deferred: %s", e, exc_info=True)
+
+from src.api.routes import router
+
+
 class Settings(BaseSettings):
     openai_api_key: str = ""
     anthropic_api_key: str = ""
-    google_cloud_project_id: str = ""
     backend_url: str = "http://localhost:3002"
     cors_origins: str = "http://localhost:3000,http://localhost:3002"
-
-    class Config:
-        env_file = ".env"
+    # env vars already loaded by load_dotenv() above — no env_file needed here
 
 
 settings = Settings()
@@ -61,26 +75,31 @@ if not settings.openai_api_key and not settings.anthropic_api_key:
     )
 
 
+def _mask_key(key: str) -> str:
+    if not key or len(key) < 8:
+        return "(empty or too short)"
+    return key[:4] + "..." + key[-4:]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("[AI Service] Starting...")
-
-    # Load priority model inside lifespan to avoid blocking the import phase
+    logger.info("[AI Service] Starting... (env loaded from: %s)", _env_loaded)
+    import os
+    has_openai = bool(os.getenv("OPENAI_API_KEY") and os.getenv("OPENAI_API_KEY", "").strip() not in ("", "your-openai-api-key", "none", "null"))
+    has_anthropic = bool(os.getenv("ANTHROPIC_API_KEY") and os.getenv("ANTHROPIC_API_KEY", "").strip().lower() not in ("", "your-anthropic-api-key", "none", "null"))
+    logger.info("[AI Service] LLM keys in env: OPENAI=%s ANTHROPIC=%s", has_openai, has_anthropic)
+    if has_openai:
+        logger.info("[AI Service] OPENAI_API_KEY present: %s", _mask_key(os.getenv("OPENAI_API_KEY", "")))
+    if has_anthropic:
+        logger.info("[AI Service] ANTHROPIC_API_KEY present: %s", _mask_key(os.getenv("ANTHROPIC_API_KEY", "")))
     try:
-        from src.models.train_priority import load_or_train
-        load_or_train()
-        from src.models.priority_model import priority_model
-        logger.info("Priority model loaded: is_trained=%s", priority_model.is_trained)
-    except Exception as e:
-        logger.warning("Priority model initialization deferred: %s", e, exc_info=True)
-
-    try:
+        import asyncio
         from src.agent.rag import knowledge_rag
-        knowledge_rag.initialize()
+        await asyncio.to_thread(knowledge_rag.initialize)
     except Exception as e:
-        logger.warning("RAG initialization deferred: %s", e, exc_info=True)
-
+        logger.warning(f"RAG initialization deferred: {e}")
+    # Priority model loaded at import time (see top of main.py)
     yield
     # Shutdown
     logger.info("[AI Service] Shutting down...")
@@ -112,14 +131,14 @@ async def root():
 @app.get("/health")
 async def health():
     from src.models.priority_model import priority_model
+    from src.agent.llm_provider import llm_provider
     return {
         "status": "ok",
         "service": "onconav-ai-service",
         "model_trained": priority_model.is_trained,
-        "llm_configured": bool(settings.openai_api_key or settings.anthropic_api_key),
+        "llm_configured": llm_provider.has_any_llm_key(),
     }
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
-

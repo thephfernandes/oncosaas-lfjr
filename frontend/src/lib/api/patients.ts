@@ -316,15 +316,23 @@ export interface CreatePatientDto {
   name: string;
   cpf?: string;
   birthDate: string;
-  gender: 'male' | 'female' | 'other';
+  gender?: 'male' | 'female' | 'other';
   phone: string;
   email?: string;
-  cancerType: string;
-  stage: string;
+  cancerType?: string;
+  cancerSubtype?: string;
+  stage?: string;
   diagnosisDate?: string;
   performanceStatus?: number;
   currentStage: string;
-  currentSpecialty?: string;
+  currentTreatment?: string;
+  smokingHistory?: string;
+  alcoholHistory?: string;
+  occupationalExposure?: string;
+  familyHistory?: { relationship: string; cancerType: string; ageAtDiagnosis?: number }[];
+  comorbidities?: { name: string; type?: ComorbidityType; severity?: ComorbiditySeverity; controlled?: boolean }[];
+  currentMedications?: { name: string; dosage?: string; frequency?: string; indication?: string; category?: MedicationCategory }[];
+  ehrId?: string;
 }
 
 export interface UpdatePatientDto extends Partial<CreatePatientDto> {
@@ -435,6 +443,39 @@ export interface PatientDetail extends Patient {
   };
 }
 
+// ─── Timeline Unificada ──────────────────────────────────────────────────────
+
+export type TimelineEventType =
+  | 'symptom'
+  | 'alert'
+  | 'exam'
+  | 'navigation_step'
+  | 'consultation'
+  | 'diagnosis'
+  | 'treatment'
+  | 'note'
+  | 'intervention'
+  | 'questionnaire';
+
+export interface TimelineEvent {
+  type: TimelineEventType;
+  date: string;
+  payload: Record<string, any>;
+}
+
+export interface TimelineResponse {
+  data: TimelineEvent[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface TimelineQueryParams {
+  limit?: number;
+  offset?: number;
+  types?: TimelineEventType[];
+}
+
 export interface ImportCsvResult {
   message: string;
   success: number;
@@ -444,7 +485,8 @@ export interface ImportCsvResult {
 
 export const patientsApi = {
   async getAll(): Promise<Patient[]> {
-    return apiClient.get<Patient[]>('/patients');
+    const data = await apiClient.get<Patient[] | null>('/patients');
+    return data ?? [];
   },
 
   async getById(id: string): Promise<Patient> {
@@ -452,9 +494,9 @@ export const patientsApi = {
   },
 
   async getDetail(id: string): Promise<PatientDetail> {
-    const response = await apiClient.get<{ data: PatientDetail } | PatientDetail>(
-      `/patients/${id}/detail`
-    );
+    const response = await apiClient.get<
+      { data: PatientDetail } | PatientDetail
+    >(`/patients/${id}/detail`);
     // Backend retorna { data: patient }; garantir que retornamos o objeto paciente
     if (response && typeof response === 'object' && 'data' in response) {
       return (response as { data: PatientDetail }).data;
@@ -539,9 +581,22 @@ export const patientsApi = {
     );
   },
 
-  async getPatientSummary(
-    patientId: string
-  ): Promise<PatientSummaryResponse> {
+  async getTimeline(
+    patientId: string,
+    params?: TimelineQueryParams
+  ): Promise<TimelineResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    if (params?.types?.length)
+      searchParams.set('types', params.types.join(','));
+    const qs = searchParams.toString();
+    return apiClient.get<TimelineResponse>(
+      `/patients/${patientId}/timeline${qs ? `?${qs}` : ''}`
+    );
+  },
+
+  async getPatientSummary(patientId: string): Promise<PatientSummaryResponse> {
     return apiClient.get<PatientSummaryResponse>(
       `/agent/patients/${patientId}/summary`
     );
@@ -689,9 +744,7 @@ export const patientsApi = {
   // ── Comorbidities ──────────────────────────────────────────────────────────
 
   async getComorbidities(patientId: string): Promise<Comorbidity[]> {
-    return apiClient.get<Comorbidity[]>(
-      `/patients/${patientId}/comorbidities`
-    );
+    return apiClient.get<Comorbidity[]>(`/patients/${patientId}/comorbidities`);
   },
 
   async createComorbidity(
@@ -736,7 +789,12 @@ export const patientsApi = {
 
   async addPerformanceStatus(
     patientId: string,
-    data: { ecogScore: number; assessedAt?: string; notes?: string; source?: string }
+    data: {
+      ecogScore: number;
+      assessedAt?: string;
+      notes?: string;
+      source?: string;
+    }
   ): Promise<PerformanceStatusEntry> {
     return apiClient.post<PerformanceStatusEntry>(
       `/patients/${patientId}/performance-status`,

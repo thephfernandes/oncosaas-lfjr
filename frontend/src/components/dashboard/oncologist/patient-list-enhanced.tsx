@@ -55,10 +55,14 @@ export function PatientListEnhanced({
 
   // Effective filters: externalFilters take precedence over internal state
   const effectivePriorityFilter = externalFilters?.priority ?? priorityFilter;
-  const effectiveCancerTypeFilter = externalFilters?.cancerType ?? cancerTypeFilter;
-  const effectiveJourneyStageFilter = externalFilters?.journeyStage ?? journeyStageFilter;
-  const effectiveHasAlertsFilter = externalFilters?.hasAlerts ?? hasAlertsFilter;
-  const effectiveHasOverdueStepsFilter = externalFilters?.hasOverdueSteps ?? hasOverdueStepsFilter;
+  const effectiveCancerTypeFilter =
+    externalFilters?.cancerType ?? cancerTypeFilter;
+  const effectiveJourneyStageFilter =
+    externalFilters?.journeyStage ?? journeyStageFilter;
+  const effectiveHasAlertsFilter =
+    externalFilters?.hasAlerts ?? hasAlertsFilter;
+  const effectiveHasOverdueStepsFilter =
+    externalFilters?.hasOverdueSteps ?? hasOverdueStepsFilter;
 
   // Obter valores únicos para filtros
   const uniqueCancerTypes = useMemo(() => {
@@ -106,12 +110,18 @@ export function PatientListEnhanced({
       }
 
       // Filtro de tipo de câncer
-      if (effectiveCancerTypeFilter && patient.cancerType !== effectiveCancerTypeFilter) {
+      if (
+        effectiveCancerTypeFilter &&
+        patient.cancerType !== effectiveCancerTypeFilter
+      ) {
         return false;
       }
 
       // Filtro de estágio da jornada
-      if (effectiveJourneyStageFilter && patient.currentStage !== effectiveJourneyStageFilter) {
+      if (
+        effectiveJourneyStageFilter &&
+        patient.currentStage !== effectiveJourneyStageFilter
+      ) {
         return false;
       }
 
@@ -121,7 +131,10 @@ export function PatientListEnhanced({
       }
 
       // Filtro de alertas
-      if (effectiveHasAlertsFilter && (patient.pendingAlertsCount ?? patient._count?.alerts ?? 0) === 0) {
+      if (
+        effectiveHasAlertsFilter &&
+        (patient.pendingAlertsCount ?? patient._count?.alerts ?? 0) === 0
+      ) {
         return false;
       }
 
@@ -130,7 +143,8 @@ export function PatientListEnhanced({
       if (effectiveHasOverdueStepsFilter) {
         // Por enquanto, verificamos se tem alertas de navegação
         // Isso será melhorado quando tivermos dados de etapas diretamente no paciente
-        const hasNavigationAlerts = (patient.pendingAlertsCount ?? patient._count?.alerts ?? 0) > 0;
+        const hasNavigationAlerts =
+          (patient.pendingAlertsCount ?? patient._count?.alerts ?? 0) > 0;
         if (!hasNavigationAlerts) {
           return false;
         }
@@ -477,9 +491,12 @@ export function PatientListEnhanced({
                         )}
                       </span>
                     )}
-                    {(patient.pendingAlertsCount ?? patient._count?.alerts ?? 0) > 0 && (
+                    {(patient.pendingAlertsCount ??
+                      patient._count?.alerts ??
+                      0) > 0 && (
                       <span className="text-red-600 font-semibold">
-                        {patient.pendingAlertsCount ?? patient._count?.alerts} alerta(s)
+                        {patient.pendingAlertsCount ?? patient._count?.alerts}{' '}
+                        alerta(s)
                       </span>
                     )}
                   </div>

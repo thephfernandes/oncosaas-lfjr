@@ -8,13 +8,7 @@ import {
 } from '@/lib/validations/treatment';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
@@ -145,22 +139,15 @@ export function TreatmentForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de Tratamento *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.entries(TREATMENT_TYPE_LABELS).map(
-                      ([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <SearchableSelect
+                    options={Object.entries(TREATMENT_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    placeholder="Buscar tipo de tratamento..."
+                    aria-label="Tipo de tratamento"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -231,22 +218,15 @@ export function TreatmentForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Intenção</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a intenção" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.entries(TREATMENT_INTENT_LABELS).map(
-                      ([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <SearchableSelect
+                    options={Object.entries(TREATMENT_INTENT_LABELS).map(([value, label]) => ({ value, label }))}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                    placeholder="Buscar intenção..."
+                    aria-label="Intenção do tratamento"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -259,22 +239,15 @@ export function TreatmentForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.entries(TREATMENT_STATUS_LABELS).map(
-                      ([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <SearchableSelect
+                    options={Object.entries(TREATMENT_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                    placeholder="Buscar status..."
+                    aria-label="Status do tratamento"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -475,22 +448,15 @@ export function TreatmentForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Resposta ao Tratamento</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a resposta" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.entries(TREATMENT_RESPONSE_LABELS).map(
-                      ([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <SearchableSelect
+                    options={Object.entries(TREATMENT_RESPONSE_LABELS).map(([value, label]) => ({ value, label }))}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v === '' ? undefined : v)}
+                    placeholder="Buscar resposta..."
+                    aria-label="Resposta ao tratamento"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
