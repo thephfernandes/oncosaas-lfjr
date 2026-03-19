@@ -279,7 +279,7 @@ Variable	            Purpose
 NEXT_PUBLIC_API_URL	    Backend REST API base URL
 NEXT_PUBLIC_WS_URL	    WebSocket server URL
 ```
-See .env.example at the repo root for the full list.
+See `frontend/.env.example` for the full list.
 
 When assessing configuration:
 - verify env usage is centralized and typed where possible

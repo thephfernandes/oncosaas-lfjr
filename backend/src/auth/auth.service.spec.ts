@@ -74,12 +74,36 @@ describe('AuthService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should throw UnauthorizedException when tenantId is missing', async () => {
-      mockRedis.get.mockResolvedValue(null); // not locked
+    it('should authenticate without tenantId (first login)', async () => {
+      const hashedPassword = await bcrypt.hash('correct-password', 10);
 
-      await expect(
-        service.validateUser('test@example.com', 'password')
-      ).rejects.toThrow(UnauthorizedException);
+      mockRedis.get.mockResolvedValue(null); // not locked
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: 'user-1',
+        email: 'test@example.com',
+        password: hashedPassword,
+        mfaEnabled: false,
+        tenantId: 'tenant-1',
+        role: 'NURSE',
+        tenant: { id: 'tenant-1', name: 'Test' },
+      });
+      mockRedis.del.mockResolvedValue(1);
+
+      const result = await service.validateUser(
+        'test@example.com',
+        'correct-password'
+      );
+
+      expect(result).toMatchObject({
+        id: 'user-1',
+        email: 'test@example.com',
+        tenantId: 'tenant-1',
+      });
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { email: 'test@example.com' },
+        })
+      );
     });
 
     it('should throw UnauthorizedException when user not found in tenant', async () => {
@@ -171,6 +195,7 @@ describe('AuthService', () => {
         service.validateUser('test@example.com', 'correct-password', 'tenant-1')
       ).rejects.toThrow(UnauthorizedException);
     });
+
   });
 
   describe('login', () => {
