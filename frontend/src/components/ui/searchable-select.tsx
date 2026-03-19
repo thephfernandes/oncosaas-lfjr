@@ -78,27 +78,30 @@ export function SearchableSelect({
     [options, inputValue]
   );
 
-  const syncInputFromValue = useCallback(() => {
-    if (selectedOption) {
-      setInputValue(selectedOption.label);
-    } else if (value) {
-      setInputValue(value);
-    } else {
-      setInputValue('');
-    }
+  const getInputValueFromProp = useCallback(() => {
+    if (selectedOption) return selectedOption.label;
+    if (value) return value;
+    return '';
   }, [value, selectedOption]);
 
   useEffect(() => {
     if (open) {
-      syncInputFromValue();
-      setHighlightedIndex(0);
+      const synced = getInputValueFromProp();
+      // Batch state updates - React 18+ batches these automatically
+      queueMicrotask(() => {
+        setInputValue(synced);
+        setHighlightedIndex(0);
+      });
       setTimeout(() => inputRef.current?.focus(), 0);
     }
-  }, [open, syncInputFromValue]);
+  }, [open, getInputValueFromProp]);
 
   useEffect(() => {
-    syncInputFromValue();
-  }, [value, syncInputFromValue]);
+    const synced = getInputValueFromProp();
+    queueMicrotask(() => {
+      setInputValue(synced);
+    });
+  }, [value, getInputValueFromProp]);
 
   const handleSelect = useCallback(
     (option: SearchableSelectOption) => {
@@ -159,7 +162,7 @@ export function SearchableSelect({
       case 'Escape':
         e.preventDefault();
         setOpen(false);
-        syncInputFromValue();
+        setInputValue(getInputValueFromProp());
         inputRef.current?.blur();
         break;
       default:
@@ -176,7 +179,7 @@ export function SearchableSelect({
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
-      syncInputFromValue();
+      setInputValue(getInputValueFromProp());
     }
     setOpen(next);
   };
@@ -226,6 +229,7 @@ export function SearchableSelect({
           {filteredOptions.length === 0 ? (
             <li
               role="option"
+              aria-selected={false}
               className="px-3 py-2 text-sm text-muted-foreground"
             >
               {emptyMessage}
