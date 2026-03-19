@@ -161,7 +161,7 @@ Orchestrator uses `claude-opus-4-6` with adaptive thinking (max 8 iterations). S
 
 Anthropic (Claude) is preferred. OpenAI is the fallback. `run_agentic_loop()` handles both. When no key is present, all generation methods return `_fallback_response()` — a safe Portuguese message that must never contain clinical advice or technical details.
 
-Key resolution order: explicit runtime config → `ai-service/.env` → project root `.env` → OS env.
+Key resolution order: explicit runtime config → `ai-service/.env` → OS env.
 
 #### Rules
 - Never log API key values — log masked forms only (`key[:4]...key[-4:]`)
@@ -222,7 +222,7 @@ Corpus loaded from `src/agent/rag/oncology_corpus.json` (not committed — RAG i
 | `RAG_TOP_K` | Top K RAG passages | `4` |
 | `RAG_SCORE_THRESHOLD` | RAG similarity threshold | `0.30` |
 
-`.env` load order (later overrides earlier): `../.env` (project root shared config) → `ai-service/.env` (service overrides).
+`.env` source: `ai-service/.env` (service-local config).
 
 When assessing configuration:
 - Verify env vars are read after `load_dotenv()` runs — singletons constructed at module import time may read before dotenv loads

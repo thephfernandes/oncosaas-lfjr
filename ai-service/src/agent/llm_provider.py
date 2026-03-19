@@ -37,17 +37,12 @@ class LLMProvider:
 
     def _read_dotenv_key(self, key_name: str) -> Optional[str]:
         """
-        Resolve API keys from local files first to avoid stale OS env overrides.
-        Priority:
-        1) ai-service/.env
-        2) project root ../.env
+        Resolve API keys from ai-service/.env first to avoid stale OS env overrides.
         """
         service_root = Path(__file__).resolve().parents[2]  # ai-service/
-        project_root = service_root.parent                  # repo root
 
-        for env_path in (service_root / ".env", project_root / ".env"):
-            if not env_path.exists():
-                continue
+        env_path = service_root / ".env"
+        if env_path.exists():
             values = dotenv_values(env_path)
             value = values.get(key_name)
             if value and not self._looks_like_placeholder(value):
