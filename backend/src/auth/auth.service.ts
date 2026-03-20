@@ -80,14 +80,8 @@ export class AuthService {
       );
     }
 
-    if (!tenantId) {
-      throw new UnauthorizedException(
-        'tenantId é obrigatório para autenticação'
-      );
-    }
-
     const user = await this.prisma.user.findFirst({
-      where: { tenantId, email },
+      where: tenantId ? { tenantId, email } : { email },
       include: { tenant: true },
     });
 
@@ -212,7 +206,7 @@ export class AuthService {
         mfaEnabled: true,
         createdAt: true,
         updatedAt: true,
-        tenant: { select: { id: true, name: true } },
+        tenant: { select: { id: true, name: true, settings: true } },
       },
     });
 
@@ -277,6 +271,50 @@ export class AuthService {
 
     await this.prisma.user.update({ where: { id: userId }, data: updateData });
     return this.getProfile(userId);
+  }
+
+  // ─── Tenant Settings ─────────────────────────────────────────────────────────
+
+  async updateTenantSettings(tenantId: string, enabledCancerTypes: string[]) {
+    const validTypes = [
+      'breast',
+      'lung',
+      'colorectal',
+      'prostate',
+      'kidney',
+      'bladder',
+      'testicular',
+      'other',
+    ];
+    const normalized = enabledCancerTypes.map((t) => t.toLowerCase());
+    const invalid = normalized.filter((t) => !validTypes.includes(t));
+    if (invalid.length > 0) {
+      throw new ForbiddenException(
+        `Tipos de câncer inválidos: ${invalid.join(', ')}. Válidos: ${validTypes.join(', ')}`,
+      );
+    }
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+    if (!tenant) {
+      throw new UnauthorizedException('Tenant não encontrado');
+    }
+
+    const currentSettings =
+      (tenant.settings as Record<string, unknown>) ?? {};
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        settings: {
+          ...currentSettings,
+          enabledCancerTypes: normalized,
+        },
+      },
+    });
+
+    return { enabledCancerTypes: normalized };
   }
 
   // ─── Password Reset ──────────────────────────────────────────────────────────
@@ -396,6 +434,9 @@ export class AuthService {
         data: {
           name: dto.institutionName,
           schemaName,
+          settings: {
+            enabledCancerTypes: ['bladder'],
+          },
         },
       });
 
