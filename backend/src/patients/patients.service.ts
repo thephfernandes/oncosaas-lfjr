@@ -41,6 +41,40 @@ export class PatientsService {
     private readonly priorityRecalculationService?: PriorityRecalculationService
   ) {}
 
+  /**
+   * Retorna os tipos de câncer habilitados para o tenant.
+   * Lê de tenant.settings.enabledCancerTypes. Default MVP: ['bladder'].
+   */
+  private async getEnabledCancerTypes(tenantId: string): Promise<string[]> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { settings: true },
+    });
+    const settings = tenant?.settings as Record<string, unknown> | null;
+    const enabled = settings?.enabledCancerTypes;
+    if (Array.isArray(enabled) && enabled.length > 0) {
+      return enabled.map((t: unknown) => String(t).toLowerCase());
+    }
+    return ['bladder']; // Default MVP
+  }
+
+  /**
+   * Valida se um tipo de câncer está habilitado para o tenant.
+   * Lança BadRequestException se não estiver.
+   */
+  private async validateCancerType(
+    cancerType: string | null | undefined,
+    tenantId: string
+  ): Promise<void> {
+    if (!cancerType) {return;}
+    const enabledTypes = await this.getEnabledCancerTypes(tenantId);
+    if (!enabledTypes.includes(cancerType.toLowerCase())) {
+      throw new BadRequestException(
+        `Tipo de câncer '${cancerType}' não está habilitado para este tenant. Tipos habilitados: ${enabledTypes.join(', ')}`
+      );
+    }
+  }
+
   async findAll(
     tenantId: string,
     options?: { limit?: number; offset?: number }
@@ -246,6 +280,16 @@ export class PatientsService {
     const normalizedPhone = normalizePhoneNumber(createPatientDto.phone);
     const phoneHash = hashPhoneNumber(normalizedPhone);
 
+    // Validar tipos de câncer habilitados para o tenant
+    if (createPatientDto.cancerType) {
+      await this.validateCancerType(createPatientDto.cancerType, tenantId);
+    }
+    for (const diag of createPatientDto.cancerDiagnoses ?? []) {
+      if (diag.cancerType) {
+        await this.validateCancerType(String(diag.cancerType), tenantId);
+      }
+    }
+
     // Extrair cancerDiagnoses do DTO para processar separadamente
     const { cancerDiagnoses, ...patientData } = createPatientDto;
 
@@ -380,6 +424,7 @@ export class PatientsService {
       updateData.email = updatePatientDto.email;
     }
     if (updatePatientDto.cancerType !== undefined) {
+      await this.validateCancerType(updatePatientDto.cancerType, tenantId);
       updateData.cancerType = updatePatientDto.cancerType;
     }
     if (updatePatientDto.stage !== undefined) {

@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search, Filter } from 'lucide-react';
+import { JOURNEY_STAGE_LABELS } from '@/lib/utils/journey-stage';
 
 interface PatientFiltersProps {
   searchTerm: string;
@@ -103,10 +104,11 @@ export function PatientFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="SCREENING">Rastreio</SelectItem>
-            <SelectItem value="DIAGNOSIS">Diagnóstico</SelectItem>
-            <SelectItem value="TREATMENT">Tratamento</SelectItem>
-            <SelectItem value="FOLLOW_UP">Seguimento</SelectItem>
+            <SelectItem value="SCREENING">{JOURNEY_STAGE_LABELS['SCREENING']}</SelectItem>
+            <SelectItem value="DIAGNOSIS">{JOURNEY_STAGE_LABELS['DIAGNOSIS']}</SelectItem>
+            <SelectItem value="TREATMENT">{JOURNEY_STAGE_LABELS['TREATMENT']}</SelectItem>
+            <SelectItem value="FOLLOW_UP">{JOURNEY_STAGE_LABELS['FOLLOW_UP']}</SelectItem>
+            <SelectItem value="PALLIATIVE">{JOURNEY_STAGE_LABELS['PALLIATIVE']}</SelectItem>
           </SelectContent>
         </Select>
       </div>

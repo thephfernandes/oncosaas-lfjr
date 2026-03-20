@@ -35,6 +35,7 @@ import {
 } from '@/lib/utils/patient-cancer-type';
 import { usePatientUpdate } from '@/hooks/use-patient-update';
 import { toast } from 'sonner';
+import { JOURNEY_STAGE_LABELS } from '@/lib/utils/journey-stage';
 
 const patientQuickEditSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -42,7 +43,7 @@ const patientQuickEditSchema = z.object({
   phone: z.string().min(10, 'Telefone é obrigatório (mín. 10 dígitos)'),
   birthDate: z.string().min(1, 'Data de nascimento é obrigatória'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
-  currentStage: z.enum(['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP']),
+  currentStage: z.enum(['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP', 'PALLIATIVE']),
   cancerType: z
     .enum([
       'breast',
@@ -64,10 +65,11 @@ const CURRENT_STAGE_OPTIONS: {
   value: PatientQuickEditFormData['currentStage'];
   label: string;
 }[] = [
-  { value: 'SCREENING', label: 'Em Rastreio' },
-  { value: 'DIAGNOSIS', label: 'Diagnóstico' },
-  { value: 'TREATMENT', label: 'Tratamento' },
-  { value: 'FOLLOW_UP', label: 'Seguimento' },
+  { value: 'SCREENING', label: JOURNEY_STAGE_LABELS['SCREENING'] },
+  { value: 'DIAGNOSIS', label: JOURNEY_STAGE_LABELS['DIAGNOSIS'] },
+  { value: 'TREATMENT', label: JOURNEY_STAGE_LABELS['TREATMENT'] },
+  { value: 'FOLLOW_UP', label: JOURNEY_STAGE_LABELS['FOLLOW_UP'] },
+  { value: 'PALLIATIVE', label: JOURNEY_STAGE_LABELS['PALLIATIVE'] },
 ];
 
 /** Valor usado no Select para "nenhum tipo"; Radix não permite value="" em SelectItem */

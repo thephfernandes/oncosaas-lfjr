@@ -12,6 +12,7 @@ import {
   UploadedFile,
   BadRequestException,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -245,17 +246,32 @@ export class OncologyNavigationController {
     );
   }
 
+  @Get('patients/:patientId/step-templates/:journeyStage')
+  async getStepTemplates(
+    @Param('patientId', ParseUUIDPipe) patientId: string,
+    @Param('journeyStage') journeyStage: JourneyStage,
+    @Request() req: any
+  ) {
+    return this.navigationService.getAvailableStepTemplates(
+      patientId,
+      req.user.tenantId,
+      journeyStage
+    );
+  }
+
   @Post('patients/:patientId/stages/:journeyStage/create-missing')
   @Roles(UserRole.ADMIN, UserRole.COORDINATOR, UserRole.ONCOLOGIST)
   async createMissingStepsForStage(
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @Param('journeyStage') journeyStage: JourneyStage,
+    @Body('stepKey') stepKey: string | undefined,
     @Request() req: any
   ) {
     const result = await this.navigationService.createMissingStepsForStage(
       patientId,
       req.user.tenantId,
-      journeyStage
+      journeyStage,
+      stepKey || undefined
     );
     return {
       message: `Etapas faltantes criadas para o estágio ${journeyStage}`,
