@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, List, Optional
-from ..models.priority_model import priority_model, FEATURE_COLUMNS, extract_features
+from ..models.priority_model import priority_model, FEATURE_COLUMNS, extract_features, CANCER_TYPE_MAP, STAGE_MAP
+from ..agent.tracer import tracer
 from ..models.schemas import (
     AgentProcessRequest,
     AgentProcessResponse,
@@ -128,6 +129,10 @@ DISPOSITION_TO_SCORE = {
     "ER_DAYS": 87.5,
     "ER_IMMEDIATE": 100.0,
 }
+
+
+PRIORITY_STAGE_MAP = STAGE_MAP
+PRIORITY_CANCER_MAP = CANCER_TYPE_MAP
 
 
 def _build_features(req: PriorityRequest) -> Dict[str, float]:
@@ -890,7 +895,7 @@ def _highest_severity(risks: List[RiskPrediction]) -> str:
 
 
 @router.post("/agent/predict-risk", response_model=PredictRiskResponse)
-async def predict_risk(request: PredictRiskRequest):
+async def predict_agent_risk(request: PredictRiskRequest):
     """Predict risk factors for a single patient (delays, worsening, abandonment)."""
     try:
         risks = _analyze_patient_risk(request)
@@ -1018,12 +1023,6 @@ def _build_nurse_assist_fallback(request: NurseAssistRequest) -> NurseAssistResp
         parts.append(f"Alertas ativos: {len(request.alerts)}")
 
     summary = ". ".join(parts) + "."
-
-    last_msgs = (
-        request.conversation_history[-3:] if request.conversation_history else []
-    )
-    patient_msgs = [m for m in last_msgs if m.role == "patient"]
-    last_patient = patient_msgs[-1].content if patient_msgs else ""
 
     replies = [
         SuggestedReply(

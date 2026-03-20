@@ -56,8 +56,6 @@ try:
 except Exception as e:
     logger.warning("Priority model initialization deferred: %s", e, exc_info=True)
 
-from src.api.routes import router
-
 
 class Settings(BaseSettings):
     openai_api_key: str = ""
