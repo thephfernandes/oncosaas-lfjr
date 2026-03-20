@@ -500,12 +500,9 @@ export class PatientsService {
       const oldStage = existingPatient.currentStage;
       const newStage = updatedPatient.currentStage || JourneyStage.SCREENING;
 
-      // Quando currentStage ou cancerType mudam: etapas são recriadas em initializeNavigationSteps;
-      // prazos (dueDate/expectedDate) são atribuídos apenas às etapas da fase atual (oncology-navigation.service).
-      if (
-        newCancerType &&
-        (newCancerType !== oldCancerType || newStage !== oldStage)
-      ) {
+      // Quando cancerType muda: reinicializar todas as etapas (delete + create)
+      // Quando apenas a fase avança (mesmo cancer type): criar etapas faltantes da nova fase
+      if (newCancerType && newCancerType !== oldCancerType) {
         try {
           await this.navigationService.initializeNavigationSteps(
             id,
@@ -516,6 +513,20 @@ export class PatientsService {
         } catch (error) {
           this.logger.error(
             'Erro ao atualizar etapas de navegação:',
+            error instanceof Error ? error.stack : String(error)
+          );
+        }
+      } else if (newCancerType && newStage !== oldStage) {
+        // Apenas fase mudou — criar etapas faltantes da nova fase sem deletar as anteriores
+        try {
+          await this.navigationService.createMissingStepsForStage(
+            id,
+            tenantId,
+            newStage,
+          );
+        } catch (error) {
+          this.logger.error(
+            'Erro ao criar etapas da nova fase:',
             error instanceof Error ? error.stack : String(error)
           );
         }
