@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import os
 from typing import Any, Dict, Optional
@@ -5,7 +6,6 @@ import joblib
 import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier
-from __future__ import annotations
 
 """
 Oncology Priority Model — Ordinal Classifier (Phase 3).
