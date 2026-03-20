@@ -61,87 +61,10 @@ export class OncologyNavigationService {
       },
       orderBy: [
         { journeyStage: 'asc' },
-        { expectedDate: 'asc' },
+        { stepOrder: 'asc' },
         { createdAt: 'asc' },
       ],
     });
-
-    // Verificar se há etapas para todos os estágios da jornada
-    const allStages = [
-      JourneyStage.SCREENING,
-      JourneyStage.DIAGNOSIS,
-      JourneyStage.TREATMENT,
-      JourneyStage.FOLLOW_UP,
-    ];
-
-    const stagesWithSteps = new Set(steps.map((step) => step.journeyStage));
-
-    // Se não houver etapas para todos os estágios, verificar se precisa criar
-    const missingStages = allStages.filter(
-      (stage) => !stagesWithSteps.has(stage)
-    );
-
-    // Se há estágios faltantes e o paciente tem pelo menos uma etapa,
-    // significa que foi criado com a lógica antiga - re-inicializar completamente
-    if (missingStages.length > 0 && steps.length > 0) {
-      // Buscar informações do paciente para re-inicializar
-      const patient = await this.prisma.patient.findFirst({
-        where: {
-          id: patientId,
-          tenantId,
-        },
-        select: {
-          cancerType: true,
-          currentStage: true,
-          cancerDiagnoses: {
-            select: {
-              cancerType: true,
-            },
-            take: 1,
-          },
-        },
-      });
-
-      if (patient) {
-        // Determinar tipo de câncer
-        const cancerTypeRaw =
-          patient.cancerType ||
-          patient.cancerDiagnoses?.[0]?.cancerType ||
-          null;
-
-        if (cancerTypeRaw) {
-          const cancerType = String(cancerTypeRaw).toLowerCase();
-          const currentStage = patient.currentStage || JourneyStage.SCREENING;
-
-          // Re-inicializar todas as etapas (isso vai deletar as antigas e criar novas para todos os estágios)
-          await this.initializeNavigationSteps(
-            patientId,
-            tenantId,
-            cancerType,
-            currentStage
-          );
-
-          // Buscar novamente as etapas após re-inicialização
-          const reinitializedSteps = await this.prisma.navigationStep.findMany({
-            where: {
-              patientId,
-              tenantId,
-            },
-            orderBy: [
-              { journeyStage: 'asc' },
-              { expectedDate: 'asc' },
-              { createdAt: 'asc' },
-            ],
-          });
-
-          // Garantir que journeyStage seja retornado como string
-          return reinitializedSteps.map((step) => ({
-            ...step,
-            journeyStage: String(step.journeyStage),
-          }));
-        }
-      }
-    }
 
     // Garantir que journeyStage seja retornado como string (Prisma pode retornar como enum)
     return steps.map((step) => ({
@@ -369,6 +292,8 @@ export class OncologyNavigationService {
 
     // Cascade de prazos e bifurcação ao completar
     if (updateDto.isCompleted && !existingStep.isCompleted) {
+      // Criar steps da próxima fase se ainda não existirem (ex: conclusão de SCREENING → cria DIAGNOSIS)
+      await this.maybeCreateNextStageSteps(updatedStep, tenantId);
       await this.cascadeDependentStepDates(updatedStep, tenantId);
       await this.applyBladderCancerBifurcation(updatedStep, tenantId);
       await this.checkLegalCheckpoints(updatedStep, tenantId);
@@ -500,10 +425,16 @@ export class OncologyNavigationService {
     }
 
     // Obter configurações de etapas com prazos relativos
-    const steps = this.getStepConfigs(cancerType.toLowerCase(), patient.status);
+    const allSteps = this.getStepConfigs(cancerType.toLowerCase(), patient.status);
+
+    // Filtrar: criar apenas etapas da fase atual e fases anteriores
+    const currentStageOrder = JOURNEY_STAGE_ORDER[stage] ?? 0;
+    const steps = allSteps.filter(
+      (s) => (JOURNEY_STAGE_ORDER[s.journeyStage] ?? 0) <= currentStageOrder,
+    );
 
     this.logger.log(
-      `Encontradas ${steps.length} etapas para ${cancerType} no estágio ${stage}`
+      `Encontradas ${steps.length} etapas para ${cancerType} no estágio ${stage} (de ${allSteps.length} totais)`
     );
 
     if (steps.length === 0) {
@@ -807,36 +738,16 @@ export class OncologyNavigationService {
           continue;
         }
 
-        // Verificar se já tem etapas para todos os estágios da jornada
-        const allStages = [
-          JourneyStage.SCREENING,
-          JourneyStage.DIAGNOSIS,
-          JourneyStage.TREATMENT,
-          JourneyStage.FOLLOW_UP,
-        ];
-
-        // Buscar todas as etapas do paciente (não apenas uma)
-        const allPatientSteps = await this.prisma.navigationStep.findMany({
+        // Verificar se o paciente já tem etapas (qualquer fase)
+        const stepCount = await this.prisma.navigationStep.count({
           where: {
             patientId: patient.id,
             tenantId,
           },
-          select: {
-            journeyStage: true,
-          },
         });
 
-        const stagesWithSteps = new Set(
-          allPatientSteps.map((step) => step.journeyStage)
-        );
-
-        // Verificar se há estágios faltantes
-        const missingStages = allStages.filter(
-          (stage) => !stagesWithSteps.has(stage)
-        );
-
-        // Se não tem etapas ou tem etapas incompletas, re-inicializar
-        if (allPatientSteps.length === 0 || missingStages.length > 0) {
+        // Inicializar apenas se não tem nenhuma etapa ainda
+        if (stepCount === 0) {
           // Converter para minúsculas para garantir consistência
           const cancerType = String(cancerTypeRaw).toLowerCase();
 
@@ -1374,15 +1285,27 @@ export class OncologyNavigationService {
         stepOrder: 1,
       },
       {
+        journeyStage: JourneyStage.SCREENING,
+        stepKey: 'clinical_suspicion',
+        stepName: 'Suspeita Clínica',
+        stepDescription:
+          'Sintomas clínicos sugestivos (hematúria, disúria, urgência miccional). Complementar ao exame de rastreio — prazo de 30 dias para diagnóstico.',
+        isRequired: false,
+        dependsOnStepKey: null,
+        relativeDaysMin: null,
+        relativeDaysMax: null,
+        stepOrder: 2,
+      },
+      {
         journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'cystoscopy',
         stepName: 'Cistoscopia',
-        stepDescription: 'Visualização endoscópica da bexiga para avaliação diagnóstica',
+        stepDescription: 'Visualização endoscópica da bexiga para avaliação diagnóstica. Prazo: até 30 dias após suspeita clínica ou exame de rastreio alterado.',
         isRequired: true,
         dependsOnStepKey: 'urine_cytology',
         relativeDaysMin: 14,
-        relativeDaysMax: 21,
-        stepOrder: 2,
+        relativeDaysMax: 30,
+        stepOrder: 3,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1393,7 +1316,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'cystoscopy',
         relativeDaysMin: 14,
         relativeDaysMax: 21,
-        stepOrder: 3,
+        stepOrder: 4,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1404,7 +1327,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'transurethral_resection',
         relativeDaysMin: 0,
         relativeDaysMax: 7,
-        stepOrder: 4,
+        stepOrder: 5,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1415,7 +1338,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 5,
+        stepOrder: 6,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1426,7 +1349,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 6,
+        stepOrder: 7,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1434,10 +1357,10 @@ export class OncologyNavigationService {
         stepName: 'BCG Intravesical',
         stepDescription: 'Imunoterapia intravesical — NMIBC alto risco (indução 6 semanas)',
         isRequired: false,
-        dependsOnStepKey: 'transurethral_resection',
+        dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 14,
         relativeDaysMax: 42,
-        stepOrder: 7,
+        stepOrder: 8,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1448,7 +1371,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 30,
         relativeDaysMax: 42,
-        stepOrder: 8,
+        stepOrder: 9,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1459,7 +1382,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'radical_cystectomy',
         relativeDaysMin: 0,
         relativeDaysMax: 0,
-        stepOrder: 9,
+        stepOrder: 10,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1470,7 +1393,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 30,
         relativeDaysMax: 30,
-        stepOrder: 10,
+        stepOrder: 11,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1481,7 +1404,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'intravesical_bcg',
         relativeDaysMin: 90,
         relativeDaysMax: 90,
-        stepOrder: 11,
+        stepOrder: 12,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1492,7 +1415,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'intravesical_bcg',
         relativeDaysMin: 180,
         relativeDaysMax: 180,
-        stepOrder: 12,
+        stepOrder: 13,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1503,7 +1426,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'intravesical_bcg',
         relativeDaysMin: 365,
         relativeDaysMax: 365,
-        stepOrder: 13,
+        stepOrder: 14,
       },
     ];
   }
@@ -1526,6 +1449,18 @@ export class OncologyNavigationService {
       },
       {
         journeyStage: JourneyStage.SCREENING,
+        stepKey: 'clinical_suspicion',
+        stepName: 'Suspeita Clínica',
+        stepDescription:
+          'Sintomas clínicos sugestivos (alteração do hábito intestinal, sangramento retal, dor abdominal). Complementar ao exame de rastreio — prazo de 30 dias para diagnóstico.',
+        isRequired: false,
+        dependsOnStepKey: null,
+        relativeDaysMin: null,
+        relativeDaysMax: null,
+        stepOrder: 2,
+      },
+      {
+        journeyStage: JourneyStage.SCREENING,
         stepKey: 'colonoscopy',
         stepName: 'Colonoscopia de Rastreio',
         stepDescription: 'Colonoscopia de rastreio (se PSOF positivo)',
@@ -1533,18 +1468,18 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'fecal_occult_blood',
         relativeDaysMin: 0,
         relativeDaysMax: 30,
-        stepOrder: 2,
+        stepOrder: 3,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'colonoscopy_with_biopsy',
         stepName: 'Colonoscopia com Biópsia',
-        stepDescription: 'Colonoscopia diagnóstica com coleta de material para análise',
+        stepDescription: 'Colonoscopia diagnóstica com coleta de material para análise. Prazo: até 30 dias após suspeita clínica ou exame de rastreio alterado.',
         isRequired: true,
         dependsOnStepKey: 'fecal_occult_blood',
         relativeDaysMin: 0,
-        relativeDaysMax: 14,
-        stepOrder: 3,
+        relativeDaysMax: 30,
+        stepOrder: 4,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1555,7 +1490,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'colonoscopy_with_biopsy',
         relativeDaysMin: 0,
         relativeDaysMax: 7,
-        stepOrder: 4,
+        stepOrder: 5,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1566,7 +1501,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 5,
+        stepOrder: 6,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1577,7 +1512,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 6,
+        stepOrder: 7,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1588,7 +1523,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 7,
+        stepOrder: 8,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1599,7 +1534,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 8,
+        stepOrder: 9,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1610,7 +1545,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'staging_ct_abdomen',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 9,
+        stepOrder: 10,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1621,7 +1556,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'surgical_evaluation',
         relativeDaysMin: 21,
         relativeDaysMax: 30,
-        stepOrder: 10,
+        stepOrder: 11,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1632,7 +1567,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'colectomy',
         relativeDaysMin: 42,
         relativeDaysMax: 56,
-        stepOrder: 11,
+        stepOrder: 12,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1643,7 +1578,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'colectomy',
         relativeDaysMin: 42,
         relativeDaysMax: 56,
-        stepOrder: 12,
+        stepOrder: 13,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1654,7 +1589,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'colectomy',
         relativeDaysMin: 90,
         relativeDaysMax: 90,
-        stepOrder: 13,
+        stepOrder: 14,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1665,7 +1600,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'colectomy',
         relativeDaysMin: 365,
         relativeDaysMax: 365,
-        stepOrder: 14,
+        stepOrder: 15,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1676,7 +1611,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'colectomy',
         relativeDaysMin: 365,
         relativeDaysMax: 365,
-        stepOrder: 15,
+        stepOrder: 16,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1687,7 +1622,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'colectomy',
         relativeDaysMin: 1095,
         relativeDaysMax: 1095,
-        stepOrder: 16,
+        stepOrder: 17,
       },
     ];
   }
@@ -1710,6 +1645,18 @@ export class OncologyNavigationService {
       },
       {
         journeyStage: JourneyStage.SCREENING,
+        stepKey: 'clinical_suspicion',
+        stepName: 'Suspeita Clínica',
+        stepDescription:
+          'Sintomas clínicos sugestivos (nódulo palpável, retração cutânea, descarga papilar). Complementar ao exame de rastreio — prazo de 30 dias para diagnóstico.',
+        isRequired: false,
+        dependsOnStepKey: null,
+        relativeDaysMin: null,
+        relativeDaysMax: null,
+        stepOrder: 2,
+      },
+      {
+        journeyStage: JourneyStage.SCREENING,
         stepKey: 'breast_ultrasound',
         stepName: 'USG de Mama',
         stepDescription: 'Ultrassonografia para complementação da mamografia',
@@ -1717,18 +1664,18 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'mammography',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 2,
+        stepOrder: 3,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'breast_biopsy',
         stepName: 'Biópsia de Mama',
-        stepDescription: 'Biópsia percutânea para confirmação histológica',
+        stepDescription: 'Biópsia percutânea para confirmação histológica. Prazo: até 30 dias após suspeita clínica ou exame de rastreio alterado.',
         isRequired: true,
         dependsOnStepKey: 'breast_ultrasound',
         relativeDaysMin: 0,
-        relativeDaysMax: 14,
-        stepOrder: 3,
+        relativeDaysMax: 30,
+        stepOrder: 4,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1739,7 +1686,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'breast_biopsy',
         relativeDaysMin: 0,
         relativeDaysMax: 7,
-        stepOrder: 4,
+        stepOrder: 5,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1750,7 +1697,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 5,
+        stepOrder: 6,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1761,7 +1708,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 6,
+        stepOrder: 7,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1772,7 +1719,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 7,
+        stepOrder: 8,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1783,7 +1730,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 14,
         relativeDaysMax: 30,
-        stepOrder: 8,
+        stepOrder: 9,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1794,7 +1741,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'staging_ct_thorax_abdomen',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 9,
+        stepOrder: 10,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1805,7 +1752,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'surgical_evaluation',
         relativeDaysMin: 14,
         relativeDaysMax: 21,
-        stepOrder: 10,
+        stepOrder: 11,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1816,7 +1763,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'neoadjuvant_chemotherapy',
         relativeDaysMin: 14,
         relativeDaysMax: 35,
-        stepOrder: 11,
+        stepOrder: 12,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1827,7 +1774,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'mastectomy_or_lumpectomy',
         relativeDaysMin: 0,
         relativeDaysMax: 0,
-        stepOrder: 12,
+        stepOrder: 13,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1838,7 +1785,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'mastectomy_or_lumpectomy',
         relativeDaysMin: 28,
         relativeDaysMax: 56,
-        stepOrder: 13,
+        stepOrder: 14,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1849,7 +1796,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'mastectomy_or_lumpectomy',
         relativeDaysMin: 42,
         relativeDaysMax: 56,
-        stepOrder: 14,
+        stepOrder: 15,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1860,7 +1807,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'radiotherapy',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 15,
+        stepOrder: 16,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -1871,7 +1818,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'adjuvant_chemotherapy',
         relativeDaysMin: 0,
         relativeDaysMax: 0,
-        stepOrder: 16,
+        stepOrder: 17,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1882,7 +1829,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'mastectomy_or_lumpectomy',
         relativeDaysMin: 180,
         relativeDaysMax: 180,
-        stepOrder: 17,
+        stepOrder: 18,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1893,7 +1840,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'mastectomy_or_lumpectomy',
         relativeDaysMin: 365,
         relativeDaysMax: 365,
-        stepOrder: 18,
+        stepOrder: 19,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -1904,7 +1851,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'mastectomy_or_lumpectomy',
         relativeDaysMin: 180,
         relativeDaysMax: 180,
-        stepOrder: 19,
+        stepOrder: 20,
       },
     ];
   }
@@ -1926,15 +1873,27 @@ export class OncologyNavigationService {
         stepOrder: 1,
       },
       {
+        journeyStage: JourneyStage.SCREENING,
+        stepKey: 'clinical_suspicion',
+        stepName: 'Suspeita Clínica',
+        stepDescription:
+          'Sintomas clínicos sugestivos (tosse persistente, hemoptise, dispneia, dor torácica). Complementar ao exame de rastreio — prazo de 30 dias para diagnóstico.',
+        isRequired: false,
+        dependsOnStepKey: null,
+        relativeDaysMin: null,
+        relativeDaysMax: null,
+        stepOrder: 2,
+      },
+      {
         journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'ct_thorax_contrast',
         stepName: 'TC de Tórax com Contraste',
-        stepDescription: 'Caracterização detalhada da lesão pulmonar',
+        stepDescription: 'Caracterização detalhada da lesão pulmonar. Prazo: até 30 dias após suspeita clínica ou exame de rastreio alterado.',
         isRequired: true,
         dependsOnStepKey: 'low_dose_ct',
         relativeDaysMin: 0,
-        relativeDaysMax: 14,
-        stepOrder: 2,
+        relativeDaysMax: 30,
+        stepOrder: 3,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1945,7 +1904,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'ct_thorax_contrast',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 3,
+        stepOrder: 4,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1956,7 +1915,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'bronchoscopy_biopsy',
         relativeDaysMin: 0,
         relativeDaysMax: 7,
-        stepOrder: 4,
+        stepOrder: 5,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1967,7 +1926,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 5,
+        stepOrder: 6,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1978,7 +1937,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 6,
+        stepOrder: 7,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -1989,7 +1948,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 7,
+        stepOrder: 8,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2000,7 +1959,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pet_ct',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 8,
+        stepOrder: 9,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2011,7 +1970,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'surgical_evaluation',
         relativeDaysMin: 21,
         relativeDaysMax: 42,
-        stepOrder: 9,
+        stepOrder: 10,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2022,7 +1981,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'lobectomy_or_pneumonectomy',
         relativeDaysMin: 42,
         relativeDaysMax: 56,
-        stepOrder: 10,
+        stepOrder: 11,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2033,7 +1992,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'chemotherapy',
         relativeDaysMin: 0,
         relativeDaysMax: 0,
-        stepOrder: 11,
+        stepOrder: 12,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2044,7 +2003,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'molecular_testing',
         relativeDaysMin: 0,
         relativeDaysMax: 21,
-        stepOrder: 12,
+        stepOrder: 13,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2055,7 +2014,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'molecular_testing',
         relativeDaysMin: 0,
         relativeDaysMax: 21,
-        stepOrder: 13,
+        stepOrder: 14,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2066,7 +2025,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'chemotherapy',
         relativeDaysMin: 90,
         relativeDaysMax: 90,
-        stepOrder: 14,
+        stepOrder: 15,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2077,7 +2036,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'chemotherapy',
         relativeDaysMin: 180,
         relativeDaysMax: 180,
-        stepOrder: 15,
+        stepOrder: 16,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2088,7 +2047,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'chemotherapy',
         relativeDaysMin: 365,
         relativeDaysMax: 365,
-        stepOrder: 16,
+        stepOrder: 17,
       },
     ];
   }
@@ -2111,6 +2070,18 @@ export class OncologyNavigationService {
       },
       {
         journeyStage: JourneyStage.SCREENING,
+        stepKey: 'clinical_suspicion',
+        stepName: 'Suspeita Clínica',
+        stepDescription:
+          'Sintomas clínicos sugestivos (disúria, jato fraco, noctúria, dor pélvica). Complementar ao exame de rastreio — prazo de 30 dias para diagnóstico.',
+        isRequired: false,
+        dependsOnStepKey: null,
+        relativeDaysMin: null,
+        relativeDaysMax: null,
+        stepOrder: 2,
+      },
+      {
+        journeyStage: JourneyStage.SCREENING,
         stepKey: 'digital_rectal_exam',
         stepName: 'Toque Retal',
         stepDescription: 'Exame digital retal — simultâneo ao PSA',
@@ -2118,18 +2089,18 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'psa_test',
         relativeDaysMin: 0,
         relativeDaysMax: 0,
-        stepOrder: 2,
+        stepOrder: 3,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'prostate_mri',
         stepName: 'RM Multiparamétrica de Próstata',
-        stepDescription: 'Avaliação de lesões suspeitas (PI-RADS) antes da biópsia',
+        stepDescription: 'Avaliação de lesões suspeitas (PI-RADS) antes da biópsia. Prazo: até 30 dias após suspeita clínica ou exame de rastreio alterado.',
         isRequired: false,
         dependsOnStepKey: 'psa_test',
         relativeDaysMin: 0,
         relativeDaysMax: 30,
-        stepOrder: 3,
+        stepOrder: 4,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2140,7 +2111,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'prostate_mri',
         relativeDaysMin: 0,
         relativeDaysMax: 30,
-        stepOrder: 4,
+        stepOrder: 5,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2151,7 +2122,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'prostate_biopsy',
         relativeDaysMin: 0,
         relativeDaysMax: 7,
-        stepOrder: 5,
+        stepOrder: 6,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2162,7 +2133,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 21,
-        stepOrder: 6,
+        stepOrder: 7,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2173,7 +2144,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 21,
-        stepOrder: 7,
+        stepOrder: 8,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2184,7 +2155,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 14,
         relativeDaysMax: 30,
-        stepOrder: 8,
+        stepOrder: 9,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2195,7 +2166,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'treatment_decision',
         relativeDaysMin: 30,
         relativeDaysMax: 42,
-        stepOrder: 9,
+        stepOrder: 10,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2206,7 +2177,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'treatment_decision',
         relativeDaysMin: 30,
         relativeDaysMax: 42,
-        stepOrder: 10,
+        stepOrder: 11,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2217,7 +2188,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'treatment_decision',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 11,
+        stepOrder: 12,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2228,7 +2199,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'radical_prostatectomy',
         relativeDaysMin: 42,
         relativeDaysMax: 90,
-        stepOrder: 12,
+        stepOrder: 13,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2239,7 +2210,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'radical_prostatectomy',
         relativeDaysMin: 180,
         relativeDaysMax: 180,
-        stepOrder: 13,
+        stepOrder: 14,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2250,7 +2221,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'radical_prostatectomy',
         relativeDaysMin: 365,
         relativeDaysMax: 365,
-        stepOrder: 14,
+        stepOrder: 15,
       },
     ];
   }
@@ -2272,15 +2243,27 @@ export class OncologyNavigationService {
         stepOrder: 1,
       },
       {
+        journeyStage: JourneyStage.SCREENING,
+        stepKey: 'clinical_suspicion',
+        stepName: 'Suspeita Clínica',
+        stepDescription:
+          'Sintomas clínicos sugestivos (hematúria, dor lombar, massa palpável). Complementar ao exame de rastreio — prazo de 30 dias para diagnóstico.',
+        isRequired: false,
+        dependsOnStepKey: null,
+        relativeDaysMin: null,
+        relativeDaysMax: null,
+        stepOrder: 2,
+      },
+      {
         journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'ct_abdomen_contrast',
         stepName: 'TC de Abdome com Contraste',
-        stepDescription: 'Caracterização da lesão renal — avaliação de vascularização',
+        stepDescription: 'Caracterização da lesão renal — avaliação de vascularização. Prazo: até 30 dias após suspeita clínica ou exame de rastreio alterado.',
         isRequired: true,
         dependsOnStepKey: 'abdominal_ultrasound',
         relativeDaysMin: 0,
-        relativeDaysMax: 21,
-        stepOrder: 2,
+        relativeDaysMax: 30,
+        stepOrder: 3,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2291,7 +2274,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'abdominal_ultrasound',
         relativeDaysMin: 0,
         relativeDaysMax: 21,
-        stepOrder: 3,
+        stepOrder: 4,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2302,7 +2285,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'ct_abdomen_contrast',
         relativeDaysMin: 0,
         relativeDaysMax: 21,
-        stepOrder: 4,
+        stepOrder: 5,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2313,7 +2296,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'biopsy_or_surgery',
         relativeDaysMin: 0,
         relativeDaysMax: 7,
-        stepOrder: 5,
+        stepOrder: 6,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2324,7 +2307,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 6,
+        stepOrder: 7,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2335,7 +2318,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 7,
+        stepOrder: 8,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2346,7 +2329,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'surgical_evaluation',
         relativeDaysMin: 30,
         relativeDaysMax: 42,
-        stepOrder: 8,
+        stepOrder: 9,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2357,7 +2340,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'partial_or_radical_nephrectomy',
         relativeDaysMin: 28,
         relativeDaysMax: 42,
-        stepOrder: 9,
+        stepOrder: 10,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2368,7 +2351,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'partial_or_radical_nephrectomy',
         relativeDaysMin: 28,
         relativeDaysMax: 42,
-        stepOrder: 10,
+        stepOrder: 11,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2379,7 +2362,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'partial_or_radical_nephrectomy',
         relativeDaysMin: 90,
         relativeDaysMax: 90,
-        stepOrder: 11,
+        stepOrder: 12,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2390,7 +2373,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'partial_or_radical_nephrectomy',
         relativeDaysMin: 180,
         relativeDaysMax: 180,
-        stepOrder: 12,
+        stepOrder: 13,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2401,7 +2384,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'partial_or_radical_nephrectomy',
         relativeDaysMin: 365,
         relativeDaysMax: 365,
-        stepOrder: 13,
+        stepOrder: 14,
       },
     ];
   }
@@ -2423,15 +2406,27 @@ export class OncologyNavigationService {
         stepOrder: 1,
       },
       {
+        journeyStage: JourneyStage.SCREENING,
+        stepKey: 'clinical_suspicion',
+        stepName: 'Suspeita Clínica',
+        stepDescription:
+          'Sintomas clínicos sugestivos (massa testicular palpável, dor escrotal, ginecomastia). Complementar ao exame de rastreio — prazo de 30 dias para diagnóstico.',
+        isRequired: false,
+        dependsOnStepKey: null,
+        relativeDaysMin: null,
+        relativeDaysMax: null,
+        stepOrder: 2,
+      },
+      {
         journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'radical_orchiectomy',
         stepName: 'Orquiectomia Radical',
-        stepDescription: 'Remoção cirúrgica do testículo afetado — diagnóstico e tratamento inicial (URGENTE)',
+        stepDescription: 'Remoção cirúrgica do testículo afetado — diagnóstico e tratamento inicial (URGENTE). Prazo: até 30 dias após suspeita clínica ou exame de rastreio alterado.',
         isRequired: true,
         dependsOnStepKey: 'testicular_ultrasound',
         relativeDaysMin: 7,
-        relativeDaysMax: 14,
-        stepOrder: 2,
+        relativeDaysMax: 30,
+        stepOrder: 3,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2442,7 +2437,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'radical_orchiectomy',
         relativeDaysMin: 0,
         relativeDaysMax: 7,
-        stepOrder: 3,
+        stepOrder: 4,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2453,7 +2448,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'radical_orchiectomy',
         relativeDaysMin: 0,
         relativeDaysMax: 7,
-        stepOrder: 4,
+        stepOrder: 5,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2464,7 +2459,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'radical_orchiectomy',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 5,
+        stepOrder: 6,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2475,7 +2470,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'radical_orchiectomy',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 6,
+        stepOrder: 7,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2486,7 +2481,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 14,
         relativeDaysMax: 28,
-        stepOrder: 7,
+        stepOrder: 8,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2497,7 +2492,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 7,
         relativeDaysMax: 21,
-        stepOrder: 8,
+        stepOrder: 9,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2508,7 +2503,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 14,
         relativeDaysMax: 28,
-        stepOrder: 9,
+        stepOrder: 10,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2519,7 +2514,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'chemotherapy',
         relativeDaysMin: 30,
         relativeDaysMax: 30,
-        stepOrder: 10,
+        stepOrder: 11,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2530,7 +2525,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'chemotherapy',
         relativeDaysMin: 90,
         relativeDaysMax: 90,
-        stepOrder: 11,
+        stepOrder: 12,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2541,7 +2536,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'chemotherapy',
         relativeDaysMin: 180,
         relativeDaysMax: 180,
-        stepOrder: 12,
+        stepOrder: 13,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2552,7 +2547,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'chemotherapy',
         relativeDaysMin: 365,
         relativeDaysMax: 365,
-        stepOrder: 13,
+        stepOrder: 14,
       },
     ];
   }
@@ -2574,15 +2569,27 @@ export class OncologyNavigationService {
         stepOrder: 1,
       },
       {
+        journeyStage: JourneyStage.SCREENING,
+        stepKey: 'clinical_suspicion',
+        stepName: 'Suspeita Clínica',
+        stepDescription:
+          'Sintomas clínicos sugestivos de neoplasia. Complementar ao exame de rastreio — prazo de 30 dias para diagnóstico.',
+        isRequired: false,
+        dependsOnStepKey: null,
+        relativeDaysMin: null,
+        relativeDaysMax: null,
+        stepOrder: 2,
+      },
+      {
         journeyStage: JourneyStage.DIAGNOSIS,
         stepKey: 'biopsy',
         stepName: 'Biópsia',
-        stepDescription: 'Coleta de material para análise anatomopatológica',
+        stepDescription: 'Coleta de material para análise anatomopatológica. Prazo: até 30 dias após suspeita clínica ou exame de rastreio alterado.',
         isRequired: true,
         dependsOnStepKey: 'initial_evaluation',
         relativeDaysMin: 0,
-        relativeDaysMax: 14,
-        stepOrder: 2,
+        relativeDaysMax: 30,
+        stepOrder: 3,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2593,7 +2600,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'biopsy',
         relativeDaysMin: 0,
         relativeDaysMax: 7,
-        stepOrder: 3,
+        stepOrder: 4,
       },
       {
         journeyStage: JourneyStage.DIAGNOSIS,
@@ -2604,7 +2611,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'pathology_report',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 4,
+        stepOrder: 5,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2615,7 +2622,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'staging_imaging',
         relativeDaysMin: 0,
         relativeDaysMax: 14,
-        stepOrder: 5,
+        stepOrder: 6,
       },
       {
         journeyStage: JourneyStage.TREATMENT,
@@ -2626,7 +2633,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'treatment_planning',
         relativeDaysMin: 0,
         relativeDaysMax: 30,
-        stepOrder: 6,
+        stepOrder: 7,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2637,7 +2644,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'first_treatment',
         relativeDaysMin: 90,
         relativeDaysMax: 90,
-        stepOrder: 7,
+        stepOrder: 8,
       },
       {
         journeyStage: JourneyStage.FOLLOW_UP,
@@ -2648,7 +2655,7 @@ export class OncologyNavigationService {
         dependsOnStepKey: 'first_treatment',
         relativeDaysMin: 365,
         relativeDaysMax: 365,
-        stepOrder: 8,
+        stepOrder: 9,
       },
     ];
   }
@@ -2763,6 +2770,50 @@ export class OncologyNavigationService {
   }
 
   /**
+   * Ao concluir um step, cria os steps da PRÓXIMA fase se ainda não existirem.
+   * Ex: completar um step de SCREENING → cria steps de DIAGNOSIS para o cascade funcionar.
+   */
+  private async maybeCreateNextStageSteps(
+    completedStep: any,
+    tenantId: string
+  ): Promise<void> {
+    const STAGE_PROGRESSION: Partial<Record<JourneyStage, JourneyStage>> = {
+      [JourneyStage.SCREENING]: JourneyStage.DIAGNOSIS,
+      [JourneyStage.DIAGNOSIS]: JourneyStage.TREATMENT,
+      [JourneyStage.TREATMENT]: JourneyStage.FOLLOW_UP,
+    };
+
+    const nextStage =
+      STAGE_PROGRESSION[completedStep.journeyStage as JourneyStage];
+    if (!nextStage) return;
+
+    const existingCount = await this.prisma.navigationStep.count({
+      where: {
+        patientId: completedStep.patientId,
+        tenantId,
+        journeyStage: nextStage,
+      },
+    });
+
+    if (existingCount === 0) {
+      try {
+        await this.createMissingStepsForStage(
+          completedStep.patientId,
+          tenantId,
+          nextStage
+        );
+        this.logger.log(
+          `Criadas etapas de ${nextStage} para paciente ${completedStep.patientId} após conclusão de ${completedStep.stepKey}`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Falha ao criar etapas de ${nextStage}: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  }
+
+  /**
    * Cascateia datas para etapas que dependem da etapa concluída.
    * Chamado após marcar uma etapa como completa.
    */
@@ -2815,6 +2866,47 @@ export class OncologyNavigationService {
         });
         this.logger.log(
           `Cascade: etapa ${dep.stepKey} → expectedDate=${updateData.expectedDate?.toISOString()?.slice(0, 10)}, dueDate=${updateData.dueDate?.toISOString()?.slice(0, 10)}`
+        );
+      }
+    }
+
+    // Caso especial: suspeita clínica é via alternativa ao exame de rastreio.
+    // Ao completar clinical_suspicion, atualizar a primeira etapa de DIAGNOSIS
+    // que não esteja concluída/cancelada. Atualiza mesmo se já tiver datas (re-marcar).
+    // Prazo legal: 30 dias para diagnóstico após suspeita clínica.
+    if (completedStep.stepKey === 'clinical_suspicion') {
+      const firstDiagnosisStep = await this.prisma.navigationStep.findFirst({
+        where: {
+          patientId: completedStep.patientId,
+          tenantId,
+          journeyStage: JourneyStage.DIAGNOSIS,
+          isCompleted: false,
+          status: {
+            notIn: [
+              NavigationStepStatus.COMPLETED,
+              NavigationStepStatus.NOT_APPLICABLE,
+              NavigationStepStatus.CANCELLED,
+            ],
+          },
+        },
+        orderBy: { stepOrder: 'asc' },
+      });
+
+      if (firstDiagnosisStep) {
+        const baseDate = new Date(actualDate);
+        const existingMeta =
+          (firstDiagnosisStep.metadata as Record<string, unknown>) ?? {};
+        await this.prisma.navigationStep.update({
+          where: { id: firstDiagnosisStep.id },
+          data: {
+            expectedDate: this.addDays(baseDate, 14),
+            dueDate: this.addDays(baseDate, 30),
+            status: NavigationStepStatus.IN_PROGRESS,
+            metadata: { ...existingMeta, unlockedBy: 'clinical_suspicion' },
+          },
+        });
+        this.logger.log(
+          `Cascade: clinical_suspicion → ${firstDiagnosisStep.stepKey} desbloqueada (prazo 30d)`,
         );
       }
     }
@@ -2939,6 +3031,37 @@ export class OncologyNavigationService {
           status: NavigationStepStatus.PENDING,
         },
       });
+    }
+
+    // Caso especial: clinical_suspicion desbloqueia a primeira etapa de DIAGNOSIS
+    // usando metadata.unlockedBy como marcador (sem poluir o campo notes visível)
+    if (uncompletedStep.stepKey === 'clinical_suspicion') {
+      const unlockedByCS = await this.prisma.navigationStep.findMany({
+        where: {
+          patientId: uncompletedStep.patientId,
+          tenantId,
+          journeyStage: JourneyStage.DIAGNOSIS,
+          isCompleted: false,
+          status: {
+            in: [NavigationStepStatus.PENDING, NavigationStepStatus.IN_PROGRESS],
+          },
+          metadata: { path: ['unlockedBy'], equals: 'clinical_suspicion' },
+        },
+      });
+
+      for (const step of unlockedByCS) {
+        const meta = (step.metadata as Record<string, unknown>) ?? {};
+        const { unlockedBy: _removed, ...restMeta } = meta;
+        await this.prisma.navigationStep.update({
+          where: { id: step.id },
+          data: {
+            expectedDate: null,
+            dueDate: null,
+            status: NavigationStepStatus.PENDING,
+            metadata: Object.keys(restMeta).length > 0 ? (restMeta as any) : null,
+          },
+        });
+      }
     }
   }
 
