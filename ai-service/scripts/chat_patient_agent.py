@@ -13,8 +13,8 @@ AI_SERVICE_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = AI_SERVICE_ROOT.parent
 sys.path.insert(0, str(AI_SERVICE_ROOT))
 
-# Carrega variáveis do ai-service/.env
-load_dotenv(AI_SERVICE_ROOT / ".env")
+# Carrega variáveis do .env da raiz do repositório
+load_dotenv(REPO_ROOT / ".env")
 
 from src.agent.orchestrator import orchestrator
 
@@ -46,7 +46,7 @@ def resolve_llm_config() -> dict:
 
     raise RuntimeError(
         "Nenhuma chave de API foi encontrada. Configure ANTHROPIC_API_KEY "
-        "ou OPENAI_API_KEY no ai-service/.env para usar uma LLM real."
+        "ou OPENAI_API_KEY no .env para usar uma LLM real."
     )
 
 

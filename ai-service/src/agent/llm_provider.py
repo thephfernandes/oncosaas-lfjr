@@ -1,7 +1,6 @@
 import json
 import logging
 from typing import Dict, List, Optional, Any
-import httpx
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 import os
@@ -37,12 +36,17 @@ class LLMProvider:
 
     def _read_dotenv_key(self, key_name: str) -> Optional[str]:
         """
-        Resolve API keys from ai-service/.env first to avoid stale OS env overrides.
+        Resolve API keys from local files first to avoid stale OS env overrides.
+        Priority:
+        1) ai-service/.env
+        2) project root ../.env
         """
         service_root = Path(__file__).resolve().parents[2]  # ai-service/
+        project_root = service_root.parent                  # repo root
 
-        env_path = service_root / ".env"
-        if env_path.exists():
+        for env_path in (service_root / ".env", project_root / ".env"):
+            if not env_path.exists():
+                continue
             values = dotenv_values(env_path)
             value = values.get(key_name)
             if value and not self._looks_like_placeholder(value):
@@ -91,20 +95,14 @@ class LLMProvider:
         key = self._resolve_api_key("ANTHROPIC_API_KEY", api_key)
         if not key:
             return None
-        return AsyncAnthropic(
-            api_key=key,
-            timeout=httpx.Timeout(connect=5.0, read=90.0, write=10.0, pool=5.0),
-        )
+        return AsyncAnthropic(api_key=key)
 
     def _get_openai_client(self, api_key: Optional[str] = None) -> Optional[AsyncOpenAI]:
         """Get or create OpenAI client."""
         key = self._resolve_api_key("OPENAI_API_KEY", api_key)
         if not key:
             return None
-        return AsyncOpenAI(
-            api_key=key,
-            timeout=httpx.Timeout(connect=5.0, read=90.0, write=10.0, pool=5.0),
-        )
+        return AsyncOpenAI(api_key=key)
 
     async def generate(
         self,
@@ -224,7 +222,7 @@ class LLMProvider:
 
         response = await client.messages.create(
             model=model,
-            max_tokens=config.get("max_tokens", 1024),
+            max_tokens=1024,
             system=system_prompt,
             messages=anthropic_messages,
         )
@@ -254,7 +252,7 @@ class LLMProvider:
             model=model,
             messages=openai_messages,
             temperature=0.7,
-            max_tokens=config.get("max_tokens", 1024),
+            max_tokens=1024,
         )
 
         return response.choices[0].message.content or ""
@@ -305,7 +303,7 @@ class LLMProvider:
 
         response = await client.messages.create(
             model=model,
-            max_tokens=config.get("max_tokens", 1024),
+            max_tokens=1024,
             system=system_prompt,
             messages=anthropic_messages,
             tools=anthropic_tools,
@@ -368,7 +366,7 @@ class LLMProvider:
             messages=openai_messages,
             tools=openai_tools if openai_tools else None,
             temperature=0.7,
-            max_tokens=config.get("max_tokens", 1024),
+            max_tokens=1024,
         )
 
         choice = response.choices[0]
