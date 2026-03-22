@@ -55,6 +55,7 @@ interface StepTemplate {
   stepName: string;
   stepDescription?: string | null;
   isRequired: boolean;
+  existingCount: number;
 }
 
 function WizardStepPicker({
@@ -94,14 +95,16 @@ function WizardStepPicker({
         <p className="text-xs text-muted-foreground px-2 py-2">Carregando...</p>
       ) : (
         <>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-blue-600"
-            size="sm"
-            onClick={() => onSelect(null)}
-          >
-            Criar todas as etapas
-          </Button>
+          {templates.some((t) => t.existingCount === 0) && (
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-blue-600"
+              size="sm"
+              onClick={() => onSelect(null)}
+            >
+              Criar todas as etapas faltantes
+            </Button>
+          )}
           <Button
             variant="ghost"
             className="w-full justify-start text-muted-foreground"
@@ -121,14 +124,21 @@ function WizardStepPicker({
               title={t.stepDescription ?? undefined}
             >
               <span className="truncate">{t.stepName}</span>
-              {t.isRequired && (
-                <span className="ml-auto text-xs text-purple-600 shrink-0">obr.</span>
-              )}
+              <span className="ml-auto flex items-center gap-1 shrink-0">
+                {t.existingCount > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    ({t.existingCount})
+                  </span>
+                )}
+                {t.isRequired && (
+                  <span className="text-xs text-purple-600">obr.</span>
+                )}
+              </span>
             </Button>
           ))}
           {templates.length === 0 && (
             <p className="text-xs text-muted-foreground px-2 py-1">
-              Todas as etapas desta fase já existem.
+              Nenhum template disponível para esta fase.
             </p>
           )}
         </>
@@ -197,7 +207,7 @@ export function PatientNavigationTab({
     stage: string;
   } | null>(null);
   const [stepPickerTemplates, setStepPickerTemplates] = useState<
-    { stepKey: string; stepName: string; stepDescription?: string | null; isRequired: boolean }[]
+    { stepKey: string; stepName: string; stepDescription?: string | null; isRequired: boolean; existingCount: number }[]
   >([]);
   const [stepPickerLoading, setStepPickerLoading] = useState(false);
 
@@ -213,6 +223,19 @@ export function PatientNavigationTab({
     },
     onError: (error: Error) => {
       toast.error(`Erro ao atualizar etapa: ${error.message}`);
+    },
+  });
+
+  const createFromTemplateMutation = useMutation({
+    mutationFn: ({ journeyStage, stepKey }: { journeyStage: string; stepKey: string }) =>
+      navigationApi.createStepFromTemplate(patient.id, journeyStage, stepKey),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
+      queryClient.invalidateQueries({ queryKey: ['navigation-steps', patient.id] });
+      toast.success('Etapa criada com sucesso');
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao criar etapa: ${error.message}`);
     },
   });
 
@@ -234,7 +257,7 @@ export function PatientNavigationTab({
   });
 
   const loadTemplates = async (typeKey: string, stage: string): Promise<
-    { stepKey: string; stepName: string; stepDescription?: string | null; isRequired: boolean }[]
+    { stepKey: string; stepName: string; stepDescription?: string | null; isRequired: boolean; existingCount: number }[]
   > => {
     try {
       return await navigationApi.getStepTemplates(patient.id, stage);
@@ -256,10 +279,12 @@ export function PatientNavigationTab({
     setWizardTypeKey(null);
     if (stepKey === '__custom__') {
       setCreateStage({ cancerType: typeKey, journeyStage: stage });
+    } else if (stepKey === null) {
+      // "Criar todas as etapas faltantes"
+      createMissingStepsMutation.mutate({ journeyStage: stage });
     } else {
-      createMissingStepsMutation.mutate(
-        stepKey ? { journeyStage: stage, stepKey } : { journeyStage: stage }
-      );
+      // Criar instância do template (funciona tanto para primeira quanto para adicionais)
+      createFromTemplateMutation.mutate({ journeyStage: stage, stepKey });
     }
   };
 
@@ -277,12 +302,10 @@ export function PatientNavigationTab({
     setStepPickerTemplates([]);
     if (stepKey === '__custom__') {
       setCreateStage({ cancerType: target.typeKey, journeyStage: target.stage });
+    } else if (stepKey === null) {
+      createMissingStepsMutation.mutate({ journeyStage: target.stage });
     } else {
-      createMissingStepsMutation.mutate(
-        stepKey
-          ? { journeyStage: target.stage, stepKey }
-          : { journeyStage: target.stage }
-      );
+      createFromTemplateMutation.mutate({ journeyStage: target.stage, stepKey });
     }
   };
 
@@ -738,14 +761,16 @@ export function PatientNavigationTab({
               <p className="text-sm text-muted-foreground py-2">Carregando...</p>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-blue-600"
-                  size="sm"
-                  onClick={() => handleStepPickerSelect(null)}
-                >
-                  Criar todas as etapas
-                </Button>
+                {stepPickerTemplates.some((t) => t.existingCount === 0) && (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-blue-600"
+                    size="sm"
+                    onClick={() => handleStepPickerSelect(null)}
+                  >
+                    Criar todas as etapas faltantes
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-muted-foreground"
@@ -765,14 +790,21 @@ export function PatientNavigationTab({
                     title={t.stepDescription ?? undefined}
                   >
                     <span className="truncate">{t.stepName}</span>
-                    {t.isRequired && (
-                      <span className="ml-auto text-xs text-purple-600 shrink-0">obr.</span>
-                    )}
+                    <span className="ml-auto flex items-center gap-1 shrink-0">
+                      {t.existingCount > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          ({t.existingCount})
+                        </span>
+                      )}
+                      {t.isRequired && (
+                        <span className="text-xs text-purple-600">obr.</span>
+                      )}
+                    </span>
                   </Button>
                 ))}
                 {stepPickerTemplates.length === 0 && !stepPickerLoading && (
                   <p className="text-xs text-muted-foreground px-2 py-1">
-                    Todas as etapas desta fase já existem.
+                    Nenhum template disponível para esta fase.
                   </p>
                 )}
               </>

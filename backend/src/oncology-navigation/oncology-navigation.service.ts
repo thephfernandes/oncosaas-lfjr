@@ -537,23 +537,28 @@ export class OncologyNavigationService {
 
     const cancerType = String(cancerTypeRaw).toLowerCase();
 
-    const existingKeys = new Set(
-      (
-        await this.prisma.navigationStep.findMany({
-          where: { patientId, tenantId, journeyStage },
-          select: { stepKey: true },
-        })
-      ).map((s) => s.stepKey)
-    );
+    const existingSteps = await this.prisma.navigationStep.findMany({
+      where: { patientId, tenantId, journeyStage },
+      select: { stepKey: true },
+    });
+
+    // Contar quantas instâncias de cada stepKey já existem
+    const existingCountMap = new Map<string, number>();
+    for (const s of existingSteps) {
+      // Normalizar: "rtu-2" → "rtu", para contar instâncias do template base
+      const baseKey = s.stepKey.replace(/-\d+$/, '');
+      existingCountMap.set(baseKey, (existingCountMap.get(baseKey) || 0) + 1);
+    }
 
     return this.getStepConfigs(cancerType, patient.status)
-      .filter((c) => c.journeyStage === journeyStage && !existingKeys.has(c.stepKey))
+      .filter((c) => c.journeyStage === journeyStage)
       .map(({ stepKey, stepName, stepDescription, journeyStage: js, isRequired }) => ({
         stepKey,
         stepName,
         stepDescription,
         journeyStage: js,
         isRequired,
+        existingCount: existingCountMap.get(stepKey) || 0,
       }));
   }
 
@@ -628,7 +633,7 @@ export class OncologyNavigationService {
     const missingSteps = expectedSteps.filter(
       (step) =>
         !existingStepKeys.has(step.stepKey) &&
-        (onlyStepKey === null || step.stepKey === onlyStepKey)
+        (!onlyStepKey || step.stepKey === onlyStepKey)
     );
 
     if (missingSteps.length === 0) {
@@ -680,6 +685,105 @@ export class OncologyNavigationService {
       created: createdCount,
       skipped: existingSteps.length,
     };
+  }
+
+  /**
+   * Cria uma instância adicional de um step a partir de um template existente.
+   * Gera stepKey único com sufixo numérico (ex: rtu-2, rtu-3).
+   */
+  async createStepFromTemplate(
+    patientId: string,
+    tenantId: string,
+    journeyStage: JourneyStage,
+    stepKey: string
+  ): Promise<NavigationStep> {
+    const patient = await this.prisma.patient.findFirst({
+      where: { id: patientId, tenantId },
+      select: {
+        cancerType: true,
+        status: true,
+        cancerDiagnoses: {
+          select: { cancerType: true },
+          where: { isActive: true, isPrimary: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!patient) {
+      throw new NotFoundException(`Patient with ID ${patientId} not found`);
+    }
+
+    const cancerTypeRaw =
+      patient.cancerType || patient.cancerDiagnoses?.[0]?.cancerType || null;
+
+    if (!cancerTypeRaw) {
+      throw new BadRequestException(
+        'Patient does not have a cancer type defined'
+      );
+    }
+
+    const cancerType = String(cancerTypeRaw).toLowerCase();
+
+    // Buscar config do template
+    const allConfigs = this.getStepConfigs(cancerType, patient.status);
+    const templateConfig = allConfigs.find(
+      (c) => c.stepKey === stepKey && c.journeyStage === journeyStage
+    );
+
+    if (!templateConfig) {
+      throw new NotFoundException(
+        `Template with stepKey "${stepKey}" not found for stage ${journeyStage}`
+      );
+    }
+
+    // Contar instâncias existentes para gerar sufixo único
+    const existingSteps = await this.prisma.navigationStep.findMany({
+      where: {
+        patientId,
+        tenantId,
+        journeyStage,
+        // Buscar stepKey exato e variações com sufixo (ex: rtu, rtu-2, rtu-3)
+        OR: [
+          { stepKey },
+          { stepKey: { startsWith: `${stepKey}-` } },
+        ],
+      },
+      select: { stepKey: true },
+    });
+
+    // Determinar próximo sufixo
+    const nextSuffix = existingSteps.length + 1;
+    const newStepKey = nextSuffix === 1 ? stepKey : `${stepKey}-${nextSuffix}`;
+
+    // Obter journey
+    const journey = await this.prisma.patientJourney.findUnique({
+      where: { patientId },
+    });
+
+    const step = await this.prisma.navigationStep.create({
+      data: {
+        tenantId,
+        patientId,
+        journeyId: journey?.id,
+        cancerType,
+        journeyStage: templateConfig.journeyStage,
+        stepKey: newStepKey,
+        stepName: templateConfig.stepName,
+        stepDescription: templateConfig.stepDescription,
+        isRequired: templateConfig.isRequired ?? true,
+        dependsOnStepKey: templateConfig.dependsOnStepKey,
+        relativeDaysMin: templateConfig.relativeDaysMin,
+        relativeDaysMax: templateConfig.relativeDaysMax,
+        stepOrder: templateConfig.stepOrder,
+        expectedDate: null,
+        dueDate: null,
+        status: NavigationStepStatus.PENDING,
+        isCompleted: false,
+      },
+    });
+
+    return step;
   }
 
   /**
