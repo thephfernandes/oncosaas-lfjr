@@ -132,10 +132,10 @@ model Patient {
 
 enum JourneyStage {
   SCREENING // Rastreio
-  NAVIGATION // Navegação entre especialidades
   DIAGNOSIS // Diagnóstico
   TREATMENT // Tratamento
   FOLLOW_UP // Seguimento
+  PALLIATIVE // Cuidados paliativos
 }
 
 enum PriorityCategory {
