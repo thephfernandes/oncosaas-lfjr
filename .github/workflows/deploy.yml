@@ -95,24 +95,43 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Scan ${{ matrix.service }} for HIGH vulnerabilities (warn only)
-        uses: aquasecurity/trivy-action@master
+      - name: Pull ARM64 image
+        run: |
+          docker pull --platform linux/arm64 \
+            "${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.sha }}"
+
+      - name: Set up Trivy
+        uses: aquasecurity/setup-trivy@v0.2.6
         with:
-          image-ref: ${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.sha }}
-          format: table
-          exit-code: '0'
-          ignore-unfixed: true
-          severity: HIGH
+          version: v0.69.3
+
+      - name: Scan ${{ matrix.service }} for HIGH vulnerabilities (warn only)
+        run: |
+          trivy image \
+            --platform linux/arm64 \
+            --scanners vuln \
+            --severity HIGH \
+            --ignore-unfixed \
+            --format table \
+            --exit-code 0 \
+            "${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.sha }}"
 
       - name: Scan ${{ matrix.service }} for CRITICAL vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.sha }}
-          format: table
-          exit-code: ${{ matrix.service == 'ai-service' && '0' || '1' }}
-          ignore-unfixed: true
-          severity: CRITICAL
-          skip-setup-trivy: true
+        shell: bash
+        run: |
+          EXIT_CODE=1
+          if [ "${{ matrix.service }}" = "ai-service" ]; then
+            EXIT_CODE=0
+          fi
+
+          trivy image \
+            --platform linux/arm64 \
+            --scanners vuln \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --format table \
+            --exit-code "${EXIT_CODE}" \
+            "${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.sha }}"
 
   deploy:
     name: Deploy to EC2 via SSM
@@ -133,13 +152,15 @@ jobs:
         run: |
           set -euo pipefail
 
-          COMMAND_ID=$(aws ssm send-command \
-            --instance-ids "$EC2_INSTANCE_ID" \
-            --document-name "AWS-RunShellScript" \
-            --comment "OncoSaaS deploy ${IMAGE_TAG}" \
-            --parameters commands="sudo /opt/oncosaas/scripts/deploy.sh '$ECR_REGISTRY' '$IMAGE_TAG'" \
-            --query 'Command.CommandId' \
-            --output text)
+          COMMAND_ID=$(
+            aws ssm send-command \
+              --instance-ids "$EC2_INSTANCE_ID" \
+              --document-name "AWS-RunShellScript" \
+              --comment "OncoSaaS deploy ${IMAGE_TAG}" \
+              --parameters "{\"commands\":[\"sudo /opt/oncosaas/scripts/deploy.sh '$ECR_REGISTRY' '$IMAGE_TAG'\"]}" \
+              --query 'Command.CommandId' \
+              --output text
+          )
 
           echo "command_id=$COMMAND_ID" >> "$GITHUB_OUTPUT"
 
@@ -147,14 +168,23 @@ jobs:
         env:
           COMMAND_ID: ${{ steps.ssm.outputs.command_id }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
-          aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "$EC2_INSTANCE_ID"
+          WAIT_RC=0
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$EC2_INSTANCE_ID" || WAIT_RC=$?
 
           STATUS=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id "$EC2_INSTANCE_ID" \
             --query 'Status' \
+            --output text)
+
+          RESPONSE_CODE=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --query 'ResponseCode' \
             --output text)
 
           STDOUT=$(aws ssm get-command-invocation \
@@ -169,9 +199,15 @@ jobs:
             --query 'StandardErrorContent' \
             --output text)
 
+          echo "SSM status: $STATUS"
+          echo "SSM response code: $RESPONSE_CODE"
+          echo ""
+          echo "----- STDOUT -----"
           echo "$STDOUT"
+          echo ""
+          echo "----- STDERR -----"
+          echo "$STDERR"
 
           if [ "$STATUS" != "Success" ]; then
-            echo "$STDERR"
             exit 1
           fi
