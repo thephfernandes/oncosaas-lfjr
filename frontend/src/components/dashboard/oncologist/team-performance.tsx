@@ -2,7 +2,7 @@
 
 import { DashboardMetrics, DashboardStatistics } from '@/lib/api/dashboard';
 import { Clock, CheckCircle2, Users, TrendingUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatMinutes } from '@/lib/utils';
 import { MetricInfoTooltip } from '@/components/shared/metric-info-tooltip';
 
 interface TeamPerformanceProps {
@@ -69,7 +69,7 @@ export function TeamPerformance({
       title: 'Tempo Médio de Resposta',
       value:
         avgResponseTime > 0
-          ? `${Math.round(avgResponseTime / 60)}h ${Math.round(avgResponseTime % 60)}m`
+          ? formatMinutes(avgResponseTime)
           : 'N/A',
       icon: Clock,
       color: 'text-blue-600',

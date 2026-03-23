@@ -13,7 +13,7 @@ import {
   Dna,
   CheckCircle2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatMinutes } from '@/lib/utils';
 import { MetricInfoTooltip } from '@/components/shared/metric-info-tooltip';
 
 interface KPICardsProps {
@@ -85,7 +85,7 @@ export function KPICards({ metrics, isLoading, onCardClick }: KPICardsProps) {
     {
       title: 'Tempo Médio de Resposta',
       value: metrics.averageResponseTimeMinutes
-        ? `${Math.round(metrics.averageResponseTimeMinutes / 60)}h ${metrics.averageResponseTimeMinutes % 60}m`
+        ? formatMinutes(metrics.averageResponseTimeMinutes)
         : 'N/A',
       icon: Clock,
       color: 'text-purple-600',

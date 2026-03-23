@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Clock, Users, TrendingUp } from 'lucide-react';
 import { MetricInfoTooltip } from '@/components/shared/metric-info-tooltip';
+import { formatMinutes } from '@/lib/utils';
 
 export function NurseMetricsPanel() {
   const { data: metrics, isLoading, error } = useNurseMetrics();
@@ -71,7 +72,7 @@ export function NurseMetricsPanel() {
           <CardContent>
             <div className="text-2xl font-bold">
               {metrics.averageResponseTimeMinutes !== null
-                ? `${metrics.averageResponseTimeMinutes} min`
+                ? formatMinutes(metrics.averageResponseTimeMinutes)
                 : 'N/A'}
             </div>
             <p className="text-xs text-muted-foreground">
