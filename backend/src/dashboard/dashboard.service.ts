@@ -41,11 +41,11 @@ export class DashboardService {
       },
     });
 
-    // Pacientes críticos (score >= 75)
+    // Pacientes críticos (priorityCategory = CRITICAL)
     const criticalPatientsCount = await this.prisma.patient.count({
       where: {
         tenantId,
-        priorityScore: { gte: 75 },
+        priorityCategory: 'CRITICAL',
         status: {
           in: ['ACTIVE', 'IN_TREATMENT', 'FOLLOW_UP'],
         },
@@ -833,10 +833,10 @@ export class DashboardService {
 
     const stageCounts = {
       SCREENING: 0,
-      NAVIGATION: 0,
       DIAGNOSIS: 0,
       TREATMENT: 0,
       FOLLOW_UP: 0,
+      PALLIATIVE: 0,
     };
 
     patientsByStage.forEach((item) => {
@@ -880,10 +880,10 @@ export class DashboardService {
 
     const stageLabels: Record<string, string> = {
       SCREENING: 'Rastreio',
-      NAVIGATION: 'Navegação',
       DIAGNOSIS: 'Diagnóstico',
       TREATMENT: 'Tratamento',
       FOLLOW_UP: 'Seguimento',
+      PALLIATIVE: 'Paliativo',
     };
 
     const totalActivePatients = Object.values(stageCounts).reduce(
@@ -895,10 +895,10 @@ export class DashboardService {
     const stageMetrics: StageMetrics[] = [];
     const averageTimePerStage: Record<string, number | null> = {
       SCREENING: null,
-      NAVIGATION: null,
       DIAGNOSIS: null,
       TREATMENT: null,
       FOLLOW_UP: null,
+      PALLIATIVE: null,
     };
 
     for (const stage of Object.keys(stageCounts) as JourneyStage[]) {
@@ -1007,10 +1007,10 @@ export class DashboardService {
     // Bottleneck = fase com >20% dos pacientes OU tempo médio >50% acima do esperado
     const expectedTimes: Record<string, number> = {
       SCREENING: 30,
-      NAVIGATION: 15,
       DIAGNOSIS: 45,
       TREATMENT: 180,
       FOLLOW_UP: 90,
+      PALLIATIVE: 365,
     };
 
     const bottlenecks: Bottleneck[] = [];
@@ -1062,10 +1062,10 @@ export class DashboardService {
       bottlenecks: bottlenecks.slice(0, 3), // Top 3 bottlenecks
       averageTimePerStage: {
         SCREENING: averageTimePerStage.SCREENING,
-        NAVIGATION: averageTimePerStage.NAVIGATION,
         DIAGNOSIS: averageTimePerStage.DIAGNOSIS,
         TREATMENT: averageTimePerStage.TREATMENT,
         FOLLOW_UP: averageTimePerStage.FOLLOW_UP,
+        PALLIATIVE: averageTimePerStage.PALLIATIVE,
       },
     };
   }
@@ -1874,24 +1874,23 @@ export class DashboardService {
     maxResults: number = 100,
   ) {
     if (indicator === 'messages') {
-      // Pacientes com mensagens não assumidas
-      const messagesWithPatients = await this.prisma.message.findMany({
+      // Pacientes com mensagens não assumidas + contagem por paciente
+      const messageCounts = await this.prisma.message.groupBy({
+        by: ['patientId'],
         where: {
           tenantId,
           direction: 'INBOUND',
           assumedBy: null,
         },
-        select: {
-          patientId: true,
-        },
-        distinct: ['patientId'],
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
         take: maxResults,
       });
 
-      const patientIds = messagesWithPatients.map((m) => m.patientId);
+      const patientIds = messageCounts.map((m) => m.patientId);
       if (patientIds.length === 0) return [];
 
-      return this.prisma.patient.findMany({
+      const patients = await this.prisma.patient.findMany({
         where: {
           id: { in: patientIds },
           tenantId,
@@ -1906,8 +1905,14 @@ export class DashboardService {
           cancerType: true,
           status: true,
         },
-        take: maxResults,
       });
+
+      // Anexar contagem de mensagens a cada paciente
+      const countMap = new Map(messageCounts.map((m) => [m.patientId, m._count.id]));
+      return patients.map((p) => ({
+        ...p,
+        unassumedMessagesCount: countMap.get(p.id) ?? 0,
+      }));
     }
 
     if (indicator === 'biomarkers') {
