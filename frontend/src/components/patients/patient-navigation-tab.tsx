@@ -8,7 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle2, Clock, AlertCircle, Edit, Plus, Trash2 } from 'lucide-react';
+import {
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Edit,
+  Plus,
+  Trash2,
+  ChevronLeft,
+} from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -37,6 +45,15 @@ import { toast } from 'sonner';
 
 interface PatientNavigationTabProps {
   patient: PatientDetail;
+}
+
+interface WizardTemplate {
+  stepKey: string;
+  stepName: string;
+  stepDescription?: string;
+  journeyStage: string;
+  isRequired: boolean;
+  existingCount: number;
 }
 
 const STEP_STATUS_COLORS: Record<string, string> = {
@@ -105,6 +122,12 @@ export function PatientNavigationTab({
   const [stepToDelete, setStepToDelete] = useState<NavigationStep | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [addStepPopoverOpen, setAddStepPopoverOpen] = useState(false);
+  const [wizardStage, setWizardStage] = useState<{
+    cancerType: string;
+    stage: string;
+  } | null>(null);
+  const [wizardTemplates, setWizardTemplates] = useState<WizardTemplate[]>([]);
+  const [wizardLoading, setWizardLoading] = useState(false);
 
   // cancerType e diagnosisId para nova etapa: primeiro diagnóstico ativo ou primeira etapa
   const { cancerType, diagnosisId } = useMemo(() => {
@@ -198,6 +221,73 @@ export function PatientNavigationTab({
       );
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleWizardSelectStage = async (
+    selectedCancerType: string,
+    stage: string
+  ): Promise<void> => {
+    setWizardStage({ cancerType: selectedCancerType, stage });
+    setWizardLoading(true);
+    try {
+      const templates = await navigationApi.getStepTemplates(patient.id, stage);
+      setWizardTemplates(templates);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Erro ao carregar templates'
+      );
+      setWizardTemplates([]);
+    } finally {
+      setWizardLoading(false);
+    }
+  };
+
+  const handleWizardSelectStep = async (
+    selectedStepKey: string | null
+  ): Promise<void> => {
+    if (!wizardStage) return;
+
+    if (selectedStepKey === '__custom__') {
+      setCreateStage({
+        cancerType: wizardStage.cancerType,
+        journeyStage: wizardStage.stage,
+      });
+      setAddStepPopoverOpen(false);
+      setWizardStage(null);
+      setWizardTemplates([]);
+      return;
+    }
+
+    try {
+      if (selectedStepKey === null) {
+        const result = await navigationApi.createMissingStepsForStage(
+          patient.id,
+          wizardStage.stage
+        );
+        toast.success(
+          result.created > 0
+            ? `${result.created} etapa(s) criada(s).`
+            : 'Nenhuma etapa faltante para criar.'
+        );
+      } else {
+        await navigationApi.createStepFromTemplate(
+          patient.id,
+          wizardStage.stage,
+          selectedStepKey
+        );
+        toast.success('Etapa adicionada com sucesso.');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['navigation-steps', patient.id],
+      });
+      setAddStepPopoverOpen(false);
+      setWizardStage(null);
+      setWizardTemplates([]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar etapa');
     }
   };
 

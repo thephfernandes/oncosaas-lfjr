@@ -11,6 +11,7 @@ import {
   JourneyStage,
   NavigationStepStatus,
   PatientStatus,
+  NavigationStep,
 } from '@prisma/client';
 import { AlertsService } from '../alerts/alerts.service';
 import { AlertType, AlertSeverity } from '@prisma/client';
@@ -18,10 +19,20 @@ import { AlertType, AlertSeverity } from '@prisma/client';
 /** Ordem dos estágios da jornada (para comparar "fase atual" vs "fase futura") */
 const JOURNEY_STAGE_ORDER: Record<JourneyStage, number> = {
   [JourneyStage.SCREENING]: 0,
-  [JourneyStage.NAVIGATION]: 1,
-  [JourneyStage.DIAGNOSIS]: 2,
-  [JourneyStage.TREATMENT]: 3,
-  [JourneyStage.FOLLOW_UP]: 4,
+  [JourneyStage.DIAGNOSIS]: 1,
+  [JourneyStage.TREATMENT]: 2,
+  [JourneyStage.FOLLOW_UP]: 3,
+  [JourneyStage.PALLIATIVE]: 4,
+};
+
+type StepConfig = {
+  journeyStage: JourneyStage;
+  stepKey: string;
+  stepName: string;
+  stepDescription: string;
+  isRequired: boolean;
+  expectedDate?: Date;
+  dueDate?: Date;
 };
 
 @Injectable()
@@ -135,6 +146,13 @@ export class OncologyNavigationService {
       ...step,
       journeyStage: String(step.journeyStage),
     }));
+  }
+
+  private getStepConfigs(
+    cancerType: string,
+    patientStatus?: PatientStatus
+  ): StepConfig[] {
+    return this.getNavigationStepsForAllStages(cancerType, patientStatus);
   }
 
   /**
@@ -843,10 +861,6 @@ export class OncologyNavigationService {
         stepName: templateConfig.stepName,
         stepDescription: templateConfig.stepDescription,
         isRequired: templateConfig.isRequired ?? true,
-        dependsOnStepKey: templateConfig.dependsOnStepKey,
-        relativeDaysMin: templateConfig.relativeDaysMin,
-        relativeDaysMax: templateConfig.relativeDaysMax,
-        stepOrder: templateConfig.stepOrder,
         expectedDate: null,
         dueDate: null,
         status: NavigationStepStatus.PENDING,
