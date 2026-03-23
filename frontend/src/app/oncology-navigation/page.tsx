@@ -417,10 +417,14 @@ function PatientNavigationCard({
       DIAGNOSIS: [],
       TREATMENT: [],
       FOLLOW_UP: [],
+      PALLIATIVE: [],
     };
 
     navigationSteps.forEach((step) => {
       if (step.cancerType.toLowerCase() === cancerType.toLowerCase()) {
+        if (!grouped[step.journeyStage]) {
+          grouped[step.journeyStage] = [];
+        }
         grouped[step.journeyStage].push(step);
       }
     });

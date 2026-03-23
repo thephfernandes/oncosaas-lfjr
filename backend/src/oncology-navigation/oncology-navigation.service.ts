@@ -11,17 +11,29 @@ import {
   JourneyStage,
   NavigationStepStatus,
   PatientStatus,
+  NavigationStep,
 } from '@prisma/client';
 import { AlertsService } from '../alerts/alerts.service';
 import { AlertType, AlertSeverity } from '@prisma/client';
 
+/** Configuração de template de etapa de navegação */
+export interface StepConfig {
+  journeyStage: JourneyStage;
+  stepKey: string;
+  stepName: string;
+  stepDescription: string;
+  isRequired: boolean;
+  expectedDate?: Date;
+  dueDate?: Date;
+}
+
 /** Ordem dos estágios da jornada (para comparar "fase atual" vs "fase futura") */
 const JOURNEY_STAGE_ORDER: Record<JourneyStage, number> = {
   [JourneyStage.SCREENING]: 0,
-  [JourneyStage.NAVIGATION]: 1,
-  [JourneyStage.DIAGNOSIS]: 2,
-  [JourneyStage.TREATMENT]: 3,
-  [JourneyStage.FOLLOW_UP]: 4,
+  [JourneyStage.DIAGNOSIS]: 1,
+  [JourneyStage.TREATMENT]: 2,
+  [JourneyStage.FOLLOW_UP]: 3,
+  [JourneyStage.PALLIATIVE]: 4,
 };
 
 @Injectable()
@@ -843,10 +855,6 @@ export class OncologyNavigationService {
         stepName: templateConfig.stepName,
         stepDescription: templateConfig.stepDescription,
         isRequired: templateConfig.isRequired ?? true,
-        dependsOnStepKey: templateConfig.dependsOnStepKey,
-        relativeDaysMin: templateConfig.relativeDaysMin,
-        relativeDaysMax: templateConfig.relativeDaysMax,
-        stepOrder: templateConfig.stepOrder,
         expectedDate: null,
         dueDate: null,
         status: NavigationStepStatus.PENDING,
@@ -1193,21 +1201,24 @@ export class OncologyNavigationService {
   }
 
   /**
+   * Retorna os templates de etapas para um tipo de câncer e status de paciente.
+   * Alias para getNavigationStepsForAllStages.
+   */
+  private getStepConfigs(
+    cancerType: string,
+    patientStatus?: PatientStatus
+  ): StepConfig[] {
+    return this.getNavigationStepsForAllStages(cancerType, patientStatus);
+  }
+
+  /**
    * Retorna as etapas esperadas para cada tipo de câncer em TODOS os estágios da jornada
    * Isso garante visibilidade completa da jornada do paciente
    */
   private getNavigationStepsForAllStages(
     cancerType: string,
     patientStatus?: PatientStatus
-  ): Array<{
-    journeyStage: JourneyStage;
-    stepKey: string;
-    stepName: string;
-    stepDescription: string;
-    isRequired: boolean;
-    expectedDate?: Date;
-    dueDate?: Date;
-  }> {
+  ): StepConfig[] {
     // Se paciente está em tratamento paliativo, usar etapas específicas
     if (patientStatus === PatientStatus.PALLIATIVE_CARE) {
       // Para paliativo, retornar etapas de todos os estágios também
