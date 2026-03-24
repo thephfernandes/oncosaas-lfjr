@@ -127,7 +127,7 @@ export class OncologyNavigationController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads/navigation-steps',
+        destination: __dirname + '/uploads/navigation-steps',
         filename: (req, file, cb) => {
           const stepId = req.params.id;
           const uniqueSuffix =
