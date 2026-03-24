@@ -577,7 +577,7 @@ export class PatientsService {
     const [updatedPatient] = await this.prisma.$transaction([
       // Atualizar score no paciente
       this.prisma.patient.update({
-        where: { id },
+        where: { id, tenantId },
         data: {
           priorityScore: updatePriorityDto.score,
           priorityCategory: updatePriorityDto.category,

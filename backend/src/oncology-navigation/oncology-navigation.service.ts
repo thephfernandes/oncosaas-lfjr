@@ -31,12 +31,14 @@ export interface StepConfig {
 }
 
 /** Ordem dos estágios da jornada (para comparar "fase atual" vs "fase futura") */
+const PALLIATIVE_STAGE = 'PALLIATIVE' as JourneyStage;
 const JOURNEY_STAGE_ORDER: Record<JourneyStage, number> = {
   [JourneyStage.SCREENING]: 0,
-  [JourneyStage.DIAGNOSIS]: 1,
-  [JourneyStage.TREATMENT]: 2,
-  [JourneyStage.FOLLOW_UP]: 3,
-  [JourneyStage.PALLIATIVE]: 4,
+  [JourneyStage.NAVIGATION]: 1,
+  [JourneyStage.DIAGNOSIS]: 2,
+  [JourneyStage.TREATMENT]: 3,
+  [JourneyStage.FOLLOW_UP]: 4,
+  [PALLIATIVE_STAGE]: 5,
 };
 
 @Injectable()
@@ -63,7 +65,7 @@ export class OncologyNavigationService {
       },
       orderBy: [
         { journeyStage: 'asc' },
-        { stepOrder: 'asc' },
+        { stepOrder: 'asc' } as any,
         { createdAt: 'asc' },
       ],
     });
@@ -243,7 +245,7 @@ export class OncologyNavigationService {
     }
 
     const updatedStep = await this.prisma.navigationStep.update({
-      where: { id: stepId },
+      where: { id: stepId, tenantId },
       data: updateData,
     });
 
@@ -266,7 +268,7 @@ export class OncologyNavigationService {
           updateDto.isCompleted !== true
         ) {
           await this.prisma.navigationStep.update({
-            where: { id: stepId },
+            where: { id: stepId, tenantId },
             data: { status: NavigationStepStatus.OVERDUE },
           });
           updatedStep.status = NavigationStepStatus.OVERDUE;
@@ -280,7 +282,7 @@ export class OncologyNavigationService {
           updateDto.isCompleted !== true
         ) {
           await this.prisma.navigationStep.update({
-            where: { id: stepId },
+            where: { id: stepId, tenantId },
             data: { status: NavigationStepStatus.PENDING },
           });
           updatedStep.status = NavigationStepStatus.PENDING;
@@ -316,7 +318,7 @@ export class OncologyNavigationService {
       throw new NotFoundException('Navigation step not found');
     }
     await this.prisma.navigationStep.delete({
-      where: { id: stepId },
+      where: { id: stepId, tenantId },
     });
   }
 
@@ -362,6 +364,7 @@ export class OncologyNavigationService {
     await this.prisma.navigationStep.updateMany({
       where: {
         id: { in: toClear.map((s) => s.id) },
+        tenantId,
       },
       data: { dueDate: null, expectedDate: null },
     });
@@ -410,7 +413,7 @@ export class OncologyNavigationService {
     // Remover etapas existentes: por diagnóstico (se informado) ou por paciente + tipo de câncer
     if (diagnosisId) {
       await this.prisma.navigationStep.deleteMany({
-        where: { diagnosisId },
+        where: { diagnosisId, tenantId },
       });
     } else {
       await this.prisma.navigationStep.deleteMany({
@@ -475,7 +478,7 @@ export class OncologyNavigationService {
             dueDate: isRootStep ? new Date() : null,
             status: NavigationStepStatus.PENDING,
             isCompleted: false,
-          },
+          } as any,
         });
         createdCount++;
       } catch (error) {
@@ -664,7 +667,7 @@ export class OncologyNavigationService {
             dueDate: isRootStep ? new Date() : null,
             status: NavigationStepStatus.PENDING,
             isCompleted: false,
-          },
+          } as any,
         });
         createdCount++;
       } catch (error) {
@@ -820,7 +823,7 @@ export class OncologyNavigationService {
       // Marcar como atrasada se ainda não estiver marcada
       if (step.status !== NavigationStepStatus.OVERDUE) {
         await this.prisma.navigationStep.update({
-          where: { id: step.id },
+          where: { id: step.id, tenantId },
           data: { status: NavigationStepStatus.OVERDUE },
         });
         markedOverdue++;
@@ -883,7 +886,7 @@ export class OncologyNavigationService {
       // Marcar como atrasada se ainda não estiver marcada
       if (step.status !== NavigationStepStatus.OVERDUE) {
         await this.prisma.navigationStep.update({
-          where: { id: step.id },
+          where: { id: step.id, tenantId },
           data: { status: NavigationStepStatus.OVERDUE },
         });
         markedOverdue++;
@@ -1118,7 +1121,7 @@ export class OncologyNavigationService {
           relativeDaysMax: 56,
           notes:
             'QT adjuvante pós-cistectomia (MIBC): 6-8 semanas após cirurgia',
-        },
+        } as any,
       });
       this.logger.log(
         `Bifurcação bexiga MIBC: chemotherapy reatribuída → dependsOn=radical_cystectomy, T+42-56`,
@@ -1150,7 +1153,7 @@ export class OncologyNavigationService {
           patientId: completedStep.patientId,
           tenantId,
           stepOrder: 1,
-        },
+        } as any,
       });
 
       if (firstStep?.createdAt) {
@@ -2665,7 +2668,7 @@ export class OncologyNavigationService {
   private getPalliativeStepConfigs(): StepConfig[] {
     return [
       {
-        journeyStage: JourneyStage.PALLIATIVE,
+        journeyStage: PALLIATIVE_STAGE,
         stepKey: 'palliative_comfort_care',
         stepName: 'Cuidados de Conforto',
         stepDescription: 'Início imediato de cuidados de conforto — controle de dor, dispneia e outros sintomas',
@@ -2676,7 +2679,7 @@ export class OncologyNavigationService {
         stepOrder: 1,
       },
       {
-        journeyStage: JourneyStage.PALLIATIVE,
+        journeyStage: PALLIATIVE_STAGE,
         stepKey: 'palliative_symptom_assessment',
         stepName: 'Avaliação de Sintomas',
         stepDescription: 'Avaliação sistemática de sintomas (ESAS ou Edmonton Symptom Assessment)',
@@ -2687,7 +2690,7 @@ export class OncologyNavigationService {
         stepOrder: 2,
       },
       {
-        journeyStage: JourneyStage.PALLIATIVE,
+        journeyStage: PALLIATIVE_STAGE,
         stepKey: 'palliative_medication_review',
         stepName: 'Revisão de Medicação',
         stepDescription: 'Revisão e ajuste do esquema medicamentoso para conforto',
@@ -2698,7 +2701,7 @@ export class OncologyNavigationService {
         stepOrder: 3,
       },
       {
-        journeyStage: JourneyStage.PALLIATIVE,
+        journeyStage: PALLIATIVE_STAGE,
         stepKey: 'palliative_quality_of_life_assessment',
         stepName: 'Avaliação de Qualidade de Vida',
         stepDescription: 'Instrumento padronizado de avaliação de qualidade de vida (FACT-G ou similar)',
@@ -2709,7 +2712,7 @@ export class OncologyNavigationService {
         stepOrder: 4,
       },
       {
-        journeyStage: JourneyStage.PALLIATIVE,
+        journeyStage: PALLIATIVE_STAGE,
         stepKey: 'palliative_family_support_assessment',
         stepName: 'Avaliação de Suporte Familiar',
         stepDescription: 'Avaliação das necessidades de suporte à família e cuidadores',
@@ -2720,7 +2723,7 @@ export class OncologyNavigationService {
         stepOrder: 5,
       },
       {
-        journeyStage: JourneyStage.PALLIATIVE,
+        journeyStage: PALLIATIVE_STAGE,
         stepKey: 'palliative_multidisciplinary_team',
         stepName: 'Coordenação Equipe Multidisciplinar',
         stepDescription: 'Reunião multidisciplinar: oncologia, paliativismo, psicologia, nutrição, enfermagem',
@@ -2731,7 +2734,7 @@ export class OncologyNavigationService {
         stepOrder: 6,
       },
       {
-        journeyStage: JourneyStage.PALLIATIVE,
+        journeyStage: PALLIATIVE_STAGE,
         stepKey: 'palliative_nutritional_assessment',
         stepName: 'Avaliação Nutricional',
         stepDescription: 'Avaliação nutricional e planejamento de suporte nutricional paliativo',
@@ -2742,7 +2745,7 @@ export class OncologyNavigationService {
         stepOrder: 7,
       },
       {
-        journeyStage: JourneyStage.PALLIATIVE,
+        journeyStage: PALLIATIVE_STAGE,
         stepKey: 'palliative_advance_care_planning',
         stepName: 'Planejamento de Cuidados Avançados',
         stepDescription: 'Discussão de diretivas antecipadas de vontade e planejamento de cuidados',
@@ -2753,7 +2756,7 @@ export class OncologyNavigationService {
         stepOrder: 8,
       },
       {
-        journeyStage: JourneyStage.PALLIATIVE,
+        journeyStage: PALLIATIVE_STAGE,
         stepKey: 'palliative_spiritual_support',
         stepName: 'Avaliação Espiritual',
         stepDescription: 'Avaliação e suporte às necessidades espirituais e existenciais',
@@ -2834,22 +2837,23 @@ export class OncologyNavigationService {
             NavigationStepStatus.CANCELLED,
           ],
         },
-      },
+      } as any,
     });
 
     for (const dep of dependentSteps) {
       const updateData: Prisma.NavigationStepUpdateInput = {};
+      const depAny = dep as any;
 
-      if (dep.relativeDaysMin !== null) {
+      if (depAny.relativeDaysMin !== null && depAny.relativeDaysMin !== undefined) {
         updateData.expectedDate = this.addDays(
           new Date(actualDate),
-          dep.relativeDaysMin
+          depAny.relativeDaysMin
         );
       }
-      if (dep.relativeDaysMax !== null) {
+      if (depAny.relativeDaysMax !== null && depAny.relativeDaysMax !== undefined) {
         updateData.dueDate = this.addDays(
           new Date(actualDate),
-          dep.relativeDaysMax
+          depAny.relativeDaysMax
         );
       }
       if (dep.status === NavigationStepStatus.PENDING) {
@@ -2858,7 +2862,7 @@ export class OncologyNavigationService {
 
       if (Object.keys(updateData).length > 0) {
         await this.prisma.navigationStep.update({
-          where: { id: dep.id },
+          where: { id: dep.id, tenantId },
           data: updateData,
         });
         this.logger.log(
@@ -2886,7 +2890,7 @@ export class OncologyNavigationService {
             ],
           },
         },
-        orderBy: { stepOrder: 'asc' },
+        orderBy: { stepOrder: 'asc' } as any,
       });
 
       if (firstDiagnosisStep) {
@@ -2894,7 +2898,7 @@ export class OncologyNavigationService {
         const existingMeta =
           (firstDiagnosisStep.metadata as Record<string, unknown>) ?? {};
         await this.prisma.navigationStep.update({
-          where: { id: firstDiagnosisStep.id },
+          where: { id: firstDiagnosisStep.id, tenantId },
           data: {
             expectedDate: this.addDays(baseDate, 14),
             dueDate: this.addDays(baseDate, 30),
@@ -2971,21 +2975,22 @@ export class OncologyNavigationService {
             NavigationStepStatus.CANCELLED,
           ],
         },
-      },
+      } as any,
     });
 
     for (const dep of dependentSteps) {
       const updateData: Prisma.NavigationStepUpdateInput = {};
-      if (dep.relativeDaysMin !== null) {
+      const depAny = dep as any;
+      if (depAny.relativeDaysMin !== null && depAny.relativeDaysMin !== undefined) {
         updateData.expectedDate = this.addDays(
           new Date(actualDate),
-          dep.relativeDaysMin
+          depAny.relativeDaysMin
         );
       }
-      if (dep.relativeDaysMax !== null) {
+      if (depAny.relativeDaysMax !== null && depAny.relativeDaysMax !== undefined) {
         updateData.dueDate = this.addDays(
           new Date(actualDate),
-          dep.relativeDaysMax
+          depAny.relativeDaysMax
         );
       }
       if (dep.status === NavigationStepStatus.PENDING) {
@@ -2993,7 +2998,7 @@ export class OncologyNavigationService {
       }
       if (Object.keys(updateData).length > 0) {
         await this.prisma.navigationStep.update({
-          where: { id: dep.id },
+          where: { id: dep.id, tenantId },
           data: updateData,
         });
       }
@@ -3016,12 +3021,12 @@ export class OncologyNavigationService {
           in: [NavigationStepStatus.PENDING, NavigationStepStatus.IN_PROGRESS],
         },
         isCompleted: false,
-      },
+      } as any,
     });
 
     for (const dep of dependentSteps) {
       await this.prisma.navigationStep.update({
-        where: { id: dep.id },
+        where: { id: dep.id, tenantId },
         data: {
           expectedDate: null,
           dueDate: null,
@@ -3050,7 +3055,7 @@ export class OncologyNavigationService {
         const meta = (step.metadata as Record<string, unknown>) ?? {};
         const { unlockedBy: _removed, ...restMeta } = meta;
         await this.prisma.navigationStep.update({
-          where: { id: step.id },
+          where: { id: step.id, tenantId },
           data: {
             expectedDate: null,
             dueDate: null,
@@ -3070,7 +3075,7 @@ export class OncologyNavigationService {
     if (
       step.journeyStage === JourneyStage.DIAGNOSIS ||
       step.journeyStage === JourneyStage.TREATMENT ||
-      step.journeyStage === JourneyStage.PALLIATIVE
+      step.journeyStage === PALLIATIVE_STAGE
     ) {
       if (step.isRequired) {
         const daysOverdue = Math.floor(

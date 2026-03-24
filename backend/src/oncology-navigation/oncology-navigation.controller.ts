@@ -40,7 +40,7 @@ interface MulterFile {
 }
 
 @Controller('oncology-navigation')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class OncologyNavigationController {
   constructor(private readonly navigationService: OncologyNavigationService) {}
 
