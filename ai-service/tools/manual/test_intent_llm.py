@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import sys
 from pathlib import Path
 from dotenv import load_dotenv
 from src.agent.intent_classifier import intent_classifier, CONFIDENCE_THRESHOLD_LLM

@@ -31,14 +31,12 @@ export interface StepConfig {
 }
 
 /** Ordem dos estágios da jornada (para comparar "fase atual" vs "fase futura") */
-const PALLIATIVE_STAGE = 'PALLIATIVE' as JourneyStage;
 const JOURNEY_STAGE_ORDER: Record<JourneyStage, number> = {
   [JourneyStage.SCREENING]: 0,
-  [JourneyStage.NAVIGATION]: 1,
-  [JourneyStage.DIAGNOSIS]: 2,
-  [JourneyStage.TREATMENT]: 3,
-  [JourneyStage.FOLLOW_UP]: 4,
-  [PALLIATIVE_STAGE]: 5,
+  [JourneyStage.DIAGNOSIS]: 1,
+  [JourneyStage.TREATMENT]: 2,
+  [JourneyStage.FOLLOW_UP]: 3,
+  [JourneyStage.PALLIATIVE]: 4,
 };
 
 @Injectable()
@@ -426,7 +424,11 @@ export class OncologyNavigationService {
     }
 
     // Obter configurações de etapas com prazos relativos
-    const allSteps = this.getStepConfigs(cancerType.toLowerCase(), patient.status);
+    const allSteps = this.getStepConfigs(
+      cancerType.toLowerCase(),
+      patient.status,
+      stage,
+    );
 
     // Filtrar: criar apenas etapas da fase atual e fases anteriores
     const currentStageOrder = JOURNEY_STAGE_ORDER[stage] ?? 0;
@@ -549,7 +551,7 @@ export class OncologyNavigationService {
       ).map((s) => s.stepKey)
     );
 
-    return this.getStepConfigs(cancerType, patient.status)
+    return this.getStepConfigs(cancerType, patient.status, journeyStage)
       .filter((c) => c.journeyStage === journeyStage && !existingKeys.has(c.stepKey))
       .map(({ stepKey, stepName, stepDescription, journeyStage: js, isRequired }) => ({
         stepKey,
@@ -622,7 +624,11 @@ export class OncologyNavigationService {
     const existingStepKeys = new Set(existingSteps.map((s) => s.stepKey));
 
     // Obter configs de etapas e filtrar pelo estágio solicitado
-    const allConfigs = this.getStepConfigs(cancerType, patient.status);
+    const allConfigs = this.getStepConfigs(
+      cancerType,
+      patient.status,
+      journeyStage,
+    );
     const expectedSteps = allConfigs.filter(
       (step) => step.journeyStage === journeyStage
     );
@@ -631,7 +637,9 @@ export class OncologyNavigationService {
     const missingSteps = expectedSteps.filter(
       (step) =>
         !existingStepKeys.has(step.stepKey) &&
-        (onlyStepKey === null || step.stepKey === onlyStepKey)
+        (onlyStepKey === undefined ||
+          onlyStepKey === null ||
+          step.stepKey === onlyStepKey)
     );
 
     if (missingSteps.length === 0) {
@@ -687,7 +695,7 @@ export class OncologyNavigationService {
 
   /**
    * Inicializa etapas de navegação para todos os pacientes que têm tipo de câncer
-   * mas ainda não têm etapas definidas
+   * ou que possuem etapas legadas sem metadados de dependência/prazo relativos.
    */
   async initializeAllPatientsSteps(tenantId: string): Promise<{
     initialized: number;
@@ -739,16 +747,39 @@ export class OncologyNavigationService {
           continue;
         }
 
-        // Verificar se o paciente já tem etapas (qualquer fase)
-        const stepCount = await this.prisma.navigationStep.count({
-          where: {
-            patientId: patient.id,
-            tenantId,
-          },
-        });
+        const hasAnyStep = (patient.navigationSteps?.length ?? 0) > 0;
 
-        // Inicializar apenas se não tem nenhuma etapa ainda
-        if (stepCount === 0) {
+        // Se já houver etapas, reinitialize apenas quando detectar assinatura legada.
+        const legacyStep = hasAnyStep
+          ? await this.prisma.navigationStep.findFirst({
+              where: {
+                patientId: patient.id,
+                tenantId,
+                OR: [
+                  // Fluxo antigo criava com default stepOrder=0
+                  { stepOrder: 0 },
+                  // Etapa dependente sem janela relativa completa
+                  {
+                    AND: [
+                      { dependsOnStepKey: { not: null } },
+                      {
+                        OR: [
+                          { relativeDaysMin: null },
+                          { relativeDaysMax: null },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              } as any,
+              select: { id: true },
+            })
+          : null;
+
+        // Inicializar quando:
+        // 1) não há etapas ainda; ou
+        // 2) há etapas, mas ao menos uma é legada e precisa migrar para grafo relativo.
+        if (!hasAnyStep || !!legacyStep) {
           // Converter para minúsculas para garantir consistência
           const cancerType = String(cancerTypeRaw).toLowerCase();
 
@@ -765,7 +796,7 @@ export class OncologyNavigationService {
 
           initialized++;
         } else {
-          // Já tem todas as etapas necessárias
+          // Já possui grafo moderno (não-legado)
           skipped++;
         }
       } catch (error) {
@@ -1006,9 +1037,15 @@ export class OncologyNavigationService {
    */
   private getStepConfigs(
     cancerType: string,
-    patientStatus?: PatientStatus
+    patientStatus?: PatientStatus,
+    currentStage?: JourneyStage,
   ): StepConfig[] {
-    if (patientStatus === PatientStatus.PALLIATIVE_CARE) {
+    // New JourneyStage PALLIATIVE must provision palliative templates
+    // even when patient.status is not yet synchronized to PALLIATIVE_CARE.
+    if (
+      currentStage === JourneyStage.PALLIATIVE ||
+      patientStatus === PatientStatus.PALLIATIVE_CARE
+    ) {
       return this.getPalliativeStepConfigs();
     }
 
@@ -2668,7 +2705,7 @@ export class OncologyNavigationService {
   private getPalliativeStepConfigs(): StepConfig[] {
     return [
       {
-        journeyStage: PALLIATIVE_STAGE,
+        journeyStage: JourneyStage.PALLIATIVE,
         stepKey: 'palliative_comfort_care',
         stepName: 'Cuidados de Conforto',
         stepDescription: 'Início imediato de cuidados de conforto — controle de dor, dispneia e outros sintomas',
@@ -2679,7 +2716,7 @@ export class OncologyNavigationService {
         stepOrder: 1,
       },
       {
-        journeyStage: PALLIATIVE_STAGE,
+        journeyStage: JourneyStage.PALLIATIVE,
         stepKey: 'palliative_symptom_assessment',
         stepName: 'Avaliação de Sintomas',
         stepDescription: 'Avaliação sistemática de sintomas (ESAS ou Edmonton Symptom Assessment)',
@@ -2690,7 +2727,7 @@ export class OncologyNavigationService {
         stepOrder: 2,
       },
       {
-        journeyStage: PALLIATIVE_STAGE,
+        journeyStage: JourneyStage.PALLIATIVE,
         stepKey: 'palliative_medication_review',
         stepName: 'Revisão de Medicação',
         stepDescription: 'Revisão e ajuste do esquema medicamentoso para conforto',
@@ -2701,7 +2738,7 @@ export class OncologyNavigationService {
         stepOrder: 3,
       },
       {
-        journeyStage: PALLIATIVE_STAGE,
+        journeyStage: JourneyStage.PALLIATIVE,
         stepKey: 'palliative_quality_of_life_assessment',
         stepName: 'Avaliação de Qualidade de Vida',
         stepDescription: 'Instrumento padronizado de avaliação de qualidade de vida (FACT-G ou similar)',
@@ -2712,7 +2749,7 @@ export class OncologyNavigationService {
         stepOrder: 4,
       },
       {
-        journeyStage: PALLIATIVE_STAGE,
+        journeyStage: JourneyStage.PALLIATIVE,
         stepKey: 'palliative_family_support_assessment',
         stepName: 'Avaliação de Suporte Familiar',
         stepDescription: 'Avaliação das necessidades de suporte à família e cuidadores',
@@ -2723,7 +2760,7 @@ export class OncologyNavigationService {
         stepOrder: 5,
       },
       {
-        journeyStage: PALLIATIVE_STAGE,
+        journeyStage: JourneyStage.PALLIATIVE,
         stepKey: 'palliative_multidisciplinary_team',
         stepName: 'Coordenação Equipe Multidisciplinar',
         stepDescription: 'Reunião multidisciplinar: oncologia, paliativismo, psicologia, nutrição, enfermagem',
@@ -2734,7 +2771,7 @@ export class OncologyNavigationService {
         stepOrder: 6,
       },
       {
-        journeyStage: PALLIATIVE_STAGE,
+        journeyStage: JourneyStage.PALLIATIVE,
         stepKey: 'palliative_nutritional_assessment',
         stepName: 'Avaliação Nutricional',
         stepDescription: 'Avaliação nutricional e planejamento de suporte nutricional paliativo',
@@ -2745,7 +2782,7 @@ export class OncologyNavigationService {
         stepOrder: 7,
       },
       {
-        journeyStage: PALLIATIVE_STAGE,
+        journeyStage: JourneyStage.PALLIATIVE,
         stepKey: 'palliative_advance_care_planning',
         stepName: 'Planejamento de Cuidados Avançados',
         stepDescription: 'Discussão de diretivas antecipadas de vontade e planejamento de cuidados',
@@ -2756,7 +2793,7 @@ export class OncologyNavigationService {
         stepOrder: 8,
       },
       {
-        journeyStage: PALLIATIVE_STAGE,
+        journeyStage: JourneyStage.PALLIATIVE,
         stepKey: 'palliative_spiritual_support',
         stepName: 'Avaliação Espiritual',
         stepDescription: 'Avaliação e suporte às necessidades espirituais e existenciais',
@@ -3075,7 +3112,7 @@ export class OncologyNavigationService {
     if (
       step.journeyStage === JourneyStage.DIAGNOSIS ||
       step.journeyStage === JourneyStage.TREATMENT ||
-      step.journeyStage === PALLIATIVE_STAGE
+      step.journeyStage === JourneyStage.PALLIATIVE
     ) {
       if (step.isRequired) {
         const daysOverdue = Math.floor(

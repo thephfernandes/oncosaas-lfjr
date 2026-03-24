@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
+import { getSafeRedirectTarget } from '@/lib/utils/redirect';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isAuthenticated, isInitializing, initialize } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,9 +24,10 @@ export default function LoginPage() {
   // Verificar se já está autenticado (após inicialização)
   useEffect(() => {
     if (!isInitializing && isAuthenticated) {
-      router.replace('/dashboard');
+      const target = getSafeRedirectTarget(searchParams.get('redirect'));
+      router.replace(target);
     }
-  }, [isAuthenticated, isInitializing, router]);
+  }, [isAuthenticated, isInitializing, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +42,8 @@ export default function LoginPage() {
 
       // Usar window.location.href para forçar reload completo e garantir redirecionamento
       if (typeof window !== 'undefined') {
-        window.location.href = '/dashboard';
+        const target = getSafeRedirectTarget(searchParams.get('redirect'));
+        window.location.href = target;
       }
     } catch (err: unknown) {
       const errorMessage =
