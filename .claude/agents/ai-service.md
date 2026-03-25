@@ -119,3 +119,68 @@ cd ai-service && pytest tests/test_orchestrator.py     # Agente
 ### API e Schemas
 - Routes: `ai-service/src/api/routes.py`
 - Schemas: `ai-service/src/models/schemas.py`
+
+---
+
+## Workflows Integrados
+
+### Executar Testes (`/testar-modulo ai-service`)
+
+```bash
+# Todos os testes
+cd ai-service && python -m pytest tests/ -v --tb=short
+
+# Módulo específico
+cd ai-service && python -m pytest tests/test_<modulo>.py -v --tb=short
+
+# Exemplos por área
+cd ai-service && python -m pytest tests/models/test_priority_model.py -v   # ML model
+cd ai-service && python -m pytest tests/agent/test_clinical_rules.py -v    # Regras clínicas
+```
+
+Após testes: se falhar, analisar e sugerir fix. Se passar, mostrar resumo de cobertura.
+
+---
+
+### Treinar Modelo de Priorização
+
+```bash
+# Treino sintético (5000 amostras)
+cd ai-service && python -m scripts.train_model
+
+# Blendando com dados reais exportados
+cd ai-service && python -m scripts.train_model --real data.json
+
+# Avaliar modelo atual
+cd ai-service && python -m scripts.train_model --eval
+```
+
+Ao alterar features: atualizar `routes.py` (encodings), retreinar e incrementar `modelVersion`.
+
+---
+
+### Adicionar Protocolo Clínico — Parte AI Service (`/novo-protocolo-clinico`)
+
+> Este workflow é a metade do ai-service. A metade backend fica no agent `backend-nestjs`.
+
+**1. Adicionar ao dicionário `PROTOCOL_RULES` em `ai-service/src/agent/protocol_engine.py`:**
+
+```python
+"<tipo>": {
+    "SCREENING":  { "check_in_frequency": "weekly",       "questionnaire": None,        "critical_symptoms": [...] },
+    "DIAGNOSIS":  { "check_in_frequency": "twice_weekly", "questionnaire": None,        "critical_symptoms": [...] },
+    "TREATMENT":  { "check_in_frequency": "daily",        "questionnaire": "ESAS",      "critical_symptoms": [...] },
+    "FOLLOW_UP":  { "check_in_frequency": "weekly",       "questionnaire": "PRO_CTCAE", "critical_symptoms": [...] },
+}
+```
+
+**2. Adicionar keywords de sintomas específicos em `ai-service/src/agent/symptom_analyzer.py`:**
+
+```python
+"<tipo>": {
+    "critical": ["<sintoma_critico_1>", "<sintoma_critico_2>"],
+    "moderate": ["<sintoma_moderado>"],
+}
+```
+
+**3. Validar** que o protocolo está coerente com o template criado no backend (`backend/src/clinical-protocols/templates/<tipo>.protocol.ts`).
