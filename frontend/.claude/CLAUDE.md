@@ -285,3 +285,12 @@ When assessing configuration:
 - verify env usage is centralized and typed where possible
 - check for server/client exposure mistakes
 - check for missing defaults, dead vars, and inconsistent naming
+
+## Agent Workflow
+
+| Situação | Agent | Quando acionar |
+|---|---|---|
+| Implementar feature, página ou componente complexo | `frontend-nextjs` | Tarefas que envolvem múltiplos arquivos |
+| Commitar mudanças | `github-organizer` | **Sempre** — nunca commitar diretamente |
+| Criar hook + API client para nova entidade | skill `/novo-hook-frontend` | Scaffolding inicial |
+| Rodar testes | skill `/testar-modulo frontend` | Validar antes do commit |
