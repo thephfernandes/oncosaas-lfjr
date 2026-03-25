@@ -1,6 +1,6 @@
 ---
 name: seguranca-compliance
-description: Use para revisões de segurança, compliance LGPD/HIPAA, verificar isolamento multi-tenant, criptografia de dados sensíveis, audit trail, rate limiting, e validação de input. Acione quando a tarefa envolver guards, interceptors, encryption, ou revisão de segurança de código existente.
+description: OBRIGATÓRIO após criar ou modificar qualquer controller, service, DTO ou guard no backend. Também use para revisões de segurança, compliance LGPD/HIPAA, isolamento multi-tenant, criptografia de dados sensíveis, audit trail e validação de input. Acione sempre antes de commitar código backend novo ou modificado.
 tools: Read, Edit, Write, Grep, Glob
 ---
 
