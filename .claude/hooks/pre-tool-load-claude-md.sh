@@ -10,11 +10,11 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 # Determina o subdiretório relevante
 SUBDIR=""
-if echo "$FILE_PATH" | grep -qE "(/|\\\\)backend(/|\\\\)"; then
+if echo "$FILE_PATH" | grep -qE "(^|/|\\\\)backend(/|\\\\)"; then
   SUBDIR="backend"
-elif echo "$FILE_PATH" | grep -qE "(/|\\\\)frontend(/|\\\\)"; then
+elif echo "$FILE_PATH" | grep -qE "(^|/|\\\\)frontend(/|\\\\)"; then
   SUBDIR="frontend"
-elif echo "$FILE_PATH" | grep -qE "(/|\\\\)ai-service(/|\\\\)"; then
+elif echo "$FILE_PATH" | grep -qE "(^|/|\\\\)ai-service(/|\\\\)"; then
   SUBDIR="ai-service"
 fi
 
@@ -34,7 +34,7 @@ fi
 touch "$MARKER"
 
 # Lê o CLAUDE.md do subdiretório
-CLAUDE_MD_PATH="$PROJECT_DIR/$SUBDIR/CLAUDE.md"
+CLAUDE_MD_PATH="$PROJECT_DIR/$SUBDIR/.claude/CLAUDE.md"
 if [ ! -f "$CLAUDE_MD_PATH" ]; then
   exit 0
 fi
