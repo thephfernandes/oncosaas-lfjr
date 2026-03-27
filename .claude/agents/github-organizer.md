@@ -57,6 +57,7 @@ chore/<task>
 Sempre começar com:
 
 ```bash
+git fetch origin                  # SEMPRE atualizar referências remotas primeiro
 git status
 git diff --stat
 git log --oneline origin/main..HEAD
@@ -67,8 +68,10 @@ git log --oneline origin/main..HEAD
 ```bash
 git diff                          # unstaged
 git diff --cached                 # staged
-git diff origin/main..HEAD        # tudo da branch
+git diff origin/main..HEAD        # tudo da branch (sempre usar origin/main, nunca main local)
 ```
+
+> **IMPORTANTE:** Sempre use `origin/main` como base de comparação, nunca `main` local. O `main` local pode estar desatualizado ou divergido do remoto.
 
 ### 3. Agrupar por responsabilidade
 
@@ -144,6 +147,39 @@ git log --oneline origin/main..HEAD
 git rebase -i origin/main
 ```
 
+### Branch derivada de outra branch (não da main)
+
+Se o PR mostra commits ou arquivos que não pertencem a esta branch, a branch foi criada em cima de outra branch. Solução:
+
+```bash
+# 1. Identificar quais commits realmente pertencem a esta branch
+git log --oneline origin/main..HEAD
+# Anotar apenas os commits que são desta branch (ignorar commits de branches anteriores)
+
+# 2. Criar branch limpa a partir do remoto (nunca do main local)
+git fetch origin
+git checkout -b <branch>-clean origin/main
+
+# 3. Cherry-pick apenas os commits desta branch (do mais antigo ao mais novo)
+git cherry-pick <hash1> <hash2> ... <hashN>
+
+# 4. VERIFICAR se há arquivos inesperados no diff antes de fazer push
+git diff origin/main HEAD --name-only
+# Se aparecer arquivo que não deveria estar: restaurar da origin/main
+git checkout origin/main -- <arquivo>
+git commit -m "fix: restaurar <arquivo> para versão do main"
+
+# 5. Force push para atualizar o PR existente
+git push origin <branch>-clean:<branch> --force
+
+# 6. Atualizar branch local e limpar
+git checkout <branch>
+git reset --hard <branch>-clean
+git branch -D <branch>-clean
+```
+
+**Passo 4 é obrigatório:** sempre rodar `git diff origin/main HEAD --name-only` após cherry-pick para garantir que apenas os arquivos intencionais estão no diff.
+
 ### PR grande (> 400 linhas)
 
 Dividir em múltiplas PRs encadeadas:
@@ -159,6 +195,16 @@ git merge origin/main
 # Resolver conflitos, depois:
 git add <arquivos-resolvidos>
 git commit  # sem -m, usa mensagem de merge gerada
+```
+
+### Verificação final antes de qualquer push
+
+```bash
+# Confirmar que apenas os arquivos esperados estão no diff
+git diff origin/main HEAD --name-only
+
+# Confirmar que a branch deriva da main (não de outra branch)
+git merge-base HEAD origin/main  # deve ser o commit mais recente da origin/main
 ```
 
 ## Arquivos Críticos para Revisar Antes de Commitar
