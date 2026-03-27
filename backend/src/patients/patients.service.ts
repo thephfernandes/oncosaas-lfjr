@@ -295,6 +295,16 @@ export class PatientsService {
       }
     }
 
+    // Validar tipos de câncer habilitados para o tenant
+    if (createPatientDto.cancerType) {
+      await this.validateCancerType(createPatientDto.cancerType, tenantId);
+    }
+    for (const diag of createPatientDto.cancerDiagnoses ?? []) {
+      if (diag.cancerType) {
+        await this.validateCancerType(String(diag.cancerType), tenantId);
+      }
+    }
+
     // Extrair cancerDiagnoses do DTO para processar separadamente
     const { cancerDiagnoses, ...patientData } = createPatientDto;
 
@@ -582,7 +592,7 @@ export class PatientsService {
     const [updatedPatient] = await this.prisma.$transaction([
       // Atualizar score no paciente
       this.prisma.patient.update({
-        where: { id },
+        where: { id, tenantId },
         data: {
           priorityScore: updatePriorityDto.score,
           priorityCategory: updatePriorityDto.category,

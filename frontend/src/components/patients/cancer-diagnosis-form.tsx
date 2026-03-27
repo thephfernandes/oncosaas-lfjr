@@ -137,7 +137,10 @@ export function CancerDiagnosisForm({
     }
   }, [primaryDiagnosisId, diagnosis, form]);
 
-  const cancerType = useWatch({ control: form.control, name: 'cancerType' });
+  const cancerType = useWatch({
+    control: form.control,
+    name: 'cancerType',
+  });
   const isBreastCancer =
     cancerType?.toLowerCase().includes('mama') || cancerType === 'breast';
   const isLungCancer =

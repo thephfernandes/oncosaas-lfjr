@@ -27,7 +27,13 @@ export const csvRowSchema = z.object({
   estagio: z.string().optional(),
   oncologistaResponsavel: z.string().optional(),
   currentStage: z
-    .enum(['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP'])
+    .enum([
+      'SCREENING',
+      'DIAGNOSIS',
+      'TREATMENT',
+      'FOLLOW_UP',
+      'PALLIATIVE',
+    ])
     .optional(),
 });
 

@@ -167,9 +167,6 @@ export const oncologyNavigationApi = {
   },
 
   /**
-   * Faz upload de arquivo para uma etapa
-   */
-  /**
    * Retorna todos os templates de etapas para uma fase, com contagem de instâncias existentes
    */
   getStepTemplates: async (
@@ -194,12 +191,14 @@ export const oncologyNavigationApi = {
         isRequired: boolean;
         existingCount: number;
       }[]
-    >(`/oncology-navigation/patients/${patientId}/step-templates/${journeyStage}`);
+    >(
+      `/oncology-navigation/patients/${patientId}/step-templates/${journeyStage}`
+    );
     return data ?? [];
   },
 
   /**
-   * Cria uma instância adicional de um step a partir de um template existente.
+   * Cria uma instância de um step a partir de um template (primeira ou adicional)
    */
   createStepFromTemplate: async (
     patientId: string,
