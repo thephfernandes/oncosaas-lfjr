@@ -61,7 +61,7 @@ describe('sortPatientsByPriority', () => {
 
   it('treats null priorityCategory as MEDIUM', () => {
     const patients = [
-      makePatient({ id: 'p1', priorityCategory: null }),
+      makePatient({ id: 'p1', priorityCategory: null as unknown as undefined }),
       makePatient({ id: 'p2', priorityCategory: 'HIGH' }),
       makePatient({ id: 'p3', priorityCategory: 'LOW' }),
     ];
@@ -72,7 +72,7 @@ describe('sortPatientsByPriority', () => {
 
   it('treats null priorityScore as 0', () => {
     const patients = [
-      makePatient({ id: 'p1', priorityCategory: 'MEDIUM', priorityScore: null }),
+      makePatient({ id: 'p1', priorityCategory: 'MEDIUM', priorityScore: null as unknown as undefined }),
       makePatient({ id: 'p2', priorityCategory: 'MEDIUM', priorityScore: 70 }),
     ];
     const sorted = sortPatientsByPriority(patients);
