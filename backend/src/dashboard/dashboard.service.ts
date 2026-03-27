@@ -883,7 +883,7 @@ export class DashboardService {
       DIAGNOSIS: 'Diagnóstico',
       TREATMENT: 'Tratamento',
       FOLLOW_UP: 'Seguimento',
-      PALLIATIVE: 'Paliativo',
+      PALLIATIVE: 'Cuidados paliativos',
     };
 
     const totalActivePatients = Object.values(stageCounts).reduce(
@@ -1010,7 +1010,7 @@ export class DashboardService {
       DIAGNOSIS: 45,
       TREATMENT: 180,
       FOLLOW_UP: 90,
-      PALLIATIVE: 365,
+      PALLIATIVE: 60,
     };
 
     const bottlenecks: Bottleneck[] = [];

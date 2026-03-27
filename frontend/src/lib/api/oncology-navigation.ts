@@ -10,7 +10,8 @@ export interface NavigationStep {
     | 'SCREENING'
     | 'DIAGNOSIS'
     | 'TREATMENT'
-    | 'FOLLOW_UP';
+    | 'FOLLOW_UP'
+    | 'PALLIATIVE';
   stepKey: string;
   stepName: string;
   stepDescription?: string;
@@ -44,7 +45,8 @@ export interface CreateNavigationStepDto {
     | 'SCREENING'
     | 'DIAGNOSIS'
     | 'TREATMENT'
-    | 'FOLLOW_UP';
+    | 'FOLLOW_UP'
+    | 'PALLIATIVE';
   stepKey: string;
   stepName: string;
   stepDescription?: string;
@@ -210,19 +212,24 @@ export const oncologyNavigationApi = {
   },
 
   /**
-   * Cria etapas faltantes para uma fase
+   * Cria etapas faltantes para uma fase (opcionalmente apenas uma pelo stepKey)
    */
   createMissingStepsForStage: async (
     patientId: string,
-    journeyStage: string
-  ): Promise<{ created: number; skipped: number; message: string }> => {
-    return apiClient.post<{
-      created: number;
-      skipped: number;
-      message: string;
-    }>(
-      `/oncology-navigation/patients/${patientId}/stages/${journeyStage}/create-missing`
+    journeyStage: string,
+    stepKey?: string
+  ): Promise<{ created: number; skipped: number }> => {
+    return apiClient.post<{ created: number; skipped: number }>(
+      `/oncology-navigation/patients/${patientId}/stages/${journeyStage}/create-missing`,
+      stepKey ? { stepKey } : {}
     );
+  },
+
+  /**
+   * Exclui uma etapa de navegação
+   */
+  deleteStep: async (stepId: string): Promise<void> => {
+    await apiClient.delete(`/oncology-navigation/steps/${stepId}`);
   },
 
   /**
