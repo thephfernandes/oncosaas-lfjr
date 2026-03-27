@@ -1,3 +1,8 @@
+---
+name: gerar-testes
+description: Gera/atualiza testes unitários e E2E para arquivos modificados antes do commit
+---
+
 # Skill: /gerar-testes
 
 ## Descrição
