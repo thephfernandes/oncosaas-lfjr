@@ -1,12 +1,12 @@
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import * as dotenv from 'dotenv';
-import { resolve } from 'path';
 
-// Carregar variáveis de ambiente do backend/.env
-dotenv.config({ path: resolve(__dirname, '../.env') });
+const connectionString = `${process.env.DATABASE_URL}`;
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');

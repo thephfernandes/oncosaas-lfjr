@@ -1,11 +1,13 @@
 name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: deploy-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -23,6 +25,7 @@ env:
 jobs:
   build-and-push:
     name: Build & push - ${{ matrix.service }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     strategy:
@@ -39,6 +42,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -67,7 +72,7 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: |
-            ${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.event.workflow_run.head_sha }}
             ${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:latest
           build-args: |
             NEXT_PUBLIC_API_URL=${{ env.APP_URL }}
@@ -98,7 +103,7 @@ jobs:
       - name: Pull ARM64 image
         run: |
           docker pull --platform linux/arm64 \
-            "${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.sha }}"
+            "${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.event.workflow_run.head_sha }}"
 
       - name: Set up Trivy
         uses: aquasecurity/setup-trivy@v0.2.6
@@ -114,7 +119,7 @@ jobs:
             --ignore-unfixed \
             --format table \
             --exit-code 0 \
-            "${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.sha }}"
+            "${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.event.workflow_run.head_sha }}"
 
       - name: Scan ${{ matrix.service }} for CRITICAL vulnerabilities
         shell: bash
@@ -131,7 +136,7 @@ jobs:
             --ignore-unfixed \
             --format table \
             --exit-code "${EXIT_CODE}" \
-            "${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.sha }}"
+            "${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.event.workflow_run.head_sha }}"
 
   deploy:
     name: Deploy to EC2 via SSM
@@ -141,6 +146,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -190,7 +197,7 @@ jobs:
       - name: Run deployment command on EC2
         id: ssm
         env:
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
 

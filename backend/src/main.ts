@@ -17,7 +17,7 @@ import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter'
 const logger = new Logger('Bootstrap');
 
 /** Crash loudly in production when required env vars are missing. */
-function validateEnv() {
+function validateEnv(): void {
   const isProduction = process.env.NODE_ENV === 'production';
   if (!isProduction) {
     return;
@@ -32,7 +32,7 @@ function validateEnv() {
   }
 }
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   validateEnv();
 
   // Verificar se deve usar HTTPS
@@ -142,4 +142,9 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+bootstrap().then(() => {
+  logger.log('Bootstrap completed successfully');
+}).catch((error) => {
+  logger.error('Bootstrap failed', error);
+  process.exit(1);
+});
