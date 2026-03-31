@@ -94,11 +94,11 @@ jobs:
       - name: Validate Prisma schema
         run: npx prisma validate
 
-      - name: Check migration status
-        run: npx prisma migrate status
-
       - name: Apply migrations to fresh CI database
         run: npx prisma migrate deploy
+
+      - name: Verify migration status
+        run: npx prisma migrate status
 
   frontend:
     needs: compose-validate
