@@ -43,6 +43,8 @@ RUN npm prune --omit=dev
 FROM node:24.14.0-alpine3.23 AS production
 WORKDIR /app
 
+ARG DATABASE_URL=postgresql://postgres:postgres@localhost:5432/public
+ENV DATABASE_URL=${DATABASE_URL}
 ENV NODE_ENV=production
 
 COPY --from=builder /app/dist ./dist
