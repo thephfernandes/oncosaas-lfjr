@@ -65,7 +65,23 @@ jobs:
           WS_URL="${WS_URL/http:\/\//ws://}"
           echo "url=$WS_URL" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push ${{ matrix.service }}
+      - name: Build and push backend
+        if: matrix.service == 'backend'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.event.workflow_run.head_sha }}
+            ${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:latest
+          secrets: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Build and push non-backend
+        if: matrix.service != 'backend'
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}

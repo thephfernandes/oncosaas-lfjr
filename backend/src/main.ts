@@ -63,16 +63,16 @@ async function bootstrap(): Promise<void> {
   );
   app.enableShutdownHooks();
 
-  // Criar diretório de uploads se não existir
-  const uploadsDir = join(process.cwd(), 'uploads', 'navigation-steps');
-  if (!existsSync(uploadsDir)) {
-    mkdirSync(uploadsDir, { recursive: true });
-  }
+  // // Criar diretório de uploads se não existir
+  // const uploadsDir = join(process.cwd(), 'uploads', 'navigation-steps');
+  // if (!existsSync(uploadsDir)) {
+  //   mkdirSync(uploadsDir, { recursive: true });
+  // }
 
-  // Servir arquivos estáticos da pasta uploads
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads',
-  });
+  // // Servir arquivos estáticos da pasta uploads
+  // app.useStaticAssets(join(process.cwd(), 'uploads'), {
+  //   prefix: '/uploads',
+  // });
 
   // CORS - origens permitidas configuradas por variável de ambiente
   const frontendUrl =

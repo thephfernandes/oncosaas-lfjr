@@ -290,6 +290,7 @@ jobs:
             echo "POSTGRES_USER=ONCONAV"
             echo "POSTGRES_PASSWORD=ONCONAV_dev"
             echo "POSTGRES_DB=ONCONAV_development"
+            echo "DATABASE_URL=postgresql://ONCONAV:ONCONAV_dev@localhost:5432/ONCONAV_development"
             echo "RABBITMQ_DEFAULT_USER=ONCONAV"
             echo "RABBITMQ_DEFAULT_PASS=ONCONAV_dev"
             echo "JWT_SECRET=${{ secrets.CI_JWT_SECRET || 'ci-test-jwt-secret' }}"

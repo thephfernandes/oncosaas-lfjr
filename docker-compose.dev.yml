@@ -48,8 +48,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: dev
-      args:
-        DATABASE_URL: postgresql://ONCONAV:ONCONAV_dev@postgres:5432/ONCONAV_development
+    secrets:
+      - DATABASE_URL
     container_name: backend
     restart: on-failure
     depends_on:
@@ -66,7 +66,6 @@ services:
     environment:
       NODE_ENV: development
       PORT: '3002'
-      DATABASE_URL: postgresql://ONCONAV:ONCONAV_dev@postgres:5432/ONCONAV_development
       REDIS_URL: redis://redis:6379
       RABBITMQ_URL: amqp://ONCONAV:ONCONAV_dev@rabbitmq:5672
       AI_SERVICE_URL: http://ai-service:8001
@@ -173,6 +172,10 @@ services:
           action: rebuild
         - path: ./ai-service/requirements-dev.txt
           action: rebuild
+
+secrets:
+  DATABASE_URL: 
+    environment: "DATABASE_URL"
 
 volumes:
   postgres_data:
