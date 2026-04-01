@@ -15,8 +15,8 @@ ENV NODE_ENV=development
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# DATABASE_URL is required by prisma generate for schema parsing only — no real DB connection is made
-RUN DATABASE_URL=postgresql://x:x@localhost/x npx prisma generate
+RUN --mount=type=secret,id=DATABASE_URL,env=DATABASE_URL,required=true \
+    npx prisma generate
 
 EXPOSE 3002
 CMD ["npm", "run", "start:dev"]
@@ -28,8 +28,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# DATABASE_URL is required by prisma generate for schema parsing only — no real DB connection is made
-RUN DATABASE_URL=postgresql://x:x@localhost/x npx prisma generate && \
+RUN --mount=type=secret,id=DATABASE_URL,env=DATABASE_URL,required=true \
+    npx prisma generate && \
     npm run build
 
 RUN npm prune --omit=dev
