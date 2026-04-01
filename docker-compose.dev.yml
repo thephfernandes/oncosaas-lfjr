@@ -48,8 +48,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: dev
-    secrets:
-      - DATABASE_URL
     container_name: backend
     restart: on-failure
     depends_on:
@@ -172,10 +170,6 @@ services:
           action: rebuild
         - path: ./ai-service/requirements-dev.txt
           action: rebuild
-
-secrets:
-  DATABASE_URL: 
-    environment: "DATABASE_URL"
 
 volumes:
   postgres_data:
