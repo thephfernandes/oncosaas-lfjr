@@ -75,8 +75,6 @@ jobs:
           tags: |
             ${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:${{ github.event.workflow_run.head_sha }}
             ${{ env.ECR_REGISTRY }}/oncosaas-${{ matrix.service }}:latest
-          secrets: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
