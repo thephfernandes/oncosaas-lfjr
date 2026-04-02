@@ -15,8 +15,7 @@ ENV NODE_ENV=development
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN --mount=type=secret,id=DATABASE_URL,env=DATABASE_URL,required=true \
-    npx prisma generate
+RUN npx prisma generate
 
 EXPOSE 3002
 CMD ["npm", "run", "start:dev"]
@@ -28,8 +27,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN --mount=type=secret,id=DATABASE_URL,env=DATABASE_URL,required=true \
-    npx prisma generate && \
+RUN npx prisma generate && \
     npm run build
 
 RUN npm prune --omit=dev
@@ -43,7 +41,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma.config.mjs ./prisma.config.mjs
 
 RUN chown -R node:node /app
 
