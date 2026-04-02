@@ -1,6 +1,8 @@
-# Subagent: LLM Agent Architect
-
-> **Quando usar:** Use para design e evolução de sistemas multi-agente com LLMs: arquitetura de orchestrators, design de subagentes, estratégias de RAG, prompt engineering avançado, tool use, agentic loops, gerenciamento de contexto e avaliação de agentes. Acione quando precisar evoluir o orchestrator do ai-service, adicionar novos subagentes, redesenhar o pipeline de processamento, ou criar novas capacidades conversacionais no ONCONAV.
+---
+name: llm-agent-architect
+description: 'Use para design e evolução de sistemas multi-agente com LLMs: arquitetura de orchestrators, design de subagentes, estratégias de RAG, prompt engineering avançado, tool use, agentic loops, gerenciamento de contexto e avaliação de agentes. Acione quando precisar evoluir o orchestrator do ai-service, adicionar novos subagentes, redesenhar o pipeline de processamento, ou criar novas capacidades conversacionais no ONCONAV.'
+tools: Read, Edit, Write, Bash, Grep, Glob
+---
 
 > **Rule dedicada:** `.claude/rules/llm-agent-architect.md` — leia antes de qualquer alteração na arquitetura multi-agente.
 
