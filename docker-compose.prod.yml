@@ -36,6 +36,7 @@ services:
       - ./frontend/.env
     environment:
       NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
     healthcheck:
       # Imagem distroless: node não está no PATH; usar caminho absoluto /nodejs/bin/node.
       # CMD exec form bypassa o ENTRYPOINT da imagem, então o PATH do container não é herdado.
