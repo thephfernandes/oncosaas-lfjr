@@ -62,6 +62,7 @@ class AgentOrchestrator:
             result = await self._process_with_trace(
                 trace, message, clinical_context, protocol,
                 conversation_history, agent_state, agent_config,
+                tenant_id=tenant_id,
             )
         except Exception as exc:
             tracer.finish_trace(trace, error=str(exc))
@@ -79,6 +80,7 @@ class AgentOrchestrator:
         conversation_history: List[Dict[str, str]],
         agent_state: Dict[str, Any],
         agent_config: Dict[str, Any],
+        tenant_id: str = "",
     ) -> Dict[str, Any]:
         """Inner implementation of process(), called with an active trace."""
 
@@ -225,6 +227,7 @@ class AgentOrchestrator:
                 conversation_history=conversation_history,
                 agent_config=agent_config,
                 trace=trace,
+                tenant_id=tenant_id,
             )
             llm_dur = (time.monotonic() - llm_start) * 1000
             span_llm.finish(tool_calls=len(all_tool_calls))
@@ -242,6 +245,11 @@ class AgentOrchestrator:
                     f"{[tc['name'] for tc in all_tool_calls]}"
                 )
         else:
+            logger.warning(
+                "Agent LLM skipped: no API keys in agent_config or ai-service environment "
+                "(tenant_id=%s). Using patient fallback message.",
+                tenant_id,
+            )
             response_text = llm_provider._fallback_response()
 
         # 8. Check if a questionnaire should start (from protocol or LLM tool calls)
@@ -417,6 +425,7 @@ class AgentOrchestrator:
         conversation_history: List[Dict[str, str]],
         agent_config: Dict[str, Any],
         trace=None,
+        tenant_id: Optional[str] = None,
     ) -> tuple:
         """
         Run the multi-agent pipeline:
@@ -430,15 +439,26 @@ class AgentOrchestrator:
             - all_tool_calls: List[Dict]
             - llm_meta: Dict[str, str] with provider/model
         """
+        # Backend sends llm_model; optional orchestrator_model/subagent_model override.
+        orch_model = (
+            agent_config.get("orchestrator_model")
+            or agent_config.get("llm_model")
+            or "claude-opus-4-6"
+        )
+        sub_model = (
+            agent_config.get("subagent_model")
+            or agent_config.get("llm_model")
+            or "claude-sonnet-4-6"
+        )
         orch_config = {
             **agent_config,
-            "llm_model": agent_config.get("orchestrator_model", "claude-opus-4-6"),
+            "llm_model": orch_model,
             "use_adaptive_thinking": True,
             "max_tokens": 4096,
         }
         subagent_config = {
             **agent_config,
-            "llm_model": agent_config.get("subagent_model", "claude-sonnet-4-6"),
+            "llm_model": sub_model,
             "max_tokens": 1024,
         }
 
@@ -498,7 +518,9 @@ class AgentOrchestrator:
             response_text = orch_result.get("response", "").strip()
             if not response_text:
                 logger.warning(
-                    "Multi-agent pipeline returned empty response, using fallback message"
+                    "Multi-agent pipeline returned empty response (tenant_id=%s); "
+                    "using patient fallback message",
+                    tenant_id or "",
                 )
                 response_text = llm_provider._fallback_response()
 
