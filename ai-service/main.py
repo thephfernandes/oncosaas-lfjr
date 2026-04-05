@@ -60,6 +60,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = str(LOCAL_ENV_PATH)
+        extra = "ignore"
 
 
 settings = Settings()
