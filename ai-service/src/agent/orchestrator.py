@@ -62,6 +62,7 @@ class AgentOrchestrator:
             result = await self._process_with_trace(
                 trace, message, clinical_context, protocol,
                 conversation_history, agent_state, agent_config,
+                tenant_id=tenant_id,
             )
         except Exception as exc:
             tracer.finish_trace(trace, error=str(exc))
@@ -79,6 +80,7 @@ class AgentOrchestrator:
         conversation_history: List[Dict[str, str]],
         agent_state: Dict[str, Any],
         agent_config: Dict[str, Any],
+        tenant_id: str = "",
     ) -> Dict[str, Any]:
         """Inner implementation of process(), called with an active trace."""
 
@@ -1054,17 +1056,23 @@ class AgentOrchestrator:
 
         # Recalculate priority when symptoms detected (dado clínico coletado)
         if detected:
+            clinical_disposition = (
+                clinical_rules_result.disposition if clinical_rules_result else None
+            )
             actions.append({
                 "type": "RECALCULATE_PRIORITY",
-                "payload": {"motivo": f"Sintoma(s) registrado(s): {', '.join(s['name'] for s in detected)}"},
+                "payload": {
+                    "motivo": f"Sintoma(s) registrado(s): {', '.join(s['name'] for s in detected)}",
+                    "clinicalDisposition": clinical_disposition,
+                },
                 "requiresApproval": False,
             })
             decisions.append({
                 "decisionType": "PRIORITY_RECALCULATED",
                 "reasoning": f"Dado clínico coletado: {len(detected)} sintoma(s) — recálculo automático de prioridade",
                 "confidence": 0.95,
-                "inputData": {"symptoms": [s["name"] for s in detected]},
-                "outputAction": {"type": "RECALCULATE_PRIORITY", "payload": {}},
+                "inputData": {"symptoms": [s["name"] for s in detected], "clinicalDisposition": clinical_disposition},
+                "outputAction": {"type": "RECALCULATE_PRIORITY", "payload": {"clinicalDisposition": clinical_disposition}},
                 "requiresApproval": False,
             })
 
