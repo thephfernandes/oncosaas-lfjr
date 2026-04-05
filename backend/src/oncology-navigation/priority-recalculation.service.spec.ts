@@ -90,4 +90,100 @@ describe('PriorityRecalculationService', () => {
       }),
     );
   });
+
+  describe('clinicalDisposition floor', () => {
+    const patient = {
+      id: 'patient-1',
+      cancerType: 'bladder',
+      stage: 'II',
+      performanceStatus: 1,
+      birthDate: null,
+      lastInteraction: null,
+      questionnaireResponses: [],
+      observations: [],
+      treatments: [],
+    };
+
+    beforeEach(() => {
+      mockPrisma.patient.findFirst.mockResolvedValue(patient);
+      mockPrisma.patient.update.mockResolvedValue({ id: 'patient-1' });
+    });
+
+    it('ER_IMMEDIATE overrides ML score of 20 to CRITICAL/90', async () => {
+      (global as any).fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ priority_score: 20, priority_category: 'low', reason: 'low risk' }),
+      });
+
+      await service.recalculate('patient-1', 'tenant-1', 'ER_IMMEDIATE');
+
+      expect(mockPrisma.patient.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ priorityScore: 90, priorityCategory: 'CRITICAL' }),
+        }),
+      );
+    });
+
+    it('ER_DAYS overrides ML score of 30 to HIGH/70', async () => {
+      (global as any).fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ priority_score: 30, priority_category: 'low', reason: 'low risk' }),
+      });
+
+      await service.recalculate('patient-1', 'tenant-1', 'ER_DAYS');
+
+      expect(mockPrisma.patient.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ priorityScore: 70, priorityCategory: 'HIGH' }),
+        }),
+      );
+    });
+
+    it('ER_IMMEDIATE does NOT override when ML score is already 95', async () => {
+      (global as any).fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ priority_score: 95, priority_category: 'critical', reason: 'high risk' }),
+      });
+
+      await service.recalculate('patient-1', 'tenant-1', 'ER_IMMEDIATE');
+
+      expect(mockPrisma.patient.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ priorityScore: 95, priorityCategory: 'CRITICAL' }),
+        }),
+      );
+    });
+
+    it('REMOTE_NURSING does not override ML score of 50 (floor is 0)', async () => {
+      (global as any).fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ priority_score: 50, priority_category: 'medium', reason: 'medium risk' }),
+      });
+
+      await service.recalculate('patient-1', 'tenant-1', 'REMOTE_NURSING');
+
+      expect(mockPrisma.patient.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ priorityScore: 50, priorityCategory: 'MEDIUM' }),
+        }),
+      );
+    });
+
+    it('reason includes clinical disposition annotation when floor is applied', async () => {
+      (global as any).fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ priority_score: 10, priority_category: 'low', reason: 'base reason' }),
+      });
+
+      await service.recalculate('patient-1', 'tenant-1', 'ER_DAYS');
+
+      expect(mockPrisma.patient.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            priorityReason: expect.stringContaining('ER_DAYS'),
+          }),
+        }),
+      );
+    });
+  });
 });
