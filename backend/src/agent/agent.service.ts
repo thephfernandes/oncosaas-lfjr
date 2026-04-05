@@ -571,12 +571,20 @@ export class AgentService {
             conversationId
           );
           break;
-        case 'RECALCULATE_PRIORITY':
+        case 'RECALCULATE_PRIORITY': {
+          const VALID_DISPOSITIONS = new Set([
+            'ER_IMMEDIATE', 'ER_DAYS', 'ADVANCE_CONSULT', 'SCHEDULED_CONSULT', 'REMOTE_NURSING',
+          ]);
+          const rawDisposition = decision.outputAction?.payload?.clinicalDisposition;
+          const clinicalDisposition: string | undefined =
+            rawDisposition && VALID_DISPOSITIONS.has(rawDisposition) ? rawDisposition : undefined;
           await this.priorityRecalculationService.recalculate(
             patientId,
-            tenantId
+            tenantId,
+            clinicalDisposition,
           );
           break;
+        }
         case 'UPDATE_CLINICAL_DISPOSITION':
           await this.updateClinicalDisposition(decision, tenantId, patientId);
           break;

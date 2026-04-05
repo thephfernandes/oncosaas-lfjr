@@ -15,11 +15,16 @@ export class PriorityRecalculationService {
     private readonly configService: ConfigService,
   ) {}
 
-  /**
-   * Recalcula e persiste o score de prioridade do paciente.
-   * Usa dados reais: último ESAS, observações (dor/náusea/fadiga), diagnóstico, tratamentos.
-   */
-  async recalculate(patientId: string, tenantId: string): Promise<boolean> {
+  /** Maps clinical disposition (Layer 1) to a minimum priority category floor. */
+  private readonly dispositionCategoryFloor: Record<string, { category: string; score: number }> = {
+    ER_IMMEDIATE:    { category: 'CRITICAL', score: 90 },
+    ER_DAYS:         { category: 'HIGH',     score: 70 },
+    ADVANCE_CONSULT: { category: 'MEDIUM',   score: 40 },
+    SCHEDULED_CONSULT: { category: 'LOW',    score: 20 },
+    REMOTE_NURSING:  { category: 'LOW',      score: 0  },
+  };
+
+  async recalculate(patientId: string, tenantId: string, clinicalDisposition?: string): Promise<boolean> {
     try {
       const patient = await this.prisma.patient.findFirst({
         where: { id: patientId, tenantId },
@@ -158,19 +163,38 @@ export class PriorityRecalculationService {
         low: 'LOW',
       };
 
+      let finalScore = Math.round(data.priority_score);
+      let finalCategory = (categoryMap[data.priority_category] || 'LOW') as
+        'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+      // Apply clinical disposition as a minimum floor — Layer 1 rules always win.
+      if (clinicalDisposition) {
+        const floor = this.dispositionCategoryFloor[clinicalDisposition];
+        if (floor && floor.score > finalScore) {
+          this.logger.log(
+            `Clinical disposition ${clinicalDisposition} overrides ML score ` +
+            `${finalScore} → ${floor.score} (${floor.category}) for patient ${patientId}`,
+          );
+          finalScore = floor.score;
+          finalCategory = floor.category as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+        }
+      }
+
       await this.prisma.patient.update({
         where: { id: patientId, tenantId },
         data: {
-          priorityScore: Math.round(data.priority_score),
-          priorityCategory: (categoryMap[data.priority_category] ||
-            'LOW') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW',
-          priorityReason: data.reason,
+          priorityScore: finalScore,
+          priorityCategory: finalCategory,
+          priorityReason: clinicalDisposition
+            ? `${data.reason} [Disposição clínica: ${clinicalDisposition}]`
+            : data.reason,
           priorityUpdatedAt: now,
         },
       });
 
       this.logger.debug(
-        `Prioridade recalculada para paciente ${patientId}: ${data.priority_category} (${data.priority_score})`,
+        `Prioridade recalculada para paciente ${patientId}: ${finalCategory} (${finalScore})` +
+        (clinicalDisposition ? ` [disposição: ${clinicalDisposition}]` : ''),
       );
       return true;
     } catch (error) {
