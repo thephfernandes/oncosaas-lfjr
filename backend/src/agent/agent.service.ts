@@ -198,10 +198,13 @@ export class AgentService {
       const baseStructured = (symptomAnalysis?.structuredData ??
         symptomAnalysis?.structured_data ?? {}) as Record<string, any>;
 
-      // Enrich structuredData with symptoms from RECORD_SYMPTOM decisions
-      const symptoms: Record<string, number> = {
-        ...(baseStructured.symptoms || {}),
-      };
+      // Enrich structuredData with symptoms from RECORD_SYMPTOM decisions.
+      // Normalize all keys to lowercase to prevent duplicates (AI returns lowercase,
+      // RECORD_SYMPTOM.display may be capitalized).
+      const symptoms: Record<string, number> = {};
+      for (const [key, val] of Object.entries(baseStructured.symptoms || {})) {
+        symptoms[key.toLowerCase()] = val as number;
+      }
       for (const d of autoApproved) {
         if (d?.outputAction?.type === 'RECORD_SYMPTOM') {
           const { display, value } = d.outputAction.payload || {};
@@ -212,7 +215,7 @@ export class AgentService {
               HIGH: 8,
               CRITICAL: 10,
             };
-            symptoms[display] = severityMap[value] || 5;
+            symptoms[display.toLowerCase()] = severityMap[value] || 5;
           }
         }
       }
@@ -658,7 +661,10 @@ export class AgentService {
       },
     });
 
-    this.priorityRecalculationService.triggerRecalculation(patientId, tenantId);
+    // Note: priority recalculation is handled by the RECALCULATE_PRIORITY action
+    // that _compile_actions always adds when symptoms are detected. Triggering
+    // another recalculation here (without clinicalDisposition) would race with
+    // and overwrite the floor applied by that action.
   }
 
   private mapToAlertType(agentType: string): string {
