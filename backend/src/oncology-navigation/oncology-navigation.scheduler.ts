@@ -273,9 +273,10 @@ export class OncologyNavigationScheduler {
           const now = new Date();
 
           const riskPayload = patients.map((p) => {
+            const hasInteracted = p.lastInteraction !== null;
             const lastInteractionDays = p.lastInteraction
               ? Math.floor((now.getTime() - new Date(p.lastInteraction).getTime()) / (86400000))
-              : 999;
+              : 0;
 
             const daysSinceRegistration = Math.floor(
               (now.getTime() - new Date(p.createdAt).getTime()) / 86400000,
@@ -288,6 +289,7 @@ export class OncologyNavigationScheduler {
               stage: p.stage || undefined,
               performance_status: p.performanceStatus ?? undefined,
               priority_score: p.priorityScore,
+              has_interacted: hasInteracted,
               last_interaction_days: lastInteractionDays,
               navigation_steps: p.navigationSteps.map((s) => ({
                 step_key: s.stepKey,

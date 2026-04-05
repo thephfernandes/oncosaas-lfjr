@@ -206,7 +206,20 @@ def _analyze_patient_risk(req: PredictRiskRequest) -> List[RiskPrediction]:
 
     no_response_threshold = req.min_days_no_interaction_alert or 7
 
-    if req.has_interacted and req.last_interaction_days >= no_response_threshold:
+    if not req.has_interacted:
+        risks.append(
+            RiskPrediction(
+                risk_type="NO_RESPONSE",
+                probability=0.85,
+                severity="HIGH",
+                message="Paciente nunca interagiu desde o cadastro",
+                details={
+                    "last_interaction_days": None,
+                    "threshold_days": no_response_threshold,
+                },
+            )
+        )
+    elif req.last_interaction_days >= no_response_threshold:
         if req.last_interaction_days >= no_response_threshold * 2:
             prob = min(1.0, 0.85 + (req.last_interaction_days - no_response_threshold * 2) * 0.01)
             sev = "HIGH"
