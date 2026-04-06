@@ -76,7 +76,7 @@ export class PatientsController {
   }
 
   @Post('import')
-  @Roles(UserRole.ADMIN, UserRole.ONCOLOGIST, UserRole.COORDINATOR)
+  @Roles(UserRole.ADMIN, UserRole.ONCOLOGIST, UserRole.COORDINATOR, UserRole.NURSE)
   @UseInterceptors(FileInterceptor('file'))
   async importPatients(
     @UploadedFile() file: MulterFile | undefined,
@@ -112,7 +112,7 @@ export class PatientsController {
   }
 
   @Post('import-spreadsheet')
-  @Roles(UserRole.ADMIN, UserRole.ONCOLOGIST, UserRole.COORDINATOR)
+  @Roles(UserRole.ADMIN, UserRole.ONCOLOGIST, UserRole.COORDINATOR, UserRole.NURSE)
   async importSpreadsheet(
     @Body() dto: ImportSpreadsheetDto,
     @CurrentUser() user: any
