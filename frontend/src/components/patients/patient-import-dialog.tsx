@@ -22,7 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import Papa from 'papaparse';
-import { csvRowSchema, CsvRow } from '@/lib/validations/import-csv';
+import { csvRowSchema, CsvRow, normalizeCsvHeader } from '@/lib/validations/import-csv';
 import {
   parseXlsxFile,
   buildRowsFromMapping,
@@ -202,6 +202,7 @@ export function PatientImportDialog({
       Papa.parse(selectedFile, {
         header: true,
         skipEmptyLines: true,
+        transformHeader: normalizeCsvHeader,
         complete: (results) => {
           const rows: CsvRow[] = [];
           const errors: ValidationError[] = [];

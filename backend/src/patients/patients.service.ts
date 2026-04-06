@@ -654,22 +654,66 @@ export class PatientsService {
       try {
         const stream = Readable.from(csvBuffer.toString('utf-8'));
 
+        // Mapeamento de aliases aceitos → nome canônico do campo
+        const HEADER_ALIASES: Record<string, string> = {
+          // name
+          name: 'name',
+          nome: 'name',
+          // cpf
+          cpf: 'cpf',
+          // dataNascimento
+          datanascimento: 'dataNascimento',
+          'data_nascimento': 'dataNascimento',
+          'data nascimento': 'dataNascimento',
+          nascimento: 'dataNascimento',
+          birthdate: 'dataNascimento',
+          // sexo
+          sexo: 'sexo',
+          genero: 'sexo',
+          gender: 'sexo',
+          // telefone
+          telefone: 'telefone',
+          phone: 'telefone',
+          celular: 'telefone',
+          // email
+          email: 'email',
+          // tipoCancer
+          tipocancer: 'tipoCancer',
+          'tipo_cancer': 'tipoCancer',
+          'tipo cancer': 'tipoCancer',
+          'tipo de cancer': 'tipoCancer',
+          'tipo de câncer': 'tipoCancer',
+          cancertype: 'tipoCancer',
+          cancer: 'tipoCancer',
+          // dataDiagnostico
+          datadiagnostico: 'dataDiagnostico',
+          'data_diagnostico': 'dataDiagnostico',
+          'data diagnostico': 'dataDiagnostico',
+          'data de diagnostico': 'dataDiagnostico',
+          'data de diagnóstico': 'dataDiagnostico',
+          diagnosisdate: 'dataDiagnostico',
+          // estagio
+          estagio: 'estagio',
+          estágio: 'estagio',
+          stage: 'estagio',
+          // oncologistaResponsavel
+          oncologistaresponsavel: 'oncologistaResponsavel',
+          'oncologista_responsavel': 'oncologistaResponsavel',
+          oncologista: 'oncologistaResponsavel',
+          // currentStage
+          currentstage: 'currentStage',
+          'current_stage': 'currentStage',
+          etapa: 'currentStage',
+          jornada: 'currentStage',
+        };
+
         stream
           .pipe(
             csv({
-              headers: [
-                'name',
-                'cpf',
-                'dataNascimento',
-                'sexo',
-                'telefone',
-                'email',
-                'tipoCancer',
-                'dataDiagnostico',
-                'estagio',
-                'oncologistaResponsavel',
-                'currentStage',
-              ],
+              mapHeaders: ({ header }) => {
+                const normalized = header.trim().toLowerCase();
+                return HEADER_ALIASES[normalized] ?? header.trim();
+              },
             })
           )
           .on('data', (row) => {
