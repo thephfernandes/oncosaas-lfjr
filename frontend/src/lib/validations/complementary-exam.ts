@@ -7,12 +7,22 @@ const examTypeEnum = z.enum([
   'IMAGING',
 ]);
 
+const examResultComponentSchema = z.object({
+  name: z.string().min(1),
+  unit: z.string().optional(),
+  referenceRange: z.string().optional(),
+  valueNumeric: z.number().optional(),
+  valueText: z.string().optional(),
+  isAbnormal: z.boolean().optional(),
+});
+
 const initialResultSchema = z.object({
   performedAt: z.string().optional(),
   valueNumeric: z.number().optional(),
   valueText: z.string().optional(),
   isAbnormal: z.boolean().optional(),
   report: z.string().optional(),
+  components: z.array(examResultComponentSchema).optional(),
 });
 
 export const createComplementaryExamSchema = z.object({
@@ -23,15 +33,6 @@ export const createComplementaryExamSchema = z.object({
   unit: z.string().optional(),
   referenceRange: z.string().optional(),
   initialResult: initialResultSchema.optional(),
-});
-
-const examResultComponentSchema = z.object({
-  name: z.string().min(1),
-  unit: z.string().optional(),
-  referenceRange: z.string().optional(),
-  valueNumeric: z.number().optional(),
-  valueText: z.string().optional(),
-  isAbnormal: z.boolean().optional(),
 });
 
 export const createComplementaryExamResultSchema = z

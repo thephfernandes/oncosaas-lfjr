@@ -12,6 +12,7 @@ import {
   UploadedFile,
   BadRequestException,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PatientsService } from './patients.service';
@@ -141,6 +142,40 @@ export class PatientsController {
   ) {
     const patient = await this.patientsService.getDetail(id, user.tenantId);
     return { data: patient };
+  }
+
+  @Get(':id/timeline')
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.ONCOLOGIST,
+    UserRole.NURSE,
+    UserRole.COORDINATOR
+  )
+  async getTimeline(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
+    @Query('types') typesCsv?: string
+  ) {
+    const limit =
+      limitStr != null && limitStr !== ''
+        ? parseInt(limitStr, 10)
+        : undefined;
+    const offset =
+      offsetStr != null && offsetStr !== ''
+        ? parseInt(offsetStr, 10)
+        : undefined;
+    const types =
+      typesCsv != null && typesCsv.trim() !== ''
+        ? typesCsv.split(',').map((t) => t.trim()).filter(Boolean)
+        : undefined;
+
+    return this.patientsService.getTimeline(id, user.tenantId, {
+      limit: Number.isFinite(limit) ? limit : undefined,
+      offset: Number.isFinite(offset) ? offset : undefined,
+      types,
+    });
   }
 
   @Get(':id/cancer-diagnoses')

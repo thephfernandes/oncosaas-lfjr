@@ -1184,6 +1184,11 @@ model ComplementaryExamResult {
   report         String?  // Laudo completo (anatomo, imagem)
   components     Json?    // Sub-valores de exames compostos (Hemograma, EAS, Gasometria): [{ name, unit, referenceRange, valueNumeric?, valueText?, isAbnormal? }]
 
+  // Soft delete (ocultar no frontend, manter rastreabilidade)
+  deletedAt         DateTime?
+  deletedByUserId   String?
+  deleteReason      String?
+
   tenant Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   exam   ComplementaryExam @relation(fields: [examId], references: [id], onDelete: Cascade)
 
@@ -1193,6 +1198,8 @@ model ComplementaryExamResult {
   @@index([tenantId])
   @@index([examId])
   @@index([performedAt])
+  @@index([tenantId, examId, deletedAt])
+  @@index([tenantId, deletedAt])
   @@map("complementary_exam_results")
 }
 

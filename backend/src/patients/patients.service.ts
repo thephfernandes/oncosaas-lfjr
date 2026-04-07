@@ -13,6 +13,10 @@ import { UpdatePriorityDto } from './dto/update-priority.dto';
 import { ImportPatientRowDto } from './dto/import-patients.dto';
 import { ImportSpreadsheetRowDto } from './dto/import-spreadsheet.dto';
 import { PatientDetailResponse } from './dto/patient-detail-response.dto';
+import {
+  PatientTimelineEvent,
+  PatientTimelineResponse,
+} from './dto/patient-timeline-response.dto';
 import { CreateCancerDiagnosisDto } from './dto/create-cancer-diagnosis.dto';
 import { UpdateCancerDiagnosisDto } from './dto/update-cancer-diagnosis.dto';
 import { Patient, Prisma, JourneyStage } from '@generated/prisma/client';
@@ -29,6 +33,10 @@ type PatientWithDiagnoses = Prisma.PatientGetPayload<{
   include: {
     cancerDiagnoses: true;
   };
+}>;
+
+type ComplementaryExamResultWithExam = Prisma.ComplementaryExamResultGetPayload<{
+  include: { exam: true };
 }>;
 
 @Injectable()
@@ -1185,6 +1193,332 @@ export class PatientsService {
       ...patient,
       navigationSteps,
     } as unknown as PatientDetailResponse;
+  }
+
+  /**
+   * Linha do tempo unificada (sintomas, alertas, exames, etapas, diagnósticos, etc.)
+   * ordenada por data (mais recente primeiro), com paginação e filtro opcional por tipo.
+   */
+  async getTimeline(
+    patientId: string,
+    tenantId: string,
+    options?: { limit?: number; offset?: number; types?: string[] }
+  ): Promise<PatientTimelineResponse> {
+    const patient = await this.prisma.patient.findFirst({
+      where: { id: patientId, tenantId },
+      select: { id: true },
+    });
+    if (!patient) {
+      throw new NotFoundException(`Patient with ID ${patientId} not found`);
+    }
+
+    const limitRaw =
+      options?.limit != null && options.limit > 0
+        ? Math.min(options.limit, 200)
+        : 50;
+    const offsetRaw =
+      options?.offset != null && options.offset > 0 ? options.offset : 0;
+    const typeFilter = options?.types?.length
+      ? new Set(options.types.map((t) => t.trim()).filter(Boolean))
+      : null;
+
+    const [
+      observations,
+      alerts,
+      navigationSteps,
+      cancerDiagnoses,
+      treatments,
+      questionnaireResponses,
+      internalNotes,
+      interventions,
+      examResults,
+    ] = await Promise.all([
+      this.prisma.observation.findMany({
+        where: { patientId, tenantId },
+        take: 500,
+        orderBy: { effectiveDateTime: 'desc' },
+      }),
+      this.prisma.alert.findMany({
+        where: { patientId, tenantId },
+        take: 500,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.navigationStep.findMany({
+        where: { patientId, tenantId },
+        take: 500,
+        orderBy: { updatedAt: 'desc' },
+      }),
+      this.prisma.cancerDiagnosis.findMany({
+        where: { patientId, tenantId },
+        take: 500,
+        orderBy: { diagnosisDate: 'desc' },
+      }),
+      this.prisma.treatment.findMany({
+        where: { patientId, tenantId },
+        take: 500,
+        orderBy: { updatedAt: 'desc' },
+      }),
+      this.prisma.questionnaireResponse.findMany({
+        where: { patientId, tenantId },
+        include: {
+          questionnaire: { select: { code: true, name: true, type: true } },
+        },
+        take: 500,
+        orderBy: { completedAt: 'desc' },
+      }),
+      this.prisma.internalNote.findMany({
+        where: { patientId, tenantId },
+        take: 500,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.intervention.findMany({
+        where: { patientId, tenantId },
+        take: 500,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.complementaryExamResult.findMany({
+        where: {
+          tenantId,
+          deletedAt: null,
+          exam: { patientId, tenantId },
+        } as Prisma.ComplementaryExamResultWhereInput,
+        include: { exam: true },
+        take: 500,
+        orderBy: { performedAt: 'desc' },
+      }),
+    ]);
+
+    type RawEvent = { t: PatientTimelineEvent; at: number };
+
+    const raw: RawEvent[] = [];
+
+    const push = (ev: PatientTimelineEvent, at: Date) => {
+      raw.push({ t: ev, at: at.getTime() });
+    };
+
+    for (const o of observations) {
+      const vq = o.valueQuantity;
+      push(
+        {
+          type: 'symptom',
+          date: o.effectiveDateTime.toISOString(),
+          payload: {
+            id: o.id,
+            code: o.code,
+            display: o.display,
+            valueQuantity: vq != null ? Number(vq) : null,
+            valueString: o.valueString ?? null,
+            unit: o.unit ?? null,
+          },
+        },
+        o.effectiveDateTime
+      );
+    }
+
+    for (const a of alerts) {
+      push(
+        {
+          type: 'alert',
+          date: a.createdAt.toISOString(),
+          payload: {
+            id: a.id,
+            type: a.type,
+            severity: a.severity,
+            message: a.message,
+            status: a.status,
+            context: a.context ?? null,
+          },
+        },
+        a.createdAt
+      );
+    }
+
+    for (const s of navigationSteps) {
+      const at =
+        s.completedAt ??
+        s.actualDate ??
+        s.expectedDate ??
+        s.dueDate ??
+        s.updatedAt;
+      push(
+        {
+          type: 'navigation_step',
+          date: at.toISOString(),
+          payload: {
+            id: s.id,
+            stepKey: s.stepKey,
+            stepName: s.stepName,
+            status: s.status,
+            journeyStage: s.journeyStage,
+            cancerType: s.cancerType,
+            result: s.result ?? null,
+            isCompleted: s.isCompleted,
+            completedAt: s.completedAt?.toISOString() ?? null,
+            expectedDate: s.expectedDate?.toISOString() ?? null,
+            actualDate: s.actualDate?.toISOString() ?? null,
+            professionalName: s.professionalName ?? null,
+            institutionName: s.institutionName ?? null,
+          },
+        },
+        at
+      );
+    }
+
+    for (const d of cancerDiagnoses) {
+      push(
+        {
+          type: 'diagnosis',
+          date: d.diagnosisDate.toISOString(),
+          payload: {
+            id: d.id,
+            cancerType: d.cancerType,
+            icd10Code: d.icd10Code ?? null,
+            stage: d.stage ?? null,
+            diagnosisDate: d.diagnosisDate.toISOString(),
+            isPrimary: d.isPrimary,
+            diagnosisConfirmed: d.diagnosisConfirmed,
+          },
+        },
+        d.diagnosisDate
+      );
+    }
+
+    for (const tr of treatments) {
+      const basePayload: Record<string, unknown> = {
+        id: tr.id,
+        treatmentType: tr.treatmentType,
+        treatmentName: tr.treatmentName ?? null,
+        protocol: tr.protocol ?? null,
+        intent: tr.intent,
+        status: tr.status,
+        currentCycle: tr.currentCycle ?? null,
+        totalCycles: tr.totalCycles ?? null,
+      };
+      if (tr.startDate) {
+        push(
+          {
+            type: 'treatment',
+            date: tr.startDate.toISOString(),
+            payload: { ...basePayload, subEvent: 'start' },
+          },
+          tr.startDate
+        );
+      }
+      if (tr.actualEndDate) {
+        push(
+          {
+            type: 'treatment',
+            date: tr.actualEndDate.toISOString(),
+            payload: { ...basePayload, subEvent: 'end' },
+          },
+          tr.actualEndDate
+        );
+      }
+      if (!tr.startDate && !tr.actualEndDate) {
+        const fallback = tr.lastApplicationDate ?? tr.updatedAt;
+        push(
+          {
+            type: 'treatment',
+            date: fallback.toISOString(),
+            payload: { ...basePayload, subEvent: 'start' },
+          },
+          fallback
+        );
+      }
+    }
+
+    for (const qr of questionnaireResponses) {
+      push(
+        {
+          type: 'questionnaire',
+          date: qr.completedAt.toISOString(),
+          payload: {
+            id: qr.id,
+            questionnaireId: qr.questionnaireId,
+            questionnaire: {
+              code: qr.questionnaire.code,
+              name: qr.questionnaire.name,
+              type: qr.questionnaire.type,
+            },
+            scores: qr.scores ?? null,
+            completedAt: qr.completedAt.toISOString(),
+          },
+        },
+        qr.completedAt
+      );
+    }
+
+    for (const n of internalNotes) {
+      push(
+        {
+          type: 'note',
+          date: n.createdAt.toISOString(),
+          payload: {
+            id: n.id,
+            content: n.content,
+            authorId: n.authorId,
+          },
+        },
+        n.createdAt
+      );
+    }
+
+    for (const inv of interventions) {
+      push(
+        {
+          type: 'intervention',
+          date: inv.createdAt.toISOString(),
+          payload: {
+            id: inv.id,
+            interventionType: inv.type,
+            notes: inv.notes ?? null,
+            userId: inv.userId,
+            messageId: inv.messageId ?? null,
+          },
+        },
+        inv.createdAt
+      );
+    }
+
+    for (const er of examResults as ComplementaryExamResultWithExam[]) {
+      const exam = er.exam;
+      push(
+        {
+          type: 'exam',
+          date: er.performedAt.toISOString(),
+          payload: {
+            id: er.id,
+            examId: exam.id,
+            examName: exam.name,
+            examType: exam.type,
+            valueNumeric: er.valueNumeric ?? null,
+            valueText: er.valueText ?? null,
+            unit: er.unit ?? null,
+            isAbnormal: er.isAbnormal ?? null,
+            report: er.report ?? null,
+            performedAt: er.performedAt.toISOString(),
+          },
+        },
+        er.performedAt
+      );
+    }
+
+    raw.sort((a, b) => b.at - a.at);
+
+    let events = raw.map((r) => r.t);
+    if (typeFilter) {
+      events = events.filter((e) => typeFilter.has(e.type));
+    }
+
+    const total = events.length;
+    const data = events.slice(offsetRaw, offsetRaw + limitRaw);
+
+    return {
+      data,
+      total,
+      limit: limitRaw,
+      offset: offsetRaw,
+    };
   }
 
   /**

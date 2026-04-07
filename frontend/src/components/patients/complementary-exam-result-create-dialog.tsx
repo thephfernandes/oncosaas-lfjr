@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { ComplementaryExamCompositeResultTable } from '@/components/patients/complementary-exam-composite-result-table';
 import {
   Form,
   FormControl,
@@ -33,8 +34,8 @@ import type { ComplementaryExam } from '@/lib/api/patients';
 import {
   COMPLEMENTARY_EXAMS_CATALOG,
   EXAM_TYPE_FIELD_CONFIG,
+  defaultCompositeComponentRows,
 } from '@/lib/data/complementary-exams-catalog';
-import { cn } from '@/lib/utils';
 
 interface ComplementaryExamResultCreateDialogProps {
   open: boolean;
@@ -76,14 +77,7 @@ export function ComplementaryExamResultCreateDialog({
       isAbnormal: false,
       report: '',
       components: isComposite
-        ? compositeComponents.map((c) => ({
-            name: c.name,
-            unit: c.unit,
-            referenceRange: c.referenceRange,
-            valueNumeric: undefined,
-            valueText: '',
-            isAbnormal: false,
-          }))
+        ? defaultCompositeComponentRows(compositeComponents)
         : [],
     };
   }
@@ -183,87 +177,12 @@ export function ComplementaryExamResultCreateDialog({
 
             {/* Exame composto: tabela de componentes */}
             {isComposite && fields.length > 0 ? (
-              <div className="border rounded-md overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-muted/50 border-b">
-                      <th className="text-left px-3 py-2 font-medium">Parâmetro</th>
-                      <th className="text-left px-3 py-2 font-medium">Valor</th>
-                      <th className="px-3 py-2 font-medium text-center">Alt.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fields.map((fieldItem, index) => {
-                      const comp = compositeComponents[index];
-                      return (
-                        <tr
-                          key={fieldItem.id}
-                          className="border-b last:border-0 hover:bg-muted/20"
-                        >
-                          <td className="px-3 py-2">
-                            <div className="font-medium">{fieldItem.name}</div>
-                            {comp?.referenceRange && (
-                              <div className="text-xs text-muted-foreground">
-                                Ref.: {comp.referenceRange}
-                                {comp.unit ? ` ${comp.unit}` : ''}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-3 py-2">
-                            <FormField
-                              control={form.control}
-                              name={`components.${index}.valueNumeric`}
-                              render={({ field: f }) => (
-                                <FormItem className="space-y-0">
-                                  <FormControl>
-                                    <div className="flex items-center gap-1">
-                                      <Input
-                                        type="number"
-                                        step="any"
-                                        placeholder="—"
-                                        className="h-8 w-28 text-sm"
-                                        value={f.value ?? ''}
-                                        onChange={(e) => {
-                                          const v = e.target.value;
-                                          f.onChange(v === '' ? undefined : Number(v));
-                                        }}
-                                      />
-                                      {comp?.unit && (
-                                        <span className="text-xs text-muted-foreground shrink-0">
-                                          {comp.unit}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            <FormField
-                              control={form.control}
-                              name={`components.${index}.isAbnormal`}
-                              render={({ field: f }) => (
-                                <FormItem className="space-y-0 flex justify-center">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={f.value ?? false}
-                                      onCheckedChange={f.onChange}
-                                      aria-label="Fora da referência"
-                                      className={cn(f.value && 'border-amber-500 data-[state=checked]:bg-amber-500')}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <ComplementaryExamCompositeResultTable
+                control={form.control}
+                fields={fields}
+                compositeComponents={compositeComponents}
+                namePrefix="components"
+              />
             ) : (
               /* Exame simples */
               <>

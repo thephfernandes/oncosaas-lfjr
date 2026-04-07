@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -46,8 +46,10 @@ import {
   filterCatalogByTypeAndSearch,
   EXAM_TYPE_FIELD_CONFIG,
   SPECIMEN_OPTIONS,
+  defaultCompositeComponentRows,
   type CatalogExamEntry,
 } from '@/lib/data/complementary-exams-catalog';
+import { ComplementaryExamCompositeResultTable } from '@/components/patients/complementary-exam-composite-result-table';
 import { cn } from '@/lib/utils';
 import { ChevronDown } from 'lucide-react';
 
@@ -79,6 +81,8 @@ export function ComplementaryExamCreateDialog({
   const [comboboxOpenState, setComboboxOpen] = useState(false);
   const comboboxOpen = open && comboboxOpenState;
   const [selectedCatalogEntry, setSelectedCatalogEntry] = useState<CatalogExamEntry | null>(null);
+  const selectedCatalogRef = useRef<CatalogExamEntry | null>(null);
+  selectedCatalogRef.current = selectedCatalogEntry;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateComplementaryExamFormData>({
@@ -95,8 +99,14 @@ export function ComplementaryExamCreateDialog({
         valueText: '',
         isAbnormal: false,
         report: '',
+        components: [],
       },
     },
+  });
+
+  const { fields: compositeFields } = useFieldArray({
+    control: form.control,
+    name: 'initialResult.components',
   });
 
   const examType = useWatch({ control: form.control, name: 'type' });
@@ -120,24 +130,58 @@ export function ComplementaryExamCreateDialog({
         referenceRange: data.referenceRange || undefined,
       });
       const ir = data.initialResult;
-      const hasInitialResult =
-        ir &&
-        (ir.performedAt ?? '').trim() !== '' &&
-        (typeof ir.valueNumeric === 'number' ||
-          (ir.valueText ?? '').trim() !== '' ||
-          (ir.report ?? '').trim() !== '');
-      if (hasInitialResult && ir) {
-        const performedAt =
-          (ir.performedAt ?? '').trim() !== ''
-            ? new Date(ir.performedAt!).toISOString()
-            : new Date().toISOString();
-        await patientsApi.createComplementaryExamResult(patientId, exam.id, {
-          performedAt,
-          valueNumeric: ir.valueNumeric,
-          valueText: ir.valueText || undefined,
-          isAbnormal: ir.isAbnormal,
-          report: ir.report || undefined,
-        });
+      const catalogSnapshot = selectedCatalogRef.current;
+      const isCompositeCatalog =
+        catalogSnapshot?.isComposite === true &&
+        ir?.components &&
+        ir.components.length > 0;
+
+      if (isCompositeCatalog && ir) {
+        const hasPanelData =
+          (ir.report ?? '').trim() !== '' ||
+          ir.components!.some(
+            (c) =>
+              (typeof c.valueNumeric === 'number' &&
+                !Number.isNaN(c.valueNumeric)) ||
+              (c.valueText ?? '').trim() !== ''
+          );
+        if (hasPanelData) {
+          const performedAt =
+            (ir.performedAt ?? '').trim() !== ''
+              ? new Date(ir.performedAt!).toISOString()
+              : new Date().toISOString();
+          await patientsApi.createComplementaryExamResult(patientId, exam.id, {
+            performedAt,
+            report: ir.report || undefined,
+            components: ir.components!.map((c) => ({
+              name: c.name,
+              unit: c.unit,
+              referenceRange: c.referenceRange,
+              valueNumeric: c.valueNumeric,
+              valueText: c.valueText || undefined,
+              isAbnormal: c.isAbnormal,
+            })),
+          });
+        }
+      } else if (ir) {
+        const hasInitialResult =
+          (ir.performedAt ?? '').trim() !== '' &&
+          (typeof ir.valueNumeric === 'number' ||
+            (ir.valueText ?? '').trim() !== '' ||
+            (ir.report ?? '').trim() !== '');
+        if (hasInitialResult) {
+          const performedAt =
+            (ir.performedAt ?? '').trim() !== ''
+              ? new Date(ir.performedAt!).toISOString()
+              : new Date().toISOString();
+          await patientsApi.createComplementaryExamResult(patientId, exam.id, {
+            performedAt,
+            valueNumeric: ir.valueNumeric,
+            valueText: ir.valueText || undefined,
+            isAbnormal: ir.isAbnormal,
+            report: ir.report || undefined,
+          });
+        }
       }
       return exam;
     },
@@ -168,6 +212,7 @@ export function ComplementaryExamCreateDialog({
         valueText: '',
         isAbnormal: false,
         report: '',
+        components: [],
       },
     });
   }, [form]);
@@ -193,17 +238,54 @@ export function ComplementaryExamCreateDialog({
     form.setValue('specimen', entry.specimen ?? '');
     form.setValue('unit', entry.unit ?? '');
     form.setValue('referenceRange', entry.referenceRange ?? '');
+    if (entry.isComposite && entry.components?.length) {
+      form.setValue(
+        'initialResult.components',
+        defaultCompositeComponentRows(entry.components)
+      );
+    } else {
+      form.setValue('initialResult.components', []);
+    }
     setComboboxOpen(false);
     inputRef.current?.blur();
   };
 
   const onSubmit = (data: CreateComplementaryExamFormData) => {
+    const ir = data.initialResult;
+    if (
+      selectedCatalogEntry?.isComposite === true &&
+      ir?.components &&
+      ir.components.length > 0
+    ) {
+      const hasPanelData =
+        (ir.report ?? '').trim() !== '' ||
+        ir.components.some(
+          (c) =>
+            (typeof c.valueNumeric === 'number' &&
+              !Number.isNaN(c.valueNumeric)) ||
+            (c.valueText ?? '').trim() !== ''
+        );
+      if (hasPanelData && !(ir.performedAt ?? '').trim()) {
+        form.setError('initialResult.performedAt', {
+          message:
+            'Informe a data da realização para salvar o resultado do painel.',
+        });
+        form.setFocus('initialResult.performedAt');
+        toast.error('Informe a data da realização.');
+        return;
+      }
+    }
     createMutation.mutate(data);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className={cn(
+          'max-h-[90vh] overflow-y-auto',
+          isComposite && compositeFields.length > 0 ? 'max-w-lg' : 'max-w-md'
+        )}
+      >
         <DialogClose onClose={() => onOpenChange(false)} />
         <DialogHeader>
           <DialogTitle>Adicionar exame complementar</DialogTitle>
@@ -219,10 +301,12 @@ export function ComplementaryExamCreateDialog({
                   <Select
                     onValueChange={(v) => {
                       field.onChange(v);
+                      setSelectedCatalogEntry(null);
                       form.setValue('name', '');
                       form.setValue('code', '');
                       form.setValue('unit', '');
                       form.setValue('referenceRange', '');
+                      form.setValue('initialResult.components', []);
                     }}
                     value={field.value}
                   >
@@ -367,116 +451,175 @@ export function ComplementaryExamCreateDialog({
               />
             )}
 
-            {/* Banner para exames compostos */}
-            {isComposite && (
-              <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                Este exame é um painel com múltiplos parâmetros. O resultado será preenchido por componente após o cadastro.
+            {/* Resultado inicial (opcional): painel composto ou exame simples */}
+            {isComposite && compositeFields.length > 0 ? (
+              <div className="space-y-3 pt-2 border-t">
+                <h4 className="text-sm font-medium">
+                  Resultado inicial (opcional)
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Painel laboratorial: preencha os parâmetros desejados ou deixe
+                  em branco para registrar só o pedido.
+                </p>
+                <FormField
+                  control={form.control}
+                  name="initialResult.performedAt"
+                  render={({ field }) => {
+                    const dateValue =
+                      field.value && String(field.value).trim() !== ''
+                        ? String(field.value).slice(0, 10)
+                        : new Date().toISOString().slice(0, 10);
+                    return (
+                      <FormItem>
+                        <FormLabel>Data da realização</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            value={dateValue}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            onBlur={field.onBlur}
+                            ref={field.ref}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <ComplementaryExamCompositeResultTable
+                  control={form.control}
+                  fields={compositeFields}
+                  compositeComponents={
+                    selectedCatalogEntry?.components ?? []
+                  }
+                  namePrefix="initialResult.components"
+                />
+                <FormField
+                  control={form.control}
+                  name="initialResult.report"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {fieldConfig.reportIsPrimary
+                          ? 'Laudo / conclusão diagnóstica'
+                          : 'Laudo / observações (opcional)'}
+                      </FormLabel>
+                      <FormControl>
+                        <textarea
+                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          placeholder="Texto livre do laudo"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            ) : (
+              <div className="space-y-3 pt-2 border-t">
+                <h4 className="text-sm font-medium">
+                  Resultado inicial (opcional)
+                </h4>
+                <FormField
+                  control={form.control}
+                  name="initialResult.performedAt"
+                  render={({ field }) => {
+                    const dateValue =
+                      field.value && String(field.value).trim() !== ''
+                        ? String(field.value).slice(0, 10)
+                        : new Date().toISOString().slice(0, 10);
+                    return (
+                      <FormItem>
+                        <FormLabel>Data da realização</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            value={dateValue}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            onBlur={field.onBlur}
+                            ref={field.ref}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="initialResult.valueNumeric"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor numérico</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            placeholder="Ex: 12.5"
+                            {...field}
+                            value={field.value ?? ''}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              field.onChange(v === '' ? undefined : Number(v));
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="initialResult.valueText"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor texto</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Positivo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="initialResult.isAbnormal"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Fora da referência</FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="initialResult.report"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Laudo / observações</FormLabel>
+                      <FormControl>
+                        <textarea
+                          className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          placeholder="Texto livre do laudo"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             )}
-
-            {/* Resultado inicial (opcional) — oculto para exames compostos */}
-            {!isComposite && (<div className="space-y-3 pt-2 border-t">
-              <h4 className="text-sm font-medium">
-                Resultado inicial (opcional)
-              </h4>
-              <FormField
-                control={form.control}
-                name="initialResult.performedAt"
-                render={({ field }) => {
-                  const dateValue =
-                    field.value && String(field.value).trim() !== ''
-                      ? String(field.value).slice(0, 10)
-                      : new Date().toISOString().slice(0, 10);
-                  return (
-                    <FormItem>
-                      <FormLabel>Data da realização</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          value={dateValue}
-                          onChange={(e) => field.onChange(e.target.value)}
-                          onBlur={field.onBlur}
-                          ref={field.ref}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="initialResult.valueNumeric"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor numérico</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="any"
-                          placeholder="Ex: 12.5"
-                          {...field}
-                          value={field.value ?? ''}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            field.onChange(v === '' ? undefined : Number(v));
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="initialResult.valueText"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor texto</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Positivo" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="initialResult.isAbnormal"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Fora da referência</FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="initialResult.report"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Laudo / observações</FormLabel>
-                    <FormControl>
-                      <textarea
-                        className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder="Texto livre do laudo"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>)}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button

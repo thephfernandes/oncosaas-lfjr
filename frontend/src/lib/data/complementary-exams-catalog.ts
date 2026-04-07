@@ -266,3 +266,25 @@ export function filterCatalogByTypeAndSearch(
 export function getCatalogByType(type: ComplementaryExamType): CatalogExamEntry[] {
   return COMPLEMENTARY_EXAMS_CATALOG.filter((e) => e.type === type);
 }
+
+/** Linhas iniciais do formulário para cada parâmetro de um painel (hemograma, EAS, etc.). */
+export function defaultCompositeComponentRows(
+  components: CompositeComponent[] | undefined
+): Array<{
+  name: string;
+  unit?: string;
+  referenceRange?: string;
+  valueNumeric?: number;
+  valueText: string;
+  isAbnormal: boolean;
+}> {
+  if (!components?.length) return [];
+  return components.map((c) => ({
+    name: c.name,
+    unit: c.unit,
+    referenceRange: c.referenceRange,
+    valueNumeric: undefined,
+    valueText: '',
+    isAbnormal: false,
+  }));
+}

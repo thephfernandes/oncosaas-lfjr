@@ -13,9 +13,18 @@ const mockPrisma = {
     update: jest.fn(),
     delete: jest.fn(),
   },
+  observation: { findMany: jest.fn() },
   alert: {
+    findMany: jest.fn(),
     groupBy: jest.fn(),
   },
+  navigationStep: { findMany: jest.fn() },
+  cancerDiagnosis: { findMany: jest.fn() },
+  treatment: { findMany: jest.fn() },
+  questionnaireResponse: { findMany: jest.fn() },
+  internalNote: { findMany: jest.fn() },
+  intervention: { findMany: jest.fn() },
+  complementaryExamResult: { findMany: jest.fn() },
   tenant: {
     findUnique: jest.fn(),
   },
@@ -267,6 +276,70 @@ describe('PatientsService', () => {
   });
 
   // ─── remove ─────────────────────────────────────────────────────────────────
+
+  // ─── getTimeline ───────────────────────────────────────────────────────────
+
+  describe('getTimeline', () => {
+    function mockTimelineEmptySources() {
+      mockPrisma.observation.findMany.mockResolvedValue([]);
+      mockPrisma.alert.findMany.mockResolvedValue([]);
+      mockPrisma.navigationStep.findMany.mockResolvedValue([]);
+      mockPrisma.cancerDiagnosis.findMany.mockResolvedValue([]);
+      mockPrisma.treatment.findMany.mockResolvedValue([]);
+      mockPrisma.questionnaireResponse.findMany.mockResolvedValue([]);
+      mockPrisma.internalNote.findMany.mockResolvedValue([]);
+      mockPrisma.intervention.findMany.mockResolvedValue([]);
+      mockPrisma.complementaryExamResult.findMany.mockResolvedValue([]);
+    }
+
+    it('deve lançar NotFoundException quando paciente não existe', async () => {
+      mockPrisma.patient.findFirst.mockResolvedValue(null);
+
+      await expect(service.getTimeline(PATIENT_ID, TENANT)).rejects.toThrow(
+        NotFoundException
+      );
+    });
+
+    it('deve retornar lista vazia quando não há eventos', async () => {
+      mockPrisma.patient.findFirst.mockResolvedValue({ id: PATIENT_ID });
+      mockTimelineEmptySources();
+
+      const result = await service.getTimeline(PATIENT_ID, TENANT);
+
+      expect(result.data).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.limit).toBe(50);
+      expect(result.offset).toBe(0);
+    });
+
+    it('deve mapear observações como symptom e respeitar filtro types', async () => {
+      const eff = new Date('2025-01-15T10:00:00.000Z');
+      mockPrisma.patient.findFirst.mockResolvedValue({ id: PATIENT_ID });
+      mockTimelineEmptySources();
+      mockPrisma.observation.findMany.mockResolvedValue([
+        {
+          id: 'obs-1',
+          code: '72514-3',
+          display: 'Dor',
+          valueQuantity: 7 as any,
+          valueString: null,
+          unit: '/10',
+          effectiveDateTime: eff,
+        },
+      ]);
+
+      const all = await service.getTimeline(PATIENT_ID, TENANT);
+      expect(all.total).toBe(1);
+      expect(all.data[0].type).toBe('symptom');
+      expect(all.data[0].payload.display).toBe('Dor');
+
+      const filtered = await service.getTimeline(PATIENT_ID, TENANT, {
+        types: ['alert'],
+      });
+      expect(filtered.total).toBe(0);
+      expect(filtered.data).toEqual([]);
+    });
+  });
 
   describe('remove', () => {
     it('deve lançar NotFoundException ao remover paciente de outro tenant', async () => {

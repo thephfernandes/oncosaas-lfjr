@@ -417,6 +417,9 @@ export interface ComplementaryExamResult {
   criticalLow: boolean | null;
   report: string | null;
   components: ExamResultComponent[] | null;
+  deletedAt?: string | null;
+  deletedByUserId?: string | null;
+  deleteReason?: string | null;
 }
 
 export interface ComplementaryExam {

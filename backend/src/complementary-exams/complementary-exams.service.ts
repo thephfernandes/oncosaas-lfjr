@@ -5,11 +5,15 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PriorityRecalculationService } from '../oncology-navigation/priority-recalculation.service';
-import { ComplementaryExamType } from '@generated/prisma/client';
+import { ComplementaryExamType, Prisma } from '@generated/prisma/client';
 import { CreateComplementaryExamDto } from './dto/create-complementary-exam.dto';
 import { UpdateComplementaryExamDto } from './dto/update-complementary-exam.dto';
 import { CreateComplementaryExamResultDto } from './dto/create-complementary-exam-result.dto';
 import { UpdateComplementaryExamResultDto } from './dto/update-complementary-exam-result.dto';
+
+/** Filtro de resultados ativos (soft delete). Asserção evita TS2353 se o client gerado estiver defasado. */
+const activeComplementaryExamResultWhere =
+  { deletedAt: null } as Prisma.ComplementaryExamResultWhereInput;
 
 @Injectable()
 export class ComplementaryExamsService {
@@ -40,6 +44,7 @@ export class ComplementaryExamsService {
       orderBy: [{ type: 'asc' }, { name: 'asc' }],
       include: {
         results: {
+          where: activeComplementaryExamResultWhere,
           orderBy: { performedAt: 'desc' },
           take: 50,
         },
@@ -62,6 +67,7 @@ export class ComplementaryExamsService {
       },
       include: {
         results: {
+          where: activeComplementaryExamResultWhere,
           orderBy: { performedAt: 'desc' },
           take: 50,
         },
@@ -108,7 +114,11 @@ export class ComplementaryExamsService {
       where: { id: examId, tenantId },
       data: dto,
       include: {
-        results: { orderBy: { performedAt: 'desc' }, take: 50 },
+        results: {
+          where: activeComplementaryExamResultWhere,
+          orderBy: { performedAt: 'desc' },
+          take: 50,
+        },
       },
     });
   }
@@ -125,11 +135,20 @@ export class ComplementaryExamsService {
 
   // --- Results ---
 
-  async findResults(patientId: string, examId: string, tenantId: string) {
+  async findResults(
+    patientId: string,
+    examId: string,
+    tenantId: string,
+    includeDeleted = false,
+  ) {
     await this.findOne(patientId, examId, tenantId);
 
     return this.prisma.complementaryExamResult.findMany({
-      where: { examId, tenantId },
+      where: {
+        examId,
+        tenantId,
+        ...(includeDeleted ? {} : { deletedAt: null }),
+      } as Prisma.ComplementaryExamResultWhereInput,
       orderBy: { performedAt: 'desc' },
     });
   }
@@ -212,6 +231,43 @@ export class ComplementaryExamsService {
     examId: string,
     resultId: string,
     tenantId: string,
+    params?: { reason?: string; deletedByUserId?: string },
+  ) {
+    await this.findOne(patientId, examId, tenantId);
+
+    const result = await this.prisma.complementaryExamResult.findFirst({
+      where: {
+        id: resultId,
+        examId,
+        tenantId,
+        deletedAt: null,
+      } as Prisma.ComplementaryExamResultWhereInput,
+    });
+
+    if (!result) {
+      throw new NotFoundException(
+        `Result with ID ${resultId} not found for this exam`,
+      );
+    }
+
+    const deleted = await this.prisma.complementaryExamResult.update({
+      where: { id: resultId, tenantId },
+      data: {
+        deletedAt: new Date(),
+        deletedByUserId: params?.deletedByUserId,
+        deleteReason: params?.reason,
+      } as Prisma.ComplementaryExamResultUpdateInput,
+    });
+
+    return { deleted: true, result: deleted };
+  }
+
+  async restoreResult(
+    patientId: string,
+    examId: string,
+    resultId: string,
+    tenantId: string,
+    _params?: { restoredByUserId?: string },
   ) {
     await this.findOne(patientId, examId, tenantId);
 
@@ -225,11 +281,16 @@ export class ComplementaryExamsService {
       );
     }
 
-    await this.prisma.complementaryExamResult.delete({
+    const restored = await this.prisma.complementaryExamResult.update({
       where: { id: resultId, tenantId },
+      data: {
+        deletedAt: null,
+        deletedByUserId: null,
+        deleteReason: null,
+      } as Prisma.ComplementaryExamResultUpdateInput,
     });
 
-    return { deleted: true };
+    return { restored: true, result: restored };
   }
 
   private async ensurePatientBelongsToTenant(

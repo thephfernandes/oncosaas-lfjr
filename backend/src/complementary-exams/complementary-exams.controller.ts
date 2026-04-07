@@ -12,17 +12,22 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ComplementaryExamsService } from './complementary-exams.service';
 import { CreateComplementaryExamDto } from './dto/create-complementary-exam.dto';
 import { UpdateComplementaryExamDto } from './dto/update-complementary-exam.dto';
 import { CreateComplementaryExamResultDto } from './dto/create-complementary-exam-result.dto';
 import { UpdateComplementaryExamResultDto } from './dto/update-complementary-exam-result.dto';
+import { SoftDeleteComplementaryExamResultDto } from './dto/soft-delete-complementary-exam-result.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole, ComplementaryExamType } from '@generated/prisma/client';
+
+type AuthedRequest = { user: CurrentUser };
 
 @Controller('patients/:patientId/complementary-exams')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
@@ -35,7 +40,7 @@ export class ComplementaryExamsController {
   @Get()
   findAll(
     @Param('patientId', ParseUUIDPipe) patientId: string,
-    @Request() req: { user: { tenantId: string } },
+    @Request() req: AuthedRequest,
     @Query('type') type?: ComplementaryExamType,
   ) {
     return this.complementaryExamsService.findAllByPatient(
@@ -49,7 +54,7 @@ export class ComplementaryExamsController {
   findOne(
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @Param('examId', ParseUUIDPipe) examId: string,
-    @Request() req: { user: { tenantId: string } },
+    @Request() req: AuthedRequest,
   ) {
     return this.complementaryExamsService.findOne(
       patientId,
@@ -63,7 +68,7 @@ export class ComplementaryExamsController {
   create(
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @Body() createDto: CreateComplementaryExamDto,
-    @Request() req: { user: { tenantId: string } },
+    @Request() req: AuthedRequest,
   ) {
     return this.complementaryExamsService.create(
       patientId,
@@ -77,7 +82,7 @@ export class ComplementaryExamsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @Param('examId', ParseUUIDPipe) examId: string,
     @Body() updateDto: UpdateComplementaryExamDto,
-    @Request() req: { user: { tenantId: string } },
+    @Request() req: AuthedRequest,
   ) {
     return this.complementaryExamsService.update(
       patientId,
@@ -92,7 +97,7 @@ export class ComplementaryExamsController {
   remove(
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @Param('examId', ParseUUIDPipe) examId: string,
-    @Request() req: { user: { tenantId: string } },
+    @Request() req: AuthedRequest,
   ) {
     return this.complementaryExamsService.remove(
       patientId,
@@ -105,12 +110,20 @@ export class ComplementaryExamsController {
   findResults(
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @Param('examId', ParseUUIDPipe) examId: string,
-    @Request() req: { user: { tenantId: string } },
+    @Request() req: AuthedRequest,
+    @Query('includeDeleted') includeDeleted?: string,
   ) {
+    if (includeDeleted === 'true') {
+      // Only ADMIN can view deleted results
+      if (req.user.role !== UserRole.ADMIN) {
+        throw new ForbiddenException('Apenas ADMIN pode visualizar resultados excluídos.');
+      }
+    }
     return this.complementaryExamsService.findResults(
       patientId,
       examId,
       req.user.tenantId,
+      includeDeleted === 'true',
     );
   }
 
@@ -120,7 +133,7 @@ export class ComplementaryExamsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @Param('examId', ParseUUIDPipe) examId: string,
     @Body() createDto: CreateComplementaryExamResultDto,
-    @Request() req: { user: { tenantId: string } },
+    @Request() req: AuthedRequest,
   ) {
     return this.complementaryExamsService.addResult(
       patientId,
@@ -136,7 +149,7 @@ export class ComplementaryExamsController {
     @Param('examId', ParseUUIDPipe) examId: string,
     @Param('resultId', ParseUUIDPipe) resultId: string,
     @Body() updateDto: UpdateComplementaryExamResultDto,
-    @Request() req: { user: { tenantId: string } },
+    @Request() req: AuthedRequest,
   ) {
     return this.complementaryExamsService.updateResult(
       patientId,
@@ -153,13 +166,33 @@ export class ComplementaryExamsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @Param('examId', ParseUUIDPipe) examId: string,
     @Param('resultId', ParseUUIDPipe) resultId: string,
-    @Request() req: { user: { tenantId: string } },
+    @Body() body: SoftDeleteComplementaryExamResultDto,
+    @Request() req: AuthedRequest,
   ) {
     return this.complementaryExamsService.removeResult(
       patientId,
       examId,
       resultId,
       req.user.tenantId,
+      { reason: body?.reason, deletedByUserId: req.user.id },
+    );
+  }
+
+  @Post(':examId/results/:resultId/restore')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.ADMIN)
+  restoreResult(
+    @Param('patientId', ParseUUIDPipe) patientId: string,
+    @Param('examId', ParseUUIDPipe) examId: string,
+    @Param('resultId', ParseUUIDPipe) resultId: string,
+    @Request() req: AuthedRequest,
+  ) {
+    return this.complementaryExamsService.restoreResult(
+      patientId,
+      examId,
+      resultId,
+      req.user.tenantId,
+      { restoredByUserId: req.user.id },
     );
   }
 }
