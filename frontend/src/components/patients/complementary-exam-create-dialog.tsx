@@ -44,6 +44,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   filterCatalogByTypeAndSearch,
+  EXAM_TYPE_FIELD_CONFIG,
+  SPECIMEN_OPTIONS,
   type CatalogExamEntry,
 } from '@/lib/data/complementary-exams-catalog';
 import { cn } from '@/lib/utils';
@@ -76,6 +78,7 @@ export function ComplementaryExamCreateDialog({
   const queryClient = useQueryClient();
   const [comboboxOpenState, setComboboxOpen] = useState(false);
   const comboboxOpen = open && comboboxOpenState;
+  const [selectedCatalogEntry, setSelectedCatalogEntry] = useState<CatalogExamEntry | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateComplementaryExamFormData>({
@@ -102,6 +105,9 @@ export function ComplementaryExamCreateDialog({
     examType,
     searchQuery ?? ''
   );
+  const isComposite = selectedCatalogEntry?.isComposite === true;
+  const specimenOptions = SPECIMEN_OPTIONS[examType] ?? [];
+  const fieldConfig = EXAM_TYPE_FIELD_CONFIG[examType];
 
   const createMutation = useMutation({
     mutationFn: async (data: CreateComplementaryExamFormData) => {
@@ -109,6 +115,7 @@ export function ComplementaryExamCreateDialog({
         type: data.type,
         name: data.name,
         code: data.code || undefined,
+        specimen: data.specimen || undefined,
         unit: data.unit || undefined,
         referenceRange: data.referenceRange || undefined,
       });
@@ -147,10 +154,12 @@ export function ComplementaryExamCreateDialog({
   });
 
   const resetForm = useCallback(() => {
+    setSelectedCatalogEntry(null);
     form.reset({
       type: 'LABORATORY',
       name: '',
       code: '',
+      specimen: '',
       unit: '',
       referenceRange: '',
       initialResult: {
@@ -178,8 +187,10 @@ export function ComplementaryExamCreateDialog({
   }, [open, form, resetForm]);
 
   const onSelectCatalogEntry = (entry: CatalogExamEntry) => {
+    setSelectedCatalogEntry(entry);
     form.setValue('name', entry.name);
     form.setValue('code', entry.code ?? '');
+    form.setValue('specimen', entry.specimen ?? '');
     form.setValue('unit', entry.unit ?? '');
     form.setValue('referenceRange', entry.referenceRange ?? '');
     setComboboxOpen(false);
@@ -325,8 +336,46 @@ export function ComplementaryExamCreateDialog({
               )}
             />
 
-            {/* Resultado inicial (opcional) */}
-            <div className="space-y-3 pt-2 border-t">
+            {/* Amostra / espécime */}
+            {specimenOptions.length > 0 && (
+              <FormField
+                control={form.control}
+                name="specimen"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amostra / espécime (opcional)</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? ''}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o material" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {specimenOptions.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Banner para exames compostos */}
+            {isComposite && (
+              <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                Este exame é um painel com múltiplos parâmetros. O resultado será preenchido por componente após o cadastro.
+              </div>
+            )}
+
+            {/* Resultado inicial (opcional) — oculto para exames compostos */}
+            {!isComposite && (<div className="space-y-3 pt-2 border-t">
               <h4 className="text-sm font-medium">
                 Resultado inicial (opcional)
               </h4>
@@ -427,7 +476,7 @@ export function ComplementaryExamCreateDialog({
                   </FormItem>
                 )}
               />
-            </div>
+            </div>)}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button

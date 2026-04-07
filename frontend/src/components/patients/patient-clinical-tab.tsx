@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { LineChart as LineChartIcon, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { ComplementaryExamChartDialog } from './complementary-exam-chart-dialog';
 import { ComplementaryExamCreateDialog } from './complementary-exam-create-dialog';
 import { ComplementaryExamResultCreateDialog } from './complementary-exam-result-create-dialog';
@@ -203,10 +204,11 @@ export function PatientClinicalTab({
                                 ({exam.code})
                               </span>
                             )}
-                            {exam.referenceRange && (
+                            {(exam.specimen || exam.referenceRange) && (
                               <span className="text-muted-foreground text-xs block mt-0.5">
-                                Ref.: {exam.referenceRange}
-                                {exam.unit ? ` ${exam.unit}` : ''}
+                                {exam.specimen && `🧪 ${exam.specimen}`}
+                                {exam.specimen && exam.referenceRange && ' · '}
+                                {exam.referenceRange && `Ref.: ${exam.referenceRange}${exam.unit ? ` ${exam.unit}` : ''}`}
                               </span>
                             )}
                           </div>
@@ -249,25 +251,64 @@ export function PatientClinicalTab({
                               .map((r) => (
                                 <li
                                   key={r.id}
-                                  className="flex items-baseline justify-between gap-2 py-1 border-b border-border/50 last:border-0"
+                                  className="py-1 border-b border-border/50 last:border-0"
                                 >
-                                  <span className="text-muted-foreground shrink-0">
-                                    {format(
-                                      new Date(r.performedAt),
-                                      'dd/MM/yyyy',
-                                      { locale: ptBR }
-                                    )}
-                                  </span>
-                                  <span className="text-right truncate min-w-0">
-                                    {r.valueNumeric != null
-                                      ? `${r.valueNumeric}${r.unit ? ` ${r.unit}` : ''}`
-                                      : (r.valueText ?? r.report ?? '-')}
-                                    {r.isAbnormal && (
-                                      <span className="text-amber-600 ml-1">
-                                        (fora ref.)
-                                      </span>
-                                    )}
-                                  </span>
+                                  <div className="flex items-baseline justify-between gap-2">
+                                    <span className="text-muted-foreground shrink-0">
+                                      {format(
+                                        new Date(r.performedAt),
+                                        'dd/MM/yyyy',
+                                        { locale: ptBR }
+                                      )}
+                                    </span>
+                                    <span className="text-right truncate min-w-0">
+                                      {r.components && r.components.length > 0
+                                        ? `${r.components.length} parâmetros`
+                                        : r.valueNumeric != null
+                                          ? `${r.valueNumeric}${r.unit ? ` ${r.unit}` : ''}`
+                                          : (r.valueText ?? r.report ?? '-')}
+                                      {r.isAbnormal && (
+                                        <span className="text-amber-600 ml-1">
+                                          (fora ref.)
+                                        </span>
+                                      )}
+                                    </span>
+                                  </div>
+                                  {r.components && r.components.length > 0 && (
+                                    <div className="mt-2 border rounded-md overflow-hidden">
+                                      <table className="w-full text-xs">
+                                        <tbody>
+                                          {r.components.map((comp, i) => (
+                                            <tr
+                                              key={i}
+                                              className={cn(
+                                                'border-b last:border-0',
+                                                comp.isAbnormal && 'bg-amber-50'
+                                              )}
+                                            >
+                                              <td className="px-2 py-1 font-medium">{comp.name}</td>
+                                              <td className="px-2 py-1 text-right">
+                                                {comp.valueNumeric !== undefined
+                                                  ? comp.valueNumeric
+                                                  : (comp.valueText ?? '—')}
+                                                {comp.unit && (
+                                                  <span className="text-muted-foreground ml-1">
+                                                    {comp.unit}
+                                                  </span>
+                                                )}
+                                              </td>
+                                              <td className="px-2 py-1 text-muted-foreground">
+                                                {comp.referenceRange ?? ''}
+                                              </td>
+                                              {comp.isAbnormal && (
+                                                <td className="px-2 py-1 text-amber-600">⚠</td>
+                                              )}
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
                                 </li>
                               ))
                           )}

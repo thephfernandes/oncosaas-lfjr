@@ -395,6 +395,15 @@ export type LabCategory =
   | 'PATHOLOGY_REPORT'
   | 'OTHER';
 
+export interface ExamResultComponent {
+  name: string;
+  unit?: string;
+  referenceRange?: string;
+  valueNumeric?: number;
+  valueText?: string;
+  isAbnormal?: boolean;
+}
+
 export interface ComplementaryExamResult {
   id: string;
   performedAt: string;
@@ -407,6 +416,7 @@ export interface ComplementaryExamResult {
   criticalHigh: boolean | null;
   criticalLow: boolean | null;
   report: string | null;
+  components: ExamResultComponent[] | null;
 }
 
 export interface ComplementaryExam {
@@ -419,6 +429,7 @@ export interface ComplementaryExam {
   loincCode: string | null;
   labCategory: LabCategory | null;
   isCriticalMetric: boolean;
+  specimen: string | null;
   unit: string | null;
   referenceRange: string | null;
   results: ComplementaryExamResult[];
@@ -668,6 +679,7 @@ export const patientsApi = {
       type: ComplementaryExamType;
       name: string;
       code?: string;
+      specimen?: string;
       unit?: string;
       referenceRange?: string;
     }
@@ -715,6 +727,7 @@ export const patientsApi = {
       referenceRange?: string;
       isAbnormal?: boolean;
       report?: string;
+      components?: ExamResultComponent[];
     }
   ): Promise<ComplementaryExamResult> {
     return apiClient.post<ComplementaryExamResult>(
