@@ -20,10 +20,13 @@ import { CreateComplementaryExamResultDto } from './dto/create-complementary-exa
 import { UpdateComplementaryExamResultDto } from './dto/update-complementary-exam-result.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
-import { ComplementaryExamType } from '@generated/prisma/client';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole, ComplementaryExamType } from '@generated/prisma/client';
 
 @Controller('patients/:patientId/complementary-exams')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.ONCOLOGIST, UserRole.DOCTOR, UserRole.NURSE_CHIEF, UserRole.NURSE, UserRole.COORDINATOR)
 export class ComplementaryExamsController {
   constructor(
     private readonly complementaryExamsService: ComplementaryExamsService,

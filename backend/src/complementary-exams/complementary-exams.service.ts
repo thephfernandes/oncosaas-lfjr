@@ -41,6 +41,7 @@ export class ComplementaryExamsService {
       include: {
         results: {
           orderBy: { performedAt: 'desc' },
+          take: 50,
         },
       },
     });
@@ -62,6 +63,7 @@ export class ComplementaryExamsService {
       include: {
         results: {
           orderBy: { performedAt: 'desc' },
+          take: 50,
         },
       },
     });
@@ -106,7 +108,7 @@ export class ComplementaryExamsService {
       where: { id: examId, tenantId },
       data: dto,
       include: {
-        results: { orderBy: { performedAt: 'desc' } },
+        results: { orderBy: { performedAt: 'desc' }, take: 50 },
       },
     });
   }
@@ -145,12 +147,16 @@ export class ComplementaryExamsService {
         examId,
         tenantId,
         performedAt: new Date(dto.performedAt),
+        collectionId: dto.collectionId,
         valueNumeric: dto.valueNumeric,
         valueText: dto.valueText,
         unit: dto.unit,
         referenceRange: dto.referenceRange,
         isAbnormal: dto.isAbnormal,
+        criticalHigh: dto.criticalHigh,
+        criticalLow: dto.criticalLow,
         report: dto.report,
+        components: dto.components ? (dto.components as any) : undefined,
       },
     });
 
@@ -181,10 +187,18 @@ export class ComplementaryExamsService {
     const updated = await this.prisma.complementaryExamResult.update({
       where: { id: resultId, tenantId },
       data: {
-        ...dto,
-        performedAt: dto.performedAt
-          ? new Date(dto.performedAt)
-          : undefined,
+        performedAt: dto.performedAt ? new Date(dto.performedAt) : undefined,
+        collectionId: dto.collectionId,
+        valueNumeric: dto.valueNumeric,
+        valueText: dto.valueText,
+        unit: dto.unit,
+        referenceRange: dto.referenceRange,
+        isAbnormal: dto.isAbnormal,
+        criticalHigh: dto.criticalHigh,
+        criticalLow: dto.criticalLow,
+        report: dto.report,
+        components:
+          dto.components !== undefined ? (dto.components as any) : undefined,
       },
     });
 
