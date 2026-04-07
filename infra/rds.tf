@@ -16,7 +16,7 @@ resource "aws_ssm_parameter" "db_master_password" {
 resource "aws_ssm_parameter" "db_url" {
   name  = "/${var.project}/${var.environment}/db/url"
   type  = "SecureString"
-  value = "postgresql://${var.db_master_username}:${urlencode(random_password.db_master.result)}@${aws_db_instance.postgres.address}:5432/${var.db_name}?sslmode=require"
+  value = "postgresql://${var.db_master_username}:${urlencode(random_password.db_master.result)}@${aws_db_instance.postgres.address}:5432/${var.db_name}?sslmode=verify-full&sslrootcert=/app/certs/rds-global-bundle.pem"
 }
 
 resource "aws_db_subnet_group" "main" {

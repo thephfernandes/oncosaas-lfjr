@@ -261,7 +261,7 @@ ENCRYPTION_KEY="$(get_ssm "$RUNTIME_PREFIX/backend/ENCRYPTION_KEY")"
 NEXTAUTH_SECRET="$(get_ssm "$RUNTIME_PREFIX/frontend/NEXTAUTH_SECRET")"
 BACKEND_SERVICE_TOKEN="$(get_ssm "$RUNTIME_PREFIX/shared/BACKEND_SERVICE_TOKEN")"
 
-DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD_ENCODED@$DB_HOST:5432/$DB_NAME?sslmode=require"
+DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD_ENCODED@$DB_HOST:5432/$DB_NAME?sslmode=verify-full&sslrootcert=/app/certs/rds-global-bundle.pem"
 WS_URL="$(echo "$APP_URL" | sed -e 's#^https://#wss://#' -e 's#^http://#ws://#')"
 
 cat >"$APP_DIR/current/backend/.env" <<EOF_BACKEND

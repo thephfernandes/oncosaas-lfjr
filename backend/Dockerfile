@@ -6,6 +6,13 @@ COPY package*.json ./
 COPY prisma ./prisma
 RUN npm ci
 
+# ---- rds-ca ----
+FROM alpine:3.23 AS rds-ca
+RUN apk add --no-cache curl
+RUN mkdir -p /certs && \
+    curl -fsSL "https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem" \
+      -o /certs/rds-global-bundle.pem
+
 # ---- dev ----
 FROM node:24.14.0-alpine3.23 AS dev
 WORKDIR /app
@@ -42,6 +49,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.mjs ./prisma.config.mjs
+COPY --from=rds-ca /certs/rds-global-bundle.pem /app/certs/rds-global-bundle.pem
 
 RUN chown -R node:node /app
 
