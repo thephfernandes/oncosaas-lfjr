@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Converte a planilha oficial ANS "Correlação TUSS x Rol" (.xlsx) em JSON para
-importação no banco via scripts/import-exam-catalog-json.ts ou POST /api/v1/exam-catalog/import.
+importação no banco via scripts/import-exam-catalog-json.ts (não há endpoint HTTP
+para mutar o catálogo global compartilhado entre tenants).
 
 Uso:
   python3 scripts/exam-catalog-from-tuss-xlsx.py \\
