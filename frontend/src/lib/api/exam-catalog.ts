@@ -39,4 +39,22 @@ export const examCatalogApi = {
       `/exam-catalog${qs ? `?${qs}` : ''}`
     );
   },
+
+  async importBatch(body: {
+    sourceVersion?: string;
+    items: Array<{
+      code: string;
+      name: string;
+      type: ComplementaryExamType;
+      rolItemCode?: string;
+      specimenDefault?: string;
+      unit?: string;
+      referenceRange?: string;
+    }>;
+  }): Promise<{ upserted: number; sourceVersion: string | null }> {
+    return apiClient.post<{ upserted: number; sourceVersion: string | null }>(
+      '/exam-catalog/import',
+      body
+    );
+  },
 };
