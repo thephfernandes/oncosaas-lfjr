@@ -11,7 +11,11 @@ describe('ExamCatalogService', () => {
       count: jest.fn(),
       upsert: jest.fn(),
     },
+    $transaction: jest.fn(),
   };
+  prismaMock.$transaction.mockImplementation(
+    (fn: (tx: typeof prismaMock) => Promise<unknown>) => fn(prismaMock),
+  );
 
   beforeEach(async () => {
     jest.clearAllMocks();
