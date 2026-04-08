@@ -7,6 +7,7 @@ import {
   UseGuards,
   DefaultValuePipe,
   ParseIntPipe,
+  ParseEnumPipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -34,7 +35,11 @@ export class ExamCatalogController {
   )
   search(
     @Query('q') q?: string,
-    @Query('type') type?: ComplementaryExamType,
+    @Query(
+      'type',
+      new ParseEnumPipe(ComplementaryExamType, { optional: true }),
+    )
+    type?: ComplementaryExamType,
     @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit?: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset?: number,
   ) {

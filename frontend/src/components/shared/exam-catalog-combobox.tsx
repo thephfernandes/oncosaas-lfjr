@@ -1,5 +1,6 @@
 'use client';
 
+import { useComposedRefs } from '@radix-ui/react-compose-refs';
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   Popover,
@@ -59,6 +60,7 @@ export function ExamCatalogCombobox<T>({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
   const innerRef = useRef<HTMLInputElement>(null);
+  const mergedInputRef = useComposedRefs(innerRef, externalInputRef);
 
   const filtered = useMemo(() => {
     const q = value.trim().toLowerCase();
@@ -90,18 +92,6 @@ export function ExamCatalogCombobox<T>({
     setOpen(false);
   };
 
-  const setRefs = (el: HTMLInputElement | null) => {
-    innerRef.current = el;
-    const ext = externalInputRef;
-    if (typeof ext === 'function') {
-      ext(el);
-    } else if (ext && 'current' in ext) {
-      // Merge refs: padrão React para ref object + ref interno.
-      // eslint-disable-next-line react-hooks/immutability -- atribuição a ref externa em callback ref
-      (ext as React.MutableRefObject<HTMLInputElement | null>).current = el;
-    }
-  };
-
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (disabled) return;
     if (e.key === 'ArrowDown') {
@@ -129,7 +119,7 @@ export function ExamCatalogCombobox<T>({
       <PopoverTrigger asChild>
         <div className={cn('relative', className)}>
           <Input
-            ref={setRefs}
+            ref={mergedInputRef}
             placeholder={placeholder}
             value={value}
             disabled={disabled}

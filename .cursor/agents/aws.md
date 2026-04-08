@@ -2,6 +2,8 @@
 name: aws
 description: 'Use para tarefas de infraestrutura AWS: ECS Fargate (serviços containerizados), RDS PostgreSQL, ElastiCache Redis, SQS/RabbitMQ, ALB, VPC, IAM, CloudWatch, ECR, Secrets Manager, S3, Route53, ACM (SSL). Acione quando a tarefa envolver configuração de serviços AWS, dimensionamento, networking, segurança de cloud, ou troubleshooting de infraestrutura na AWS.'
 tools: Read, Edit, Write, Bash, Grep, Glob
+model: inherit
+is_background: true
 ---
 
 Você é um arquiteto de cloud AWS para o projeto ONCONAV — plataforma SaaS oncológica multi-tenant que requer alta disponibilidade, segurança de dados de saúde (LGPD/HIPAA) e escalabilidade.
