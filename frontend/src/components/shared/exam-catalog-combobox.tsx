@@ -1,5 +1,6 @@
 'use client';
 
+import { useComposedRefs } from '@radix-ui/react-compose-refs';
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   Popover,
@@ -56,10 +57,9 @@ export function ExamCatalogCombobox<T>({
   const open = isControlled ? controlledOpen! : uncontrolledOpen;
   const setOpen = isControlled ? controlledOnOpenChange! : setUncontrolledOpen;
 
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
   const innerRef = useRef<HTMLInputElement>(null);
-
+  const mergedInputRef = useComposedRefs(innerRef, externalInputRef);
   const filtered = useMemo(() => {
     const q = value.trim().toLowerCase();
     if (!q) return options;
@@ -71,9 +71,16 @@ export function ExamCatalogCombobox<T>({
     );
   }, [options, value]);
 
-  useEffect(() => {
+  const filterKey = useMemo(
+    () => `${value}:${filtered.length}`,
+    [value, filtered.length]
+  );
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  if (filterKey !== lastFilterKey) {
+    setLastFilterKey(filterKey);
     setHighlightedIndex(0);
-  }, [value, filtered.length]);
+  }
 
   useEffect(() => {
     if (!open || !listRef.current) return;
@@ -88,14 +95,6 @@ export function ExamCatalogCombobox<T>({
     if (!opt) return;
     onSelectOption(opt);
     setOpen(false);
-  };
-
-  const setRefs = (el: HTMLInputElement | null) => {
-    innerRef.current = el;
-    if (typeof externalInputRef === 'function') externalInputRef(el);
-    else if (externalInputRef && 'current' in externalInputRef)
-      (externalInputRef as React.MutableRefObject<HTMLInputElement | null>).current =
-        el;
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -125,7 +124,7 @@ export function ExamCatalogCombobox<T>({
       <PopoverTrigger asChild>
         <div className={cn('relative', className)}>
           <Input
-            ref={setRefs}
+            ref={mergedInputRef}
             placeholder={placeholder}
             value={value}
             disabled={disabled}
