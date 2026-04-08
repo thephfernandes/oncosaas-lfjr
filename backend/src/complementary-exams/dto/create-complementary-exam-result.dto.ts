@@ -3,52 +3,14 @@ import {
   IsOptional,
   IsNumber,
   IsBoolean,
+  IsDateString,
   IsNotEmpty,
   IsUUID,
-  IsArray,
-  ValidateNested,
-  MaxLength,
-  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class ExamResultComponentDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  name: string;
-
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  valueNumeric?: number;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(200)
-  valueText?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(50)
-  unit?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  referenceRange?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
-  isAbnormal?: boolean;
-}
-
 export class CreateComplementaryExamResultDto {
-  /** Data de realização (somente dia, sem fuso) — YYYY-MM-DD */
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-    message: 'performedAt deve estar no formato YYYY-MM-DD',
-  })
+  @IsDateString()
   @IsNotEmpty()
   performedAt: string;
 
@@ -91,10 +53,4 @@ export class CreateComplementaryExamResultDto {
   @IsString()
   @IsOptional()
   report?: string;
-
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => ExamResultComponentDto)
-  components?: ExamResultComponentDto[];
 }

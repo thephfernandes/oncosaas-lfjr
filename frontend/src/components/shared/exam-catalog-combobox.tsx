@@ -57,11 +57,9 @@ export function ExamCatalogCombobox<T>({
   const open = isControlled ? controlledOpen! : uncontrolledOpen;
   const setOpen = isControlled ? controlledOnOpenChange! : setUncontrolledOpen;
 
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
   const innerRef = useRef<HTMLInputElement>(null);
   const mergedInputRef = useComposedRefs(innerRef, externalInputRef);
-
   const filtered = useMemo(() => {
     const q = value.trim().toLowerCase();
     if (!q) return options;
@@ -73,10 +71,14 @@ export function ExamCatalogCombobox<T>({
     );
   }, [options, value]);
 
-  const filterKey = `${value}:${filtered.length}`;
-  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
-  if (filterKey !== prevFilterKey) {
-    setPrevFilterKey(filterKey);
+  const filterKey = useMemo(
+    () => `${value}:${filtered.length}`,
+    [value, filtered.length]
+  );
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  if (filterKey !== lastFilterKey) {
+    setLastFilterKey(filterKey);
     setHighlightedIndex(0);
   }
 
