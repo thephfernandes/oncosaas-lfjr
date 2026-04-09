@@ -1,6 +1,7 @@
 /**
  * Espelho do catálogo mínimo do frontend + itens extras para desenvolvimento.
- * Seed idempotente (upsert por code). Importação TUSS completa continua via POST /exam-catalog/import.
+ * Seed idempotente (upsert por code). Importação TUSS em massa: scripts Python
+ * (exam-catalog:from-tuss) + scripts/import-exam-catalog-json.ts com DATABASE_URL (sem API).
  */
 export const EXAM_CATALOG_SEED_ROWS: Array<{
   code: string;

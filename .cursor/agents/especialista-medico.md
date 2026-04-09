@@ -1,3 +1,11 @@
+---
+name: especialista-medico
+model: inherit
+is_background: true
+description: Especialista médico/oncológico para protocolos clínicos, terminologia e domínio ONCONAV.
+tools: Read, Edit, Write, Bash, Grep, Glob
+---
+
 # Subagent: Especialista Médico/Oncológico
 
 ## Papel

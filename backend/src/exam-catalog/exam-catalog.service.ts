@@ -42,32 +42,34 @@ export class ExamCatalogService {
     items: ImportExamCatalogItemDto[],
     sourceVersion?: string,
   ) {
-    let upserted = 0;
-    for (const row of items) {
-      await this.prisma.examCatalogItem.upsert({
-        where: { code: row.code },
-        create: {
-          code: row.code,
-          name: row.name,
-          type: row.type,
-          rolItemCode: row.rolItemCode ?? null,
-          specimenDefault: row.specimenDefault ?? null,
-          unit: row.unit ?? null,
-          referenceRange: row.referenceRange ?? null,
-          sourceVersion: sourceVersion ?? null,
-        },
-        update: {
-          name: row.name,
-          type: row.type,
-          rolItemCode: row.rolItemCode ?? null,
-          specimenDefault: row.specimenDefault ?? null,
-          unit: row.unit ?? null,
-          referenceRange: row.referenceRange ?? null,
-          ...(sourceVersion !== undefined ? { sourceVersion } : {}),
-        },
-      });
-      upserted++;
-    }
-    return { upserted, sourceVersion: sourceVersion ?? null };
+    return this.prisma.$transaction(async (tx) => {
+      let upserted = 0;
+      for (const row of items) {
+        await tx.examCatalogItem.upsert({
+          where: { code: row.code },
+          create: {
+            code: row.code,
+            name: row.name,
+            type: row.type,
+            rolItemCode: row.rolItemCode ?? null,
+            specimenDefault: row.specimenDefault ?? null,
+            unit: row.unit ?? null,
+            referenceRange: row.referenceRange ?? null,
+            sourceVersion: sourceVersion ?? null,
+          },
+          update: {
+            name: row.name,
+            type: row.type,
+            rolItemCode: row.rolItemCode ?? null,
+            specimenDefault: row.specimenDefault ?? null,
+            unit: row.unit ?? null,
+            referenceRange: row.referenceRange ?? null,
+            ...(sourceVersion !== undefined ? { sourceVersion } : {}),
+          },
+        });
+        upserted++;
+      }
+      return { upserted, sourceVersion: sourceVersion ?? null };
+    });
   }
 }
