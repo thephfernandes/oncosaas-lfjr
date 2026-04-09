@@ -8,6 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { CheckCircle2, Clock, AlertCircle, Edit, Plus, Trash2, ChevronRight, Check } from 'lucide-react';
 import {
   Accordion,
@@ -36,6 +43,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  buildNavDropId,
+  DraggableNavigationStep,
+  parseNavDropId,
+  StageDroppableColumn,
+} from '@/components/patients/navigation-step-dnd';
 import { NavigationStep, navigationApi } from '@/lib/api/navigation';
 import { NavigationStepDialog } from './navigation-step-dialog';
 import { CreateNavigationStepDialog } from './create-navigation-step-dialog';
@@ -215,6 +228,10 @@ export function PatientNavigationTab({
   >([]);
   const [stepPickerLoading, setStepPickerLoading] = useState(false);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
   const toggleCompleteMutation = useMutation({
     mutationFn: ({ stepId, isCompleted }: { stepId: string; isCompleted: boolean }) =>
       navigationApi.updateStep(stepId, {
@@ -229,6 +246,47 @@ export function PatientNavigationTab({
       toast.error(`Erro ao atualizar etapa: ${error.message}`);
     },
   });
+
+  const moveStepMutation = useMutation({
+    mutationFn: ({
+      stepId,
+      journeyStage,
+    }: {
+      stepId: string;
+      journeyStage: JourneyStage;
+    }) => navigationApi.updateStep(stepId, { journeyStage }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
+      queryClient.invalidateQueries({ queryKey: ['navigation-steps', patient.id] });
+      toast.success('Etapa movida para outra fase');
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao mover etapa: ${error.message}`);
+    },
+  });
+
+  const handleDragEnd = (event: DragEndEvent): void => {
+    const { active, over } = event;
+    if (!over) return;
+    const parsed = parseNavDropId(String(over.id));
+    if (!parsed) return;
+    const stepId = String(active.id);
+    const step = patient.navigationSteps?.find((s) => s.id === stepId);
+    if (!step) return;
+    if ((step.cancerType || 'other').toLowerCase() !== parsed.typeKey) {
+      toast.error('Mova a etapa apenas dentro do mesmo tipo de câncer.');
+      return;
+    }
+    const current = (step.journeyStage || 'SCREENING').toUpperCase() as JourneyStage;
+    if (current === parsed.stage) return;
+    moveStepMutation.mutate({ stepId, journeyStage: parsed.stage });
+  };
+
+  const handleMoveStepToStage = (step: NavigationStep, journeyStage: JourneyStage): void => {
+    const current = (step.journeyStage || 'SCREENING').toUpperCase() as JourneyStage;
+    if (current === journeyStage) return;
+    moveStepMutation.mutate({ stepId: step.id, journeyStage });
+  };
 
   const createFromTemplateMutation = useMutation({
     mutationFn: ({ journeyStage, stepKey }: { journeyStage: string; stepKey: string }) =>
@@ -515,6 +573,7 @@ export function PatientNavigationTab({
           </div>
         </CardHeader>
         <CardContent>
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <Accordion type="multiple" className="w-full">
             {cancerTypes.map((typeKey) => {
               const stageMap = stepsByCancerTypeAndStage.get(typeKey);
@@ -540,7 +599,11 @@ export function PatientNavigationTab({
                         const stageLabel = JOURNEY_STAGE_LABELS[stage] || stage;
 
                         return (
-                          <div key={stage}>
+                          <StageDroppableColumn
+                            key={stage}
+                            id={buildNavDropId(typeKey, stage)}
+                            className="space-y-2"
+                          >
                             <h4 className="text-sm font-medium text-muted-foreground mb-2">
                               {stageLabel}
                               <span className="ml-2 font-normal">
@@ -565,22 +628,22 @@ export function PatientNavigationTab({
                               ) : (
                                 <>
                                   {steps.map((step) => (
-                            <div
-                              key={step.id}
-                              className="border rounded-lg p-4 space-y-2"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="font-semibold">
+                            <DraggableNavigationStep key={step.id} stepId={step.id}>
+                            {(dragHandle) => (
+                            <div className="border rounded-lg p-4 space-y-2 flex-1 min-w-0 w-full">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {dragHandle}
+                                  <div className="font-semibold truncate">
                                     {step.stepName}
                                   </div>
                                   {step.isRequired && (
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge variant="outline" className="text-xs shrink-0">
                                       Obrigatória
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap justify-end">
                                   <Badge
                                     variant="outline"
                                     className={
@@ -596,6 +659,7 @@ export function PatientNavigationTab({
                                     </span>
                                   </Badge>
                                   <button
+                                    type="button"
                                     onClick={() =>
                                       toggleCompleteMutation.mutate({
                                         stepId: step.id,
@@ -612,6 +676,33 @@ export function PatientNavigationTab({
                                   >
                                     <Check className="h-4 w-4" />
                                   </button>
+                                  <div className="flex items-center gap-1">
+                                    <label htmlFor={`nav-move-${step.id}`} className="sr-only">
+                                      Mover etapa para outra fase
+                                    </label>
+                                    <select
+                                      id={`nav-move-${step.id}`}
+                                      className="h-8 max-w-[11rem] rounded-md border border-input bg-background px-2 text-xs md:text-sm"
+                                      defaultValue=""
+                                      onChange={(e) => {
+                                        const v = e.currentTarget.value as JourneyStage;
+                                        e.currentTarget.value = '';
+                                        if (v) handleMoveStepToStage(step, v);
+                                      }}
+                                      disabled={moveStepMutation.isPending}
+                                    >
+                                      <option value="">Mover para fase…</option>
+                                      {JOURNEY_STAGES.filter(
+                                        (s) =>
+                                          s !==
+                                          ((step.journeyStage || 'SCREENING').toUpperCase() as JourneyStage)
+                                      ).map((s) => (
+                                        <option key={s} value={s}>
+                                          {JOURNEY_STAGE_LABELS[s]}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -731,6 +822,8 @@ export function PatientNavigationTab({
                               </div>
                             )}
                             </div>
+                            )}
+                            </DraggableNavigationStep>
                           ))}
                                   <Button
                                     size="sm"
@@ -743,7 +836,7 @@ export function PatientNavigationTab({
                                 </>
                               )}
                             </div>
-                          </div>
+                          </StageDroppableColumn>
                         );
                       })}
                     </div>
@@ -752,6 +845,7 @@ export function PatientNavigationTab({
               );
             })}
           </Accordion>
+          </DndContext>
         </CardContent>
       </Card>
 

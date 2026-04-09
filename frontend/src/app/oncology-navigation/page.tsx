@@ -892,6 +892,7 @@ function StepCard({ step, apiUrl }: StepCardProps) {
           <div className="flex items-center gap-1">
             {/* Botão de atalho para marcar como concluída */}
             <button
+              type="button"
               onClick={handleQuickComplete}
               disabled={updateStep.isPending}
               className={`p-1.5 rounded transition-colors ${
@@ -911,6 +912,36 @@ function StepCard({ step, apiUrl }: StepCardProps) {
                 }`}
               />
             </button>
+            <label htmlFor={`onc-nav-move-${step.id}`} className="sr-only">
+              Mover etapa para outra fase
+            </label>
+            <select
+              id={`onc-nav-move-${step.id}`}
+              className="h-8 max-w-[10rem] rounded border border-input bg-background px-1.5 text-xs"
+              defaultValue=""
+              onChange={async (e) => {
+                const v = e.currentTarget.value as JourneyStage;
+                e.currentTarget.value = '';
+                if (!v || v === step.journeyStage) return;
+                try {
+                  await updateStep.mutateAsync({
+                    stepId: step.id,
+                    data: { journeyStage: v },
+                  });
+                  toast.success('Etapa movida para outra fase');
+                } catch {
+                  /* toast no hook */
+                }
+              }}
+              disabled={updateStep.isPending}
+            >
+              <option value="">Mover para fase…</option>
+              {JOURNEY_STAGES.filter((s) => s !== step.journeyStage).map((s) => (
+                <option key={s} value={s}>
+                  {JOURNEY_STAGE_LABELS[s]}
+                </option>
+              ))}
+            </select>
             {/* Botão de editar */}
             <button
               onClick={() => setIsEditing(!isEditing)}
