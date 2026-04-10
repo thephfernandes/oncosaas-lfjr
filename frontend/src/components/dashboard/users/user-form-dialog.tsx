@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -9,7 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateUser, useUpdateUser } from '@/hooks/useUsers';
-import { User, UserRole, UpdateUserDto } from '@/lib/api/users';
+import {
+  User,
+  UserRole,
+  UpdateUserDto,
+  CreateUserDto,
+  ClinicalSubrole,
+} from '@/lib/api/users';
 import { useAuthStore } from '@/stores/auth-store';
 
 const userSchema = z.object({
@@ -28,6 +34,8 @@ const userSchema = z.object({
     'NURSE',
     'COORDINATOR',
   ]),
+  /** Vazio = não definido; ADMIN ou Coordenador */
+  clinicalSubrole: z.enum(['', 'NURSING', 'MEDICAL']),
   mfaEnabled: z.boolean().default(false),
 });
 
@@ -41,6 +49,23 @@ const roleOptions: { value: UserRole; label: string }[] = [
   { value: 'NURSE', label: 'Enfermeiro' },
   { value: 'COORDINATOR', label: 'Coordenador' },
 ];
+
+const clinicalSubroleOptions: {
+  value: '' | ClinicalSubrole;
+  label: string;
+}[] = [
+  { value: '', label: 'Não definido' },
+  { value: 'NURSING', label: 'Enfermagem (evolução de enfermagem)' },
+  { value: 'MEDICAL', label: 'Médica (evolução médica)' },
+];
+
+function clinicalSubroleForApi(
+  role: UserRole,
+  value: '' | ClinicalSubrole
+): ClinicalSubrole | null | undefined {
+  if (role !== 'COORDINATOR' && role !== 'ADMIN') return undefined;
+  return value === '' ? null : value;
+}
 
 interface UserFormDialogProps {
   open: boolean;
@@ -58,7 +83,6 @@ export function UserFormDialog({
   const updateUserMutation = useUpdateUser();
   const { user: currentUser } = useAuthStore();
 
-  // Apenas ADMIN pode alterar roles
   const canChangeRole = currentUser?.role === 'ADMIN';
 
   const {
@@ -67,6 +91,7 @@ export function UserFormDialog({
     formState: { errors },
     reset,
     setValue,
+    control,
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
@@ -74,11 +99,13 @@ export function UserFormDialog({
       email: '',
       password: '',
       role: 'NURSE',
+      clinicalSubrole: '',
       mfaEnabled: false,
     },
   });
 
-  // Ao criar usuário, se não for admin, fixar role em NURSE
+  const role = useWatch({ control, name: 'role' });
+
   useEffect(() => {
     if (!isEditing && !canChangeRole) {
       setValue('role', 'NURSE');
@@ -86,21 +113,28 @@ export function UserFormDialog({
   }, [isEditing, canChangeRole, setValue]);
 
   useEffect(() => {
+    if (role !== 'COORDINATOR' && role !== 'ADMIN') {
+      setValue('clinicalSubrole', '');
+    }
+  }, [role, setValue]);
+
+  useEffect(() => {
     if (user) {
       reset({
         name: user.name,
         email: user.email,
-        password: '', // Não preencher senha ao editar
+        password: '',
         role: user.role,
+        clinicalSubrole: user.clinicalSubrole ?? '',
         mfaEnabled: user.mfaEnabled,
       });
     } else {
-      // Ao criar, se não for admin, fixar role em NURSE
       reset({
         name: '',
         email: '',
         password: '',
-        role: canChangeRole ? 'NURSE' : 'NURSE', // Sempre NURSE como padrão
+        role: canChangeRole ? 'NURSE' : 'NURSE',
+        clinicalSubrole: '',
         mfaEnabled: false,
       });
     }
@@ -109,7 +143,6 @@ export function UserFormDialog({
   const onSubmit = async (data: UserFormData): Promise<void> => {
     try {
       if (isEditing) {
-        // Remover password se estiver vazio (não atualizar senha)
         const updateData: UpdateUserDto = {
           name: data.name,
           email: data.email,
@@ -118,6 +151,10 @@ export function UserFormDialog({
         };
         if (data.password && data.password.length > 0) {
           updateData.password = data.password;
+        }
+        const sub = clinicalSubroleForApi(data.role, data.clinicalSubrole);
+        if (sub !== undefined) {
+          updateData.clinicalSubrole = sub;
         }
         await updateUserMutation.mutateAsync({
           id: user!.id,
@@ -128,13 +165,18 @@ export function UserFormDialog({
           alert('Senha é obrigatória e deve ter no mínimo 6 caracteres');
           return;
         }
-        await createUserMutation.mutateAsync({
+        const payload: CreateUserDto = {
           name: data.name,
           email: data.email,
           password: data.password,
           role: data.role,
           mfaEnabled: data.mfaEnabled,
-        });
+        };
+        const sub = clinicalSubroleForApi(data.role, data.clinicalSubrole);
+        if (sub !== undefined) {
+          payload.clinicalSubrole = sub;
+        }
+        await createUserMutation.mutateAsync(payload);
       }
       onOpenChange(false);
       reset();
@@ -151,6 +193,9 @@ export function UserFormDialog({
 
   const isLoading =
     createUserMutation.isPending || updateUserMutation.isPending;
+
+  const showClinicalSubrole =
+    role === 'COORDINATOR' || role === 'ADMIN';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -238,6 +283,35 @@ export function UserFormDialog({
               <p className="text-sm text-red-600 mt-1">{errors.role.message}</p>
             )}
           </div>
+
+          {showClinicalSubrole && canChangeRole && (
+            <div>
+              <Label htmlFor="clinicalSubrole">
+                Subpapel clínico (administrador ou coordenador)
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Define se este perfil pode assinar evoluções de enfermagem ou
+                médicas no prontuário (obrigatório para atuar clinicamente nesse
+                módulo).
+              </p>
+              <select
+                id="clinicalSubrole"
+                {...register('clinicalSubrole')}
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {clinicalSubroleOptions.map((option) => (
+                  <option key={option.value || 'none'} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {errors.clinicalSubrole && (
+                <p className="text-sm text-red-600 mt-1">
+                  {errors.clinicalSubrole.message}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <input

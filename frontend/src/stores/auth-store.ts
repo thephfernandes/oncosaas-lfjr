@@ -64,6 +64,11 @@ export const useAuthStore = create<AuthState>((set) => ({
                   isAuthenticated: true,
                   isInitializing: false,
                 });
+                void authApi.refreshSessionUser().then((merged) => {
+                  if (merged) {
+                    set({ user: merged });
+                  }
+                });
               })
               .catch(() => {
                 apiClient.clearAuth();
@@ -97,6 +102,11 @@ export const useAuthStore = create<AuthState>((set) => ({
           token,
           isAuthenticated: true,
           isInitializing: false,
+        });
+        void authApi.refreshSessionUser().then((merged) => {
+          if (merged) {
+            set({ user: merged });
+          }
         });
       } catch {
         apiClient.clearAuth();

@@ -101,7 +101,7 @@ const AlertDialogAction = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Action>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>
 >(({ className, children, ...props }, ref) => (
-  <AlertDialogPrimitive.Action ref={ref} {...props}>
+  <AlertDialogPrimitive.Action ref={ref} asChild {...props}>
     <Button variant="default" className={className}>
       {children}
     </Button>
@@ -113,7 +113,7 @@ const AlertDialogCancel = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Cancel>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>
 >(({ className, children, ...props }, ref) => (
-  <AlertDialogPrimitive.Cancel ref={ref} {...props}>
+  <AlertDialogPrimitive.Cancel ref={ref} asChild {...props}>
     <Button variant="outline" className={cn('mt-2 sm:mt-0', className)}>
       {children}
     </Button>

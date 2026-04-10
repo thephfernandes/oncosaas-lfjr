@@ -8,11 +8,15 @@ export type UserRole =
   | 'NURSE'
   | 'COORDINATOR';
 
+/** Subpapel clínico do coordenador (assinatura enfermagem vs médica no prontuário) */
+export type ClinicalSubrole = 'NURSING' | 'MEDICAL';
+
 export interface User {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  clinicalSubrole?: ClinicalSubrole | null;
   mfaEnabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -28,6 +32,8 @@ export interface CreateUserDto {
   name: string;
   role: UserRole;
   mfaEnabled?: boolean;
+  /** Quando `role` é `COORDINATOR` ou `ADMIN` */
+  clinicalSubrole?: ClinicalSubrole | null;
 }
 
 export interface UpdateUserDto {
@@ -36,6 +42,7 @@ export interface UpdateUserDto {
   name?: string;
   role?: UserRole;
   mfaEnabled?: boolean;
+  clinicalSubrole?: ClinicalSubrole | null;
 }
 
 export const usersApi = {

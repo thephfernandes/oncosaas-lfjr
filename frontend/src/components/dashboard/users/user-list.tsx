@@ -3,6 +3,11 @@
 import { useState } from 'react';
 import { useUsers, useDeleteUser } from '@/hooks/useUsers';
 import { User, UserRole } from '@/lib/api/users';
+
+const clinicalSubroleLabels: Record<string, string> = {
+  NURSING: 'Subpapel: Enfermagem',
+  MEDICAL: 'Subpapel: Médica',
+};
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -109,6 +114,12 @@ export function UserList({ onEdit }: UserListProps) {
                     <Badge className={roleColors[user.role]}>
                       {roleLabels[user.role]}
                     </Badge>
+                    {(user.role === 'COORDINATOR' || user.role === 'ADMIN') &&
+                      user.clinicalSubrole && (
+                      <Badge variant="outline" className="text-xs">
+                        {clinicalSubroleLabels[user.clinicalSubrole]}
+                      </Badge>
+                    )}
                     {user.mfaEnabled && (
                       <Badge className="bg-yellow-100 text-yellow-800">
                         MFA
