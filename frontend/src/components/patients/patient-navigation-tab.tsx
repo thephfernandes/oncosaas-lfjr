@@ -11,6 +11,8 @@ import { ptBR } from 'date-fns/locale';
 import {
   DndContext,
   DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
@@ -46,6 +48,7 @@ import {
 import {
   buildNavDropId,
   DraggableNavigationStep,
+  NavigationStepDragPreview,
   parseNavDropId,
   StageDroppableColumn,
 } from '@/components/patients/navigation-step-dnd';
@@ -227,6 +230,7 @@ export function PatientNavigationTab({
     { stepKey: string; stepName: string; stepDescription?: string | null; isRequired: boolean; existingCount: number }[]
   >([]);
   const [stepPickerLoading, setStepPickerLoading] = useState(false);
+  const [activeDragStepId, setActiveDragStepId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -265,7 +269,12 @@ export function PatientNavigationTab({
     },
   });
 
+  const handleDragStart = (event: DragStartEvent): void => {
+    setActiveDragStepId(String(event.active.id));
+  };
+
   const handleDragEnd = (event: DragEndEvent): void => {
+    setActiveDragStepId(null);
     const { active, over } = event;
     if (!over) return;
     const parsed = parseNavDropId(String(over.id));
@@ -282,10 +291,8 @@ export function PatientNavigationTab({
     moveStepMutation.mutate({ stepId, journeyStage: parsed.stage });
   };
 
-  const handleMoveStepToStage = (step: NavigationStep, journeyStage: JourneyStage): void => {
-    const current = (step.journeyStage || 'SCREENING').toUpperCase() as JourneyStage;
-    if (current === journeyStage) return;
-    moveStepMutation.mutate({ stepId: step.id, journeyStage });
+  const handleDragCancel = (): void => {
+    setActiveDragStepId(null);
   };
 
   const createFromTemplateMutation = useMutation({
@@ -496,6 +503,11 @@ export function PatientNavigationTab({
     (patient.navigationSteps?.length ?? 0) > 0 ||
     (patient.cancerDiagnoses?.length ?? 0) > 0;
 
+  const activeDragStep = useMemo(() => {
+    if (!activeDragStepId || !patient.navigationSteps) return undefined;
+    return patient.navigationSteps.find((s) => s.id === activeDragStepId);
+  }, [activeDragStepId, patient.navigationSteps]);
+
   if (!hasStepsOrDiagnosis) {
     return (
       <Card>
@@ -573,7 +585,12 @@ export function PatientNavigationTab({
           </div>
         </CardHeader>
         <CardContent>
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
           <Accordion type="multiple" className="w-full">
             {cancerTypes.map((typeKey) => {
               const stageMap = stepsByCancerTypeAndStage.get(typeKey);
@@ -602,33 +619,41 @@ export function PatientNavigationTab({
                           <StageDroppableColumn
                             key={stage}
                             id={buildNavDropId(typeKey, stage)}
-                            className="space-y-2"
+                            className={
+                              steps.length === 0 ? '' : 'space-y-2'
+                            }
                           >
-                            <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                            {steps.length === 0 ? (
+                              <div className="flex flex-col gap-2 rounded-md border border-dashed bg-muted/20 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                                <span className="text-sm font-medium text-muted-foreground">
+                                  {stageLabel}{' '}
+                                  <span className="font-normal">(0)</span>
+                                </span>
+                                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                  <span className="text-xs text-muted-foreground">
+                                    Solte uma etapa aqui
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openStepPicker(typeKey, stage)}
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Adicionar etapa
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                            <h4 className="mb-2 text-sm font-medium text-muted-foreground">
                               {stageLabel}
                               <span className="ml-2 font-normal">
                                 ({steps.length})
                               </span>
                             </h4>
                             <div className="space-y-4">
-                              {steps.length === 0 ? (
-                                <div className="flex flex-col items-center gap-3 py-4 text-center rounded-lg border border-dashed">
-                                  <p className="text-sm text-muted-foreground">
-                                    Nenhuma etapa para esta fase.
-                                  </p>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => openStepPicker(typeKey, stage)}
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Adicionar etapa
-                                  </Button>
-                                </div>
-                              ) : (
-                                <>
                                   {steps.map((step) => (
-                            <DraggableNavigationStep key={step.id} stepId={step.id}>
+                            <DraggableNavigationStep key={step.id} stepId={step.id} useDragOverlay>
                             {(dragHandle) => (
                             <div className="border rounded-lg p-4 space-y-2 flex-1 min-w-0 w-full">
                               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -676,33 +701,6 @@ export function PatientNavigationTab({
                                   >
                                     <Check className="h-4 w-4" />
                                   </button>
-                                  <div className="flex items-center gap-1">
-                                    <label htmlFor={`nav-move-${step.id}`} className="sr-only">
-                                      Mover etapa para outra fase
-                                    </label>
-                                    <select
-                                      id={`nav-move-${step.id}`}
-                                      className="h-8 max-w-[11rem] rounded-md border border-input bg-background px-2 text-xs md:text-sm"
-                                      defaultValue=""
-                                      onChange={(e) => {
-                                        const v = e.currentTarget.value as JourneyStage;
-                                        e.currentTarget.value = '';
-                                        if (v) handleMoveStepToStage(step, v);
-                                      }}
-                                      disabled={moveStepMutation.isPending}
-                                    >
-                                      <option value="">Mover para fase…</option>
-                                      {JOURNEY_STAGES.filter(
-                                        (s) =>
-                                          s !==
-                                          ((step.journeyStage || 'SCREENING').toUpperCase() as JourneyStage)
-                                      ).map((s) => (
-                                        <option key={s} value={s}>
-                                          {JOURNEY_STAGE_LABELS[s]}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -833,9 +831,9 @@ export function PatientNavigationTab({
                                     <Plus className="h-4 w-4 mr-2" />
                                     Adicionar etapa
                                   </Button>
-                                </>
-                              )}
                             </div>
+                              </>
+                            )}
                           </StageDroppableColumn>
                         );
                       })}
@@ -845,6 +843,14 @@ export function PatientNavigationTab({
               );
             })}
           </Accordion>
+          <DragOverlay dropAnimation={{ duration: 180, easing: 'ease-out' }} className="z-[1000]">
+            {activeDragStep ? (
+              <NavigationStepDragPreview
+                stepName={activeDragStep.stepName}
+                stepDescription={activeDragStep.stepDescription}
+              />
+            ) : null}
+          </DragOverlay>
           </DndContext>
         </CardContent>
       </Card>
