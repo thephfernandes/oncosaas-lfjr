@@ -41,8 +41,11 @@ describe('ClinicalNotesService', () => {
     it('fills missing keys with empty string', () => {
       const out = service.normalizeAndValidateSections({ hda: 'teste' });
       for (const k of CLINICAL_NOTE_SECTION_KEYS) {
-        if (k === 'hda') expect(out[k]).toBe('teste');
-        else expect(out[k]).toBe('');
+        if (k === 'hda') {
+          expect(out[k]).toBe('teste');
+        } else {
+          expect(out[k]).toBe('');
+        }
       }
     });
 

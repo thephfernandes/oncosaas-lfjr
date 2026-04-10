@@ -125,7 +125,9 @@ export class ClinicalNotesService {
     userId: string,
     createdById: string
   ): boolean {
-    if (userId === createdById) return true;
+    if (userId === createdById) {
+      return true;
+    }
     if (
       noteType === ClinicalNoteType.NURSING &&
       role === UserRole.NURSE_CHIEF
@@ -149,7 +151,9 @@ export class ClinicalNotesService {
     userId: string,
     createdById: string
   ): boolean {
-    if (status === ClinicalNoteStatus.VOIDED) return false;
+    if (status === ClinicalNoteStatus.VOIDED) {
+      return false;
+    }
     if (status === ClinicalNoteStatus.DRAFT) {
       return this.canEditDraft(
         role,
@@ -670,7 +674,9 @@ export class ClinicalNotesService {
       const parent = await this.prisma.clinicalNote.findFirst({
         where: { id: current.amendsClinicalNoteId, tenantId },
       });
-      if (!parent) break;
+      if (!parent) {
+        break;
+      }
       current = parent;
     }
     const rootId = current.id;
@@ -703,7 +709,9 @@ export class ClinicalNotesService {
     const byParent = new Map<string | null, typeof chain>();
     for (const n of chain) {
       const k = n.amendsClinicalNoteId;
-      if (!byParent.has(k)) byParent.set(k, []);
+      if (!byParent.has(k)) {
+        byParent.set(k, []);
+      }
       byParent.get(k)!.push(n);
     }
 
