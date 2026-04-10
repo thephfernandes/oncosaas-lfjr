@@ -8,6 +8,7 @@ import { PatientOncologyTab } from './patient-oncology-tab';
 import { PatientClinicalTab } from './patient-clinical-tab';
 import { PatientTreatmentTab } from './patient-treatment-tab';
 import { PatientNavigationTab } from './patient-navigation-tab';
+import { PatientProntuarioTab } from './patient-prontuario-tab';
 
 interface PatientDetailTabsProps {
   patient: PatientDetail;
@@ -18,12 +19,13 @@ export function PatientDetailTabs({
 }: PatientDetailTabsProps): React.ReactElement {
   return (
     <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="grid w-full grid-cols-5">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1 h-auto">
         <TabsTrigger value="overview">Visão Geral</TabsTrigger>
         <TabsTrigger value="clinical">Dados Clínicos</TabsTrigger>
         <TabsTrigger value="oncology">Dados Oncológicos</TabsTrigger>
         <TabsTrigger value="treatment">Tratamento</TabsTrigger>
         <TabsTrigger value="navigation">Navegação</TabsTrigger>
+        <TabsTrigger value="chart">Prontuário</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="mt-6">
@@ -44,6 +46,10 @@ export function PatientDetailTabs({
 
       <TabsContent value="navigation" className="mt-6">
         <PatientNavigationTab patient={patient} />
+      </TabsContent>
+
+      <TabsContent value="chart" className="mt-6">
+        <PatientProntuarioTab patient={patient} />
       </TabsContent>
     </Tabs>
   );

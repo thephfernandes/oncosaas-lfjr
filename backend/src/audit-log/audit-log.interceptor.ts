@@ -103,6 +103,14 @@ export class AuditLogInterceptor implements NestInterceptor {
     void apiToken;
     void oauthAccessToken;
     void appSecret;
-    return safe as Record<string, unknown>;
+    const out = { ...safe } as Record<string, unknown>;
+    // Prontuário: nunca persistir texto clínico no audit (interceptor grava response body)
+    if ('sections' in out) {
+      delete out.sections;
+    }
+    if ('sectionsPayloadEncrypted' in out) {
+      delete out.sectionsPayloadEncrypted;
+    }
+    return out;
   }
 }

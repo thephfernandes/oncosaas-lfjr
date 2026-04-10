@@ -6,8 +6,9 @@ import {
   IsEnum,
   IsOptional,
   IsBoolean,
+  ValidateIf,
 } from 'class-validator';
-import { UserRole } from '@generated/prisma/client';
+import { ClinicalSubrole, UserRole } from '@generated/prisma/client';
 
 export class CreateUserDto {
   @IsEmail()
@@ -26,6 +27,15 @@ export class CreateUserDto {
   @IsEnum(UserRole)
   @IsNotEmpty()
   role: UserRole;
+
+  /// COORDINATOR ou ADMIN — define competência para evoluções de enfermagem vs médica no prontuário
+  @ValidateIf(
+    (o: CreateUserDto) =>
+      o.role === UserRole.COORDINATOR || o.role === UserRole.ADMIN
+  )
+  @IsOptional()
+  @IsEnum(ClinicalSubrole)
+  clinicalSubrole?: ClinicalSubrole | null;
 
   @IsOptional()
   @IsBoolean()

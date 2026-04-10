@@ -5,6 +5,8 @@ export interface CurrentUser {
   email: string;
   tenantId: string;
   role: string;
+  /** Presente quando role é COORDINATOR — define assinatura NURSING vs MEDICAL */
+  clinicalSubrole?: string | null;
   tenant?: {
     id: string;
     name: string;

@@ -38,6 +38,8 @@ export interface User {
     | 'NURSE_CHIEF'
     | 'NURSE'
     | 'COORDINATOR';
+  /** Presente para coordenadores (prontuário) */
+  clinicalSubrole?: 'NURSING' | 'MEDICAL' | null;
   tenantId: string;
   tenant?: {
     id: string;
@@ -53,6 +55,18 @@ export interface LoginResponse {
   access_token: string;
   refresh_token: string;
   user: User;
+}
+
+/** Resposta de GET /auth/profile — alinhada ao que o backend retorna */
+export interface AuthProfileResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: User['role'];
+  clinicalSubrole: 'NURSING' | 'MEDICAL' | null;
+  tenantId: string;
+  tenant?: User['tenant'];
+  mfaEnabled?: boolean;
 }
 
 export const authApi = {
@@ -137,5 +151,31 @@ export const authApi = {
 
   isAuthenticated(): boolean {
     return !!apiClient.getToken() && !apiClient.isTokenExpired();
+  },
+
+  /**
+   * Atualiza nome, papel, clinicalSubrole e tenant a partir do servidor.
+   * Necessário após evoluir o modelo (ex.: subpapel clínico) com sessão antiga no localStorage.
+   */
+  async refreshSessionUser(): Promise<User | null> {
+    try {
+      const profile = await apiClient.get<AuthProfileResponse>('/auth/profile');
+      const prev = this.getCurrentUser();
+      const merged: User = {
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        role: profile.role,
+        clinicalSubrole: profile.clinicalSubrole ?? null,
+        tenantId: profile.tenantId,
+        tenant: profile.tenant ?? prev?.tenant,
+      };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(merged));
+      }
+      return merged;
+    } catch {
+      return null;
+    }
   },
 };

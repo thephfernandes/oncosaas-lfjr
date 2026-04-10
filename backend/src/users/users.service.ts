@@ -8,7 +8,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
-import { UserRole } from '@generated/prisma/client';
+import { ClinicalSubrole, UserRole } from '@generated/prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -22,6 +22,7 @@ export class UsersService {
         email: true,
         name: true,
         role: true,
+        clinicalSubrole: true,
         mfaEnabled: true,
         createdAt: true,
         updatedAt: true,
@@ -47,6 +48,7 @@ export class UsersService {
         email: true,
         name: true,
         role: true,
+        clinicalSubrole: true,
         mfaEnabled: true,
         createdAt: true,
         updatedAt: true,
@@ -99,19 +101,29 @@ export class UsersService {
     // Hash da senha
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
+    const clinicalSubrole: ClinicalSubrole | null =
+      createUserDto.role === UserRole.COORDINATOR ||
+      createUserDto.role === UserRole.ADMIN
+        ? createUserDto.clinicalSubrole ?? null
+        : null;
+
     // Criar usuário
     const user = await this.prisma.user.create({
       data: {
-        ...createUserDto,
+        email: createUserDto.email,
+        name: createUserDto.name,
+        role: createUserDto.role,
         password: hashedPassword,
         tenantId,
         mfaEnabled: createUserDto.mfaEnabled || false,
+        clinicalSubrole,
       },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
+        clinicalSubrole: true,
         mfaEnabled: true,
         createdAt: true,
         updatedAt: true,
@@ -156,6 +168,15 @@ export class UsersService {
       );
     }
 
+    if (
+      updateUserDto.clinicalSubrole !== undefined &&
+      currentUserRole !== UserRole.ADMIN
+    ) {
+      throw new BadRequestException(
+        'Only administrators can change clinical subrole'
+      );
+    }
+
     // Se email está sendo atualizado, verificar duplicata
     if (updateUserDto.email && updateUserDto.email !== existingUser.email) {
       const emailExists = await this.prisma.user.findFirst({
@@ -174,20 +195,39 @@ export class UsersService {
     }
 
     // Hash da senha se fornecida
-    const updateData: any = { ...updateUserDto };
+    const updateData: Record<string, unknown> = { ...updateUserDto };
     if (updateUserDto.password) {
       updateData.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    const targetRole = updateUserDto.role ?? existingUser.role;
+    if (
+      updateUserDto.clinicalSubrole !== undefined &&
+      targetRole !== UserRole.COORDINATOR &&
+      targetRole !== UserRole.ADMIN
+    ) {
+      throw new BadRequestException(
+        'clinicalSubrole applies only to COORDINATOR or ADMIN users'
+      );
+    }
+
+    if (
+      targetRole !== UserRole.COORDINATOR &&
+      targetRole !== UserRole.ADMIN
+    ) {
+      updateData.clinicalSubrole = null;
     }
 
     // Atualizar usuário
     const user = await this.prisma.user.update({
       where: { id, tenantId },
-      data: updateData,
+      data: updateData as Parameters<typeof this.prisma.user.update>[0]['data'],
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
+        clinicalSubrole: true,
         mfaEnabled: true,
         createdAt: true,
         updatedAt: true,

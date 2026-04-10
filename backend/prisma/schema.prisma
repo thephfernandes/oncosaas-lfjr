@@ -18,6 +18,8 @@ model User {
   email      String
   name       String
   role       UserRole
+  /// Subpapel clínico (enfermagem vs médica no prontuário) — COORDINATOR e ADMIN
+  clinicalSubrole ClinicalSubrole?
   password   String // Hash bcrypt
   mfaEnabled Boolean  @default(false)
   mfaSecret  String?
@@ -27,6 +29,10 @@ model User {
   tenant        Tenant         @relation(fields: [tenantId], references: [id])
   internalNotes InternalNote[]
   interventions Intervention[]
+  clinicalNotesCreated       ClinicalNote[]         @relation("ClinicalNoteCreatedBy")
+  clinicalNotesSigned        ClinicalNote[]         @relation("ClinicalNoteSignedBy")
+  clinicalNotesVoided        ClinicalNote[]         @relation("ClinicalNoteVoidedBy")
+  clinicalNoteVersionsAuthored ClinicalNoteVersion[] @relation("ClinicalNoteVersionAuthor")
 
   @@unique([tenantId, email])
   @@map("users")
@@ -39,6 +45,11 @@ enum UserRole {
   NURSE_CHIEF
   NURSE
   COORDINATOR
+}
+
+enum ClinicalSubrole {
+  NURSING // Coordenador com competência para assinar evolução de enfermagem
+  MEDICAL // Coordenador com competência para assinar evolução médica
 }
 
 // ============================================
@@ -122,6 +133,7 @@ model Patient {
   comorbidities             Comorbidity[]              // Comorbidades (estruturado)
   performanceStatusHistory  PerformanceStatusHistory[] // Histórico ECOG para cálculo de delta
   dispositionFeedback       ClinicalDispositionFeedback[] // Correções de disposição para retraining
+  clinicalNotes             ClinicalNote[] // Prontuário estruturado (evoluções versionadas)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -134,6 +146,83 @@ model Patient {
   @@index([phoneHash]) // Índice para busca eficiente por telefone
   @@index([tenantId, medicalRecordNumber]) // Busca e deduplicação por prontuário
   @@map("patients")
+}
+
+/// Prontuário oncológico — uma “evolução” por registro; adendo = nova linha com amendsClinicalNoteId
+model ClinicalNote {
+  id        String @id @default(uuid())
+  tenantId  String
+  patientId String
+  noteType  ClinicalNoteType
+  status    ClinicalNoteStatus @default(DRAFT)
+
+  createdById String
+  signedById  String?
+  signedAt    DateTime?
+  voidedById  String?
+  voidedAt    DateTime?
+  voidReason  String?
+
+  /// Nota assinada da qual este registro é adendo (nova evolução)
+  amendsClinicalNoteId String?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("ClinicalNoteCreatedBy", fields: [createdById], references: [id])
+  signedBy  User? @relation("ClinicalNoteSignedBy", fields: [signedById], references: [id])
+  voidedBy  User? @relation("ClinicalNoteVoidedBy", fields: [voidedById], references: [id])
+  amendsClinicalNote ClinicalNote?  @relation("ClinicalNoteAmendment", fields: [amendsClinicalNoteId], references: [id])
+  amendedNotes       ClinicalNote[] @relation("ClinicalNoteAmendment")
+  versions           ClinicalNoteVersion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([tenantId, patientId, createdAt])
+  @@map("clinical_notes")
+}
+
+enum ClinicalNoteType {
+  NURSING
+  MEDICAL
+}
+
+enum ClinicalNoteStatus {
+  DRAFT
+  SIGNED
+  VOIDED
+}
+
+model ClinicalNoteVersion {
+  id                       String @id @default(uuid())
+  tenantId                 String
+  clinicalNoteId           String
+  versionNumber            Int
+  /// AES-256-GCM (base64) do JSON das seções
+  sectionsPayloadEncrypted String
+  /// SHA-256 (hex) do plaintext JSON antes de criptografar
+  sectionsContentHash      String
+  authorId                 String
+  changeType               ClinicalNoteVersionChangeType
+  changeReason             String?
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clinicalNote ClinicalNote @relation(fields: [clinicalNoteId], references: [id], onDelete: Cascade)
+  author       User         @relation("ClinicalNoteVersionAuthor", fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([clinicalNoteId, versionNumber])
+  @@index([tenantId])
+  @@index([clinicalNoteId])
+  @@map("clinical_note_versions")
+}
+
+enum ClinicalNoteVersionChangeType {
+  CREATE
+  EDIT
 }
 
 enum JourneyStage {
@@ -254,6 +343,8 @@ model NavigationStep {
   journey    PatientJourney?  @relation(fields: [journeyId], references: [id], onDelete: Cascade)
   diagnosis  CancerDiagnosis? @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
 
+  files NavigationStepFile[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -268,6 +359,31 @@ model NavigationStep {
   @@index([patientId, stepKey])
   @@index([patientId, dependsOnStepKey])
   @@map("navigation_steps")
+}
+
+/// Metadados de arquivos vinculados a etapas de navegação (ex.: bucket S3).
+/// Tabela criada em 20260325090000; `uploadedBy` é o id do usuário (sem FK no banco).
+model NavigationStepFile {
+  id               String    @id @default(uuid())
+  tenantId         String
+  navigationStepId String
+  bucket           String
+  objectKey        String
+  etag             String?
+  size             Int
+  contentType      String
+  originalName     String
+  uploadedBy       String
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  navigationStep NavigationStep @relation(fields: [navigationStepId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([navigationStepId])
+  @@index([tenantId, objectKey])
+  @@map("navigation_step_files")
 }
 
 enum NavigationStepStatus {
@@ -1280,6 +1396,7 @@ model Tenant {
   questionnaireResponses QuestionnaireResponse[]
   auditLogs              AuditLog[]
   navigationSteps        NavigationStep[]
+  navigationStepFiles    NavigationStepFile[]
   whatsappConnections    WhatsAppConnection[]
   internalNotes          InternalNote[]
   interventions          Intervention[]
@@ -1297,6 +1414,8 @@ model Tenant {
   scheduledActions            ScheduledAction[]
   clinicalProtocols           ClinicalProtocol[]
   dispositionFeedback         ClinicalDispositionFeedback[]
+  clinicalNotes               ClinicalNote[]
+  clinicalNoteVersions        ClinicalNoteVersion[]
 
   @@map("tenants")
 }

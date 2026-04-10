@@ -33,6 +33,7 @@ import { ComorbiditiesModule } from './comorbidities/comorbidities.module';
 import { PerformanceStatusModule } from './performance-status/performance-status.module';
 import { EmergencyReferencesModule } from './emergency-references/emergency-references.module';
 import { DispositionFeedbackModule } from './disposition-feedback/disposition-feedback.module';
+import { ClinicalNotesModule } from './clinical-notes/clinical-notes.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { ThrottleGuard } from './common/guards/throttle.guard';
 
@@ -72,6 +73,7 @@ import { ThrottleGuard } from './common/guards/throttle.guard';
     PerformanceStatusModule,
     EmergencyReferencesModule,
     DispositionFeedbackModule,
+    ClinicalNotesModule,
   ],
   controllers: [AppController],
   providers: [

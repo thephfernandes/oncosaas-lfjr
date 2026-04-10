@@ -7,6 +7,8 @@ const { mockAuthApi, mockApiClient } = vi.hoisted(() => ({
     login: vi.fn(),
     registerInstitution: vi.fn(),
     logout: vi.fn(),
+    /** Evita throw no initialize() (catch limpava sessão se ausente) */
+    refreshSessionUser: vi.fn().mockResolvedValue(null),
   },
   mockApiClient: {
     isTokenExpired: vi.fn(),

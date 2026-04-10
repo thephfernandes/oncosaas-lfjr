@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsBoolean,
 } from 'class-validator';
-import { UserRole } from '@generated/prisma/client';
+import { ClinicalSubrole, UserRole } from '@generated/prisma/client';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -25,6 +25,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
+
+  /// COORDINATOR ou ADMIN — competência clínica no prontuário (enfermagem vs médica)
+  @IsOptional()
+  @IsEnum(ClinicalSubrole)
+  clinicalSubrole?: ClinicalSubrole | null;
 
   @IsOptional()
   @IsBoolean()
