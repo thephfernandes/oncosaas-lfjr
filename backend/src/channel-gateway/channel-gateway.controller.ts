@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Logger,
   RawBodyRequest,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
@@ -39,11 +40,22 @@ export class ChannelGatewayController {
     @Query('hub.challenge') challenge: string,
     @Res() res: Response
   ) {
-    const verifyToken =
-      this.configService.get<string>('WHATSAPP_WEBHOOK_VERIFY_TOKEN') ||
-      'onconav-webhook-verify';
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
+    const verifyToken = this.configService.get<string>(
+      'WHATSAPP_WEBHOOK_VERIFY_TOKEN'
+    );
 
-    if (mode === 'subscribe' && token === verifyToken) {
+    if (isProduction && !verifyToken) {
+      this.logger.error(
+        'WHATSAPP_WEBHOOK_VERIFY_TOKEN must be set in production'
+      );
+      return res.status(503).send('Service Unavailable');
+    }
+
+    const effectiveToken = verifyToken ?? 'onconav-webhook-verify';
+
+    if (mode === 'subscribe' && token === effectiveToken) {
       this.logger.log('WhatsApp webhook verified successfully');
       return res.status(200).send(challenge);
     }
@@ -63,50 +75,64 @@ export class ChannelGatewayController {
     @Body() body: any,
     @Req() req: RawBodyRequest<Request>
   ) {
-    // Validate webhook signature in production
-    const signature = req.headers['x-hub-signature-256'] as string;
-    if (signature && req.rawBody) {
-      const isValid = this.whatsAppChannel.validateWebhookSignature(
-        req.rawBody,
-        signature
-      );
-      if (!isValid) {
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
+    const signature = req.headers['x-hub-signature-256'] as string | undefined;
+
+    if (isProduction) {
+      if (!req.rawBody || !signature) {
+        this.logger.warn('WhatsApp webhook: missing raw body or signature');
+        throw new ForbiddenException('Webhook signature required');
+      }
+      if (
+        !this.whatsAppChannel.validateWebhookSignature(req.rawBody, signature)
+      ) {
+        this.logger.warn('Invalid WhatsApp webhook signature');
+        throw new ForbiddenException('Invalid signature');
+      }
+    } else if (signature && req.rawBody) {
+      if (
+        !this.whatsAppChannel.validateWebhookSignature(req.rawBody, signature)
+      ) {
         this.logger.warn('Invalid WhatsApp webhook signature');
         return { status: 'invalid_signature' };
       }
     }
 
-    // Parse incoming messages
     const messages = this.whatsAppChannel.parseWebhookPayload(body);
 
     if (messages.length === 0) {
-      // Could be a status update, just acknowledge
       return { status: 'ok' };
     }
 
-    // Process each message
-    for (const msg of messages) {
-      try {
-        const result = await this.gatewayService.processIncomingMessage(
-          msg.phone,
-          msg.content,
-          'WHATSAPP',
-          msg.messageId,
-          msg.timestamp,
-          msg.type,
-          msg.mediaUrl
-        );
+    setImmediate(() => {
+      void (async () => {
+        for (const msg of messages) {
+          try {
+            const result = await this.gatewayService.processIncomingMessage(
+              msg.phone,
+              msg.content,
+              'WHATSAPP',
+              msg.messageId,
+              msg.timestamp,
+              msg.type,
+              msg.mediaUrl
+            );
 
-        if (!result) {
-          this.logger.warn(`No patient found for phone from WhatsApp message`);
+            if (!result) {
+              this.logger.warn(
+                `No patient found for phone from WhatsApp message`
+              );
+            }
+          } catch (error) {
+            this.logger.error(
+              `Error processing WhatsApp message ${msg.messageId}`,
+              error instanceof Error ? error.stack : error
+            );
+          }
         }
-      } catch (error) {
-        this.logger.error(
-          `Error processing WhatsApp message ${msg.messageId}`,
-          error instanceof Error ? error.stack : error
-        );
-      }
-    }
+      })();
+    });
 
     return { status: 'ok' };
   }

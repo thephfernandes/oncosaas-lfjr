@@ -15,7 +15,7 @@
 - **Status**: ✅ Funcionando
 - **Teste**: Login com `admin@hospitalteste.com` / `senha123`
 - **Resultado**: Token JWT gerado com sucesso
-- **Resposta**: `access_token` e dados do usuário incluindo `tenantId`
+- **Resposta**: JSON com `user` (inclui `tenantId`); JWT em cookie HttpOnly `access_token` (não no corpo)
 
 ---
 

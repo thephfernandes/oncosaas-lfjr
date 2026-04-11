@@ -8,23 +8,26 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../../auth/guards/tenant.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { FHIRConfigService } from './services/fhir-config.service';
+import { FHIRAuthService } from './services/fhir-auth.service';
 import { CreateFHIRConfigDto } from './dto/create-fhir-config.dto';
 import { UpdateFHIRConfigDto } from './dto/update-fhir-config.dto';
 import { PrismaService } from '@/prisma/prisma.service';
-import { Prisma } from '@generated/prisma/client';
+import { Prisma, UserRole } from '@generated/prisma/client';
 
 @Controller('fhir/config')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
-@Roles('ADMIN')
+@Roles(UserRole.ADMIN)
 export class FHIRConfigController {
   constructor(
     private readonly fhirConfigService: FHIRConfigService,
+    private readonly fhirAuthService: FHIRAuthService,
     private readonly prisma: PrismaService
   ) {}
 
@@ -33,7 +36,9 @@ export class FHIRConfigController {
    */
   @Get()
   async getConfig(@Request() req) {
-    const config = await this.fhirConfigService.getConfig(req.user.tenantId);
+    const config = await this.fhirConfigService.getConfigForApiResponse(
+      req.user.tenantId
+    );
     if (!config) {
       return { enabled: false, message: 'Integração FHIR não configurada' };
     }
@@ -73,12 +78,17 @@ export class FHIRConfigController {
         },
       });
 
-      // Limpar cache
       this.fhirConfigService.clearCache(tenantId);
+      this.fhirAuthService.clearCache(tenantId);
 
       return {
         message: 'Configuração FHIR atualizada com sucesso',
-        config: updated,
+        config: {
+          ...updated,
+          authConfig: this.fhirConfigService.redactAuthConfigJson(
+            updated.authConfig
+          ),
+        },
       };
     } else {
       // Criar
@@ -100,9 +110,17 @@ export class FHIRConfigController {
         },
       });
 
+      this.fhirConfigService.clearCache(tenantId);
+      this.fhirAuthService.clearCache(tenantId);
+
       return {
         message: 'Configuração FHIR criada com sucesso',
-        config: created,
+        config: {
+          ...created,
+          authConfig: this.fhirConfigService.redactAuthConfigJson(
+            created.authConfig
+          ),
+        },
       };
     }
   }
@@ -120,7 +138,7 @@ export class FHIRConfigController {
     });
 
     if (!existing) {
-      throw new Error('Configuração FHIR não encontrada');
+      throw new NotFoundException('Configuração FHIR não encontrada');
     }
 
     const updateData: any = {};
@@ -162,12 +180,17 @@ export class FHIRConfigController {
       data: updateData,
     });
 
-    // Limpar cache
     this.fhirConfigService.clearCache(tenantId);
+    this.fhirAuthService.clearCache(tenantId);
 
     return {
       message: 'Configuração FHIR atualizada com sucesso',
-      config: updated,
+      config: {
+        ...updated,
+        authConfig: this.fhirConfigService.redactAuthConfigJson(
+          updated.authConfig
+        ),
+      },
     };
   }
 }

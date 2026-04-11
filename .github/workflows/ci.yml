@@ -114,9 +114,10 @@ jobs:
         run: |
           cp .env.example .env
           {
-            echo "NEXTAUTH_URL=${{ vars.CI_NEXTAUTH_URL || 'http://localhost:3000' }}"
-            echo "NEXTAUTH_SECRET=${{ secrets.CI_NEXTAUTH_SECRET || 'ci-test-nextauth-secret' }}"
-            echo "NEXT_PUBLIC_API_URL=${{ vars.CI_NEXT_PUBLIC_API_URL || 'http://localhost:3002' }}"
+            echo "JWT_SECRET=${{ secrets.CI_JWT_SECRET || 'ci-test-jwt-secret' }}"
+            echo "BACKEND_URL=${{ vars.CI_BACKEND_URL || 'http://127.0.0.1:3002' }}"
+            echo "NEXT_PUBLIC_USE_RELATIVE_API=${{ vars.CI_NEXT_PUBLIC_USE_RELATIVE_API || 'true' }}"
+            echo "NEXT_PUBLIC_API_URL=${{ vars.CI_NEXT_PUBLIC_API_URL || '' }}"
             echo "NEXT_PUBLIC_WS_URL=${{ vars.CI_NEXT_PUBLIC_WS_URL || 'ws://localhost:3002' }}"
           } >> .env
 
@@ -306,8 +307,7 @@ jobs:
           } >> backend/.env
 
           {
-            echo "NEXTAUTH_URL=http://localhost:3000"
-            echo "NEXTAUTH_SECRET=${{ secrets.CI_NEXTAUTH_SECRET || 'ci-test-nextauth-secret' }}"
+            echo "JWT_SECRET=${{ secrets.CI_JWT_SECRET || 'ci-test-jwt-secret' }}"
             echo "NEXT_PUBLIC_API_URL=http://localhost:3002"
             echo "NEXT_PUBLIC_WS_URL=ws://localhost:3002"
           } >> frontend/.env

@@ -151,6 +151,7 @@ model Patient {
   performanceStatusHistory  PerformanceStatusHistory[] // Histórico ECOG para cálculo de delta
   dispositionFeedback       ClinicalDispositionFeedback[] // Correções de disposição para retraining
   clinicalNotes             ClinicalNote[] // Prontuário estruturado (evoluções versionadas)
+  consents                  PatientConsent[] // Termos de Consentimento Livre e Esclarecido (TCLE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -204,6 +205,27 @@ model ClinicalNote {
 enum ClinicalNoteType {
   NURSING
   MEDICAL
+}
+
+/// Termo de Consentimento Livre e Esclarecido (TCLE) digital — requisito CEP/EBSERH
+model PatientConsent {
+  id          String    @id @default(uuid())
+  tenantId    String
+  patientId   String
+  version     String    // versão do TCLE, ex: "1.0"
+  consentedAt DateTime  @default(now())
+  ipAddress   String?
+  userAgent   String?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@map("patient_consents")
 }
 
 enum ClinicalNoteStatus {
@@ -893,6 +915,10 @@ model Message {
   criticalSymptomsDetected String[] // Sintomas críticos detectados
   alertTriggered           Boolean     @default(false)
 
+  // Sugestão do agente IA (modo assistido)
+  suggestedResponse String? // Texto sugerido pelo agente para a enfermeira avaliar
+  suggestionStatus  SuggestionStatus? // Status de avaliação da sugestão
+
   // Handoff manual (enfermagem assume)
   assumedBy String? // userId que assumiu
   assumedAt DateTime?
@@ -928,6 +954,13 @@ enum MessageDirection {
 enum ProcessedBy {
   AGENT // Processado pelo agente de IA
   NURSING // Processado manualmente pela enfermagem
+}
+
+enum SuggestionStatus {
+  PENDING // Aguardando avaliação da enfermeira
+  ACCEPTED // Aceita e enviada sem edição
+  EDITED // Editada pela enfermeira antes do envio
+  REJECTED // Rejeitada, não enviada ao paciente
 }
 
 // Alertas
@@ -1433,6 +1466,7 @@ model Tenant {
   dispositionFeedback         ClinicalDispositionFeedback[]
   clinicalNotes               ClinicalNote[]
   clinicalNoteVersions        ClinicalNoteVersion[]
+  patientConsents             PatientConsent[]
 
   @@map("tenants")
 }

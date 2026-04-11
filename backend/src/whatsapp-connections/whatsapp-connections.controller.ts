@@ -17,7 +17,10 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
+import { UserRole } from '@generated/prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { WhatsAppConnectionsService } from './whatsapp-connections.service';
 import { CreateWhatsAppConnectionDto } from './dto/create-whatsapp-connection.dto';
@@ -26,6 +29,15 @@ import { ProcessEmbeddedSignupDto } from './dto/process-embedded-signup.dto';
 import { Response } from 'express';
 
 @Controller('whatsapp-connections')
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Roles(
+  UserRole.ADMIN,
+  UserRole.ONCOLOGIST,
+  UserRole.DOCTOR,
+  UserRole.NURSE_CHIEF,
+  UserRole.NURSE,
+  UserRole.COORDINATOR
+)
 export class WhatsAppConnectionsController {
   private readonly logger = new Logger(WhatsAppConnectionsController.name);
 
@@ -35,19 +47,16 @@ export class WhatsAppConnectionsController {
   ) {}
 
   @Get()
-  @UseGuards(JwtAuthGuard, TenantGuard)
   async findAll(@Request() req) {
     return this.whatsappConnectionsService.findAll(req.user.tenantId);
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, TenantGuard)
   async findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
     return this.whatsappConnectionsService.findOne(id, req.user.tenantId);
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, TenantGuard)
   async create(@Body() createDto: CreateWhatsAppConnectionDto, @Request() req) {
     return this.whatsappConnectionsService.createManualConnection(
       createDto,
@@ -56,7 +65,6 @@ export class WhatsAppConnectionsController {
   }
 
   @Post('oauth/initiate')
-  @UseGuards(JwtAuthGuard, TenantGuard)
   async initiateOAuth(@Request() req) {
     return this.whatsappConnectionsService.initiateOAuthFlow(req.user.tenantId);
   }
@@ -106,7 +114,6 @@ export class WhatsAppConnectionsController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard, TenantGuard)
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateWhatsAppConnectionDto,
@@ -120,14 +127,12 @@ export class WhatsAppConnectionsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, TenantGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
     await this.whatsappConnectionsService.remove(id, req.user.tenantId);
   }
 
   @Post(':id/test')
-  @UseGuards(JwtAuthGuard, TenantGuard)
   async testConnection(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
     return this.whatsappConnectionsService.testConnection(
       id,
@@ -136,13 +141,11 @@ export class WhatsAppConnectionsController {
   }
 
   @Post(':id/set-default')
-  @UseGuards(JwtAuthGuard, TenantGuard)
   async setDefault(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
     return this.whatsappConnectionsService.setDefault(id, req.user.tenantId);
   }
 
   @Post(':id/run-meta-tests')
-  @UseGuards(JwtAuthGuard, TenantGuard)
   async runMetaAppReviewTests(
     @Param('id', ParseUUIDPipe) id: string,
     @Request() req
@@ -154,7 +157,6 @@ export class WhatsAppConnectionsController {
   }
 
   @Post('embedded-signup/process')
-  @UseGuards(JwtAuthGuard, TenantGuard)
   async processEmbeddedSignup(
     @Body() dto: ProcessEmbeddedSignupDto,
     @Request() req

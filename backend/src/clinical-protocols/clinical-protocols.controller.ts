@@ -13,11 +13,22 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@generated/prisma/client';
 import { ClinicalProtocolsService } from './clinical-protocols.service';
 import { CreateProtocolDto, UpdateProtocolDto } from './dto/protocol.dto';
 
 @Controller('clinical-protocols')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Roles(
+  UserRole.ADMIN,
+  UserRole.ONCOLOGIST,
+  UserRole.DOCTOR,
+  UserRole.NURSE_CHIEF,
+  UserRole.NURSE,
+  UserRole.COORDINATOR
+)
 export class ClinicalProtocolsController {
   private readonly logger = new Logger(ClinicalProtocolsController.name);
 

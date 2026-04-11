@@ -47,10 +47,9 @@ export class DispositionFeedbackService {
    * Returns feature_snapshot + corrected_disposition (ground truth label).
    * No patient IDs or names included.
    */
-  async exportTrainingData(tenantId?: string) {
-    const where = tenantId ? { tenantId } : {};
+  async exportTrainingData(tenantId: string) {
     const rows = await this.prisma.clinicalDispositionFeedback.findMany({
-      where,
+      where: { tenantId },
       select: {
         featureSnapshot: true,
         correctedDisposition: true,

@@ -7,15 +7,9 @@ const { mockAuthApi, mockApiClient } = vi.hoisted(() => ({
     login: vi.fn(),
     registerInstitution: vi.fn(),
     logout: vi.fn(),
-    /** Evita throw no initialize() (catch limpava sessão se ausente) */
     refreshSessionUser: vi.fn().mockResolvedValue(null),
   },
   mockApiClient: {
-    isTokenExpired: vi.fn(),
-    getRefreshToken: vi.fn(),
-    post: vi.fn(),
-    setToken: vi.fn(),
-    setRefreshToken: vi.fn(),
     setTenantId: vi.fn(),
     clearAuth: vi.fn(),
     onTokenRefreshed: vi.fn(() => () => {}),
@@ -44,6 +38,7 @@ describe('useAuthStore initialize', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mockAuthApi.refreshSessionUser.mockResolvedValue(null);
     useAuthStore.setState({
       user: null,
       token: null,
@@ -62,34 +57,10 @@ describe('useAuthStore initialize', () => {
     expect(state.isInitializing).toBe(false);
   });
 
-  it('restores authenticated session when token, user, and tenant are present', () => {
-    const persistedToken = 'token-123';
-    localStorage.setItem('auth_token', persistedToken);
+  it('restores authenticated session when user, tenant exist and profile succeeds', async () => {
     localStorage.setItem('tenant_id', baseUser.tenantId);
     localStorage.setItem('user', JSON.stringify(baseUser));
-    mockApiClient.isTokenExpired.mockReturnValue(false);
-
-    useAuthStore.getState().initialize();
-
-    const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(true);
-    expect(state.token).toBe(persistedToken);
-    expect(state.user?.id).toBe(baseUser.id);
-    expect(state.isInitializing).toBe(false);
-    expect(mockApiClient.setToken).toHaveBeenCalledWith(persistedToken);
-    expect(mockApiClient.setTenantId).toHaveBeenCalledWith(baseUser.tenantId);
-  });
-
-  it('silently refreshes expired sessions and keeps user logged in', async () => {
-    localStorage.setItem('auth_token', 'expired-token');
-    localStorage.setItem('tenant_id', baseUser.tenantId);
-    localStorage.setItem('user', JSON.stringify(baseUser));
-    mockApiClient.isTokenExpired.mockReturnValue(true);
-    mockApiClient.getRefreshToken.mockReturnValue('refresh-123');
-    mockApiClient.post.mockResolvedValue({
-      access_token: 'fresh-token',
-      refresh_token: 'fresh-refresh',
-    });
+    mockAuthApi.refreshSessionUser.mockResolvedValue(baseUser);
 
     useAuthStore.getState().initialize();
 
@@ -97,21 +68,34 @@ describe('useAuthStore initialize', () => {
       const state = useAuthStore.getState();
       expect(state.isInitializing).toBe(false);
       expect(state.isAuthenticated).toBe(true);
-      expect(state.token).toBe('fresh-token');
     });
 
-    expect(mockApiClient.setToken).toHaveBeenCalledWith('fresh-token');
-    expect(mockApiClient.setRefreshToken).toHaveBeenCalledWith('fresh-refresh');
+    const state = useAuthStore.getState();
+    expect(state.token).toBeNull();
+    expect(state.user?.id).toBe(baseUser.id);
     expect(mockApiClient.setTenantId).toHaveBeenCalledWith(baseUser.tenantId);
+    expect(mockAuthApi.refreshSessionUser).toHaveBeenCalled();
   });
 
-  it('clears session when refresh fails', async () => {
-    localStorage.setItem('auth_token', 'expired-token');
+  it('deduplica chamadas paralelas a initialize (um GET /auth/profile)', async () => {
     localStorage.setItem('tenant_id', baseUser.tenantId);
     localStorage.setItem('user', JSON.stringify(baseUser));
-    mockApiClient.isTokenExpired.mockReturnValue(true);
-    mockApiClient.getRefreshToken.mockReturnValue('refresh-123');
-    mockApiClient.post.mockRejectedValue(new Error('refresh failed'));
+    mockAuthApi.refreshSessionUser.mockResolvedValue(baseUser);
+
+    useAuthStore.getState().initialize();
+    useAuthStore.getState().initialize();
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().isInitializing).toBe(false);
+    });
+
+    expect(mockAuthApi.refreshSessionUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears session when profile returns null', async () => {
+    localStorage.setItem('tenant_id', baseUser.tenantId);
+    localStorage.setItem('user', JSON.stringify(baseUser));
+    mockAuthApi.refreshSessionUser.mockResolvedValue(null);
 
     useAuthStore.getState().initialize();
 
@@ -119,8 +103,22 @@ describe('useAuthStore initialize', () => {
       const state = useAuthStore.getState();
       expect(state.isInitializing).toBe(false);
       expect(state.isAuthenticated).toBe(false);
-      expect(state.user).toBeNull();
-      expect(state.token).toBeNull();
+    });
+
+    expect(mockApiClient.clearAuth).toHaveBeenCalled();
+  });
+
+  it('clears session when profile throws', async () => {
+    localStorage.setItem('tenant_id', baseUser.tenantId);
+    localStorage.setItem('user', JSON.stringify(baseUser));
+    mockAuthApi.refreshSessionUser.mockRejectedValue(new Error('unauthorized'));
+
+    useAuthStore.getState().initialize();
+
+    await waitFor(() => {
+      const state = useAuthStore.getState();
+      expect(state.isInitializing).toBe(false);
+      expect(state.isAuthenticated).toBe(false);
     });
 
     expect(mockApiClient.clearAuth).toHaveBeenCalled();

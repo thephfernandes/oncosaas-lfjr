@@ -1,6 +1,4 @@
-import axios from 'axios';
 import { apiClient } from './client';
-import { getApiUrl } from '@/lib/utils/api-config';
 import type { JourneyStage } from '@/lib/utils/journey-stage';
 
 /** Parâmetro de estágio da jornada (API oncology-navigation) — alinhado ao Prisma. */
@@ -247,26 +245,9 @@ export const oncologyNavigationApi = {
   uploadFile: async (stepId: string, file: File): Promise<NavigationStep> => {
     const formData = new FormData();
     formData.append('file', file);
-
-    // Usar axios diretamente para FormData (não definir Content-Type manualmente)
-    const API_URL = getApiUrl();
-    const token =
-      typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    const tenantId =
-      typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : null;
-
-    const response = await axios.post<NavigationStep>(
-      `${API_URL}/api/v1/oncology-navigation/steps/${stepId}/upload`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'X-Tenant-Id': tenantId || '',
-          // Não definir Content-Type - deixar o navegador definir com boundary
-        },
-      }
+    return apiClient.postFormData<NavigationStep>(
+      `/oncology-navigation/steps/${stepId}/upload`,
+      formData
     );
-
-    return response.data;
   },
 };

@@ -126,6 +126,8 @@ export const useSendMessage = () => {
         structuredData: null,
         criticalSymptomsDetected: [],
         alertTriggered: false,
+        suggestedResponse: null,
+        suggestionStatus: null,
         assumedBy: null,
         assumedAt: null,
         createdAt: new Date().toISOString(),

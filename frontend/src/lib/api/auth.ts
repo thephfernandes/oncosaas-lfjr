@@ -51,9 +51,13 @@ export interface User {
   };
 }
 
+/** Login / register-institution: JWT só em cookies HttpOnly (sem access_token no JSON). */
 export interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
+  user: User;
+}
+
+export interface RegisterPublicResponse {
+  message: string;
   user: User;
 }
 
@@ -76,8 +80,6 @@ export const authApi = {
       credentials
     );
 
-    apiClient.setToken(response.access_token);
-    apiClient.setRefreshToken(response.refresh_token);
     apiClient.setTenantId(response.user.tenantId);
 
     if (typeof window !== 'undefined') {
@@ -87,16 +89,12 @@ export const authApi = {
     return response;
   },
 
-  async register(data: RegisterDto): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>(
+  async register(data: RegisterDto): Promise<RegisterPublicResponse> {
+    const response = await apiClient.post<RegisterPublicResponse>(
       '/auth/register',
       data
     );
 
-    apiClient.setToken(response.access_token);
-    if (response.refresh_token) {
-      apiClient.setRefreshToken(response.refresh_token);
-    }
     apiClient.setTenantId(response.user.tenantId);
 
     if (typeof window !== 'undefined') {
@@ -112,8 +110,6 @@ export const authApi = {
       data
     );
 
-    apiClient.setToken(response.access_token);
-    apiClient.setRefreshToken(response.refresh_token);
     apiClient.setTenantId(response.user.tenantId);
 
     if (typeof window !== 'undefined') {
@@ -124,13 +120,14 @@ export const authApi = {
   },
 
   async logout(): Promise<void> {
-    const refreshToken = apiClient.getRefreshToken();
-    if (refreshToken) {
-      try {
-        await apiClient.post('/auth/logout', { refresh_token: refreshToken });
-      } catch {
-        // Ignorar erros no logout — limpar dados locais de qualquer forma
-      }
+    const legacy = apiClient.getRefreshToken();
+    try {
+      await apiClient.post(
+        '/auth/logout',
+        legacy ? { refresh_token: legacy } : {}
+      );
+    } catch {
+      // Ignorar erros no logout — limpar dados locais de qualquer forma
     }
     apiClient.clearAuth();
   },

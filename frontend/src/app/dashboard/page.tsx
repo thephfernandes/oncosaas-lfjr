@@ -273,7 +273,7 @@ function NursingDashboard() {
 // Componente do Dashboard Gerencial (Oncologistas)
 function ManagementDashboard() {
   const router = useRouter();
-  const { user, isAuthenticated, isInitializing, initialize } = useAuthStore();
+  const { user, isAuthenticated, isInitializing } = useAuthStore();
   const [statisticsPeriod, setStatisticsPeriod] = useState<
     '7d' | '30d' | '90d'
   >('7d');
@@ -303,18 +303,7 @@ function ManagementDashboard() {
     title: '',
   });
 
-  // Inicializar autenticação
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
-
-  // Verificar autenticação (após inicialização)
-  useEffect(() => {
-    if (!isInitializing && !isAuthenticated) {
-      router.replace('/login');
-      return;
-    }
-  }, [isAuthenticated, isInitializing, router]);
+  // Autenticação: o pai `DashboardPage` já chama `initialize()` — evita GET /auth/profile duplicado.
 
   const {
     data: metrics,

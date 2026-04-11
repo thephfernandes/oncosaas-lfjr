@@ -15,13 +15,18 @@ import { RedisModule } from '../redis/redis.module';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) =>
-        ({
-          secret: configService.get<string>('JWT_SECRET') || 'your-secret-key',
+      useFactory: async (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET environment variable is not set');
+        }
+        return {
+          secret,
           signOptions: {
             expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '24h',
           },
-        }) as import('@nestjs/jwt').JwtModuleOptions,
+        } as import('@nestjs/jwt').JwtModuleOptions;
+      },
       inject: [ConfigService],
     }),
   ],

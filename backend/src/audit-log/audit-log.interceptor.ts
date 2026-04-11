@@ -10,6 +10,23 @@ import { tap } from 'rxjs/operators';
 import { AuditAction } from '@generated/prisma/client';
 import { AuditLogService } from './audit-log.service';
 
+const SENSITIVE_KEYS = new Set([
+  'password',
+  'apiToken',
+  'oauthAccessToken',
+  'appSecret',
+  'mfaSecret',
+  'cpf',
+  'phone',
+  'openaiApiKey',
+  'anthropicApiKey',
+  'apiKey',
+  'sections',
+  'sectionsPayloadEncrypted',
+]);
+
+const MAX_SANITIZE_DEPTH = 12;
+
 const METHOD_TO_ACTION: Record<string, AuditAction> = {
   POST: AuditAction.CREATE,
   PUT: AuditAction.UPDATE,
@@ -92,24 +109,38 @@ export class AuditLogInterceptor implements NestInterceptor {
     return undefined;
   }
 
-  /** Strip large/sensitive fields before storing */
+  /** Strip large/sensitive fields before storing (recursive) */
   private sanitize(data: unknown): Record<string, unknown> | undefined {
-    if (!data || typeof data !== 'object') {
+    const sanitized = this.deepSanitize(data, 0);
+    if (!sanitized || typeof sanitized !== 'object' || Array.isArray(sanitized)) {
       return undefined;
     }
-    const { password, apiToken, oauthAccessToken, appSecret, ...safe } =
-      data as Record<string, unknown>;
-    void password;
-    void apiToken;
-    void oauthAccessToken;
-    void appSecret;
-    const out = { ...safe } as Record<string, unknown>;
-    // Prontuário: nunca persistir texto clínico no audit (interceptor grava response body)
-    if ('sections' in out) {
-      delete out.sections;
+    return sanitized as Record<string, unknown>;
+  }
+
+  private deepSanitize(data: unknown, depth: number): unknown {
+    if (depth > MAX_SANITIZE_DEPTH) {
+      return '[MaxDepth]';
     }
-    if ('sectionsPayloadEncrypted' in out) {
-      delete out.sectionsPayloadEncrypted;
+    if (data === null || data === undefined) {
+      return data;
+    }
+    if (typeof data !== 'object') {
+      return data;
+    }
+    if (data instanceof Date) {
+      return data.toISOString();
+    }
+    if (Array.isArray(data)) {
+      return data.map((item) => this.deepSanitize(item, depth + 1));
+    }
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      if (SENSITIVE_KEYS.has(key)) {
+        out[key] = '[REDACTED]';
+        continue;
+      }
+      out[key] = this.deepSanitize(value, depth + 1);
     }
     return out;
   }

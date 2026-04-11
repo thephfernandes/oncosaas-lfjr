@@ -11,11 +11,22 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../../auth/guards/tenant.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { UserRole } from '@generated/prisma/client';
 import { FHIRSyncService } from './services/fhir-sync.service';
 import { FHIRConfigService } from './services/fhir-config.service';
 
 @Controller('fhir')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Roles(
+  UserRole.ADMIN,
+  UserRole.ONCOLOGIST,
+  UserRole.DOCTOR,
+  UserRole.NURSE_CHIEF,
+  UserRole.NURSE,
+  UserRole.COORDINATOR
+)
 export class FHIRController {
   constructor(
     private readonly fhirSyncService: FHIRSyncService,

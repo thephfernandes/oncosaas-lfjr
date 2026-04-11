@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 
 const PUBLIC_ROUTES = new Set([
   '/login',
@@ -20,7 +21,7 @@ function decodeBase64Url(value: string): string {
   return atob(normalized + padding);
 }
 
-function hasValidAuthToken(token: string | undefined): boolean {
+function hasValidAuthTokenLegacy(token: string | undefined): boolean {
   if (!token) {
     return false;
   }
@@ -42,17 +43,39 @@ function hasValidAuthToken(token: string | undefined): boolean {
   }
 }
 
-export function middleware(request: NextRequest) {
+/** Quando `JWT_SECRET` está definido (mesmo valor do backend), valida assinatura HS256.
+ *  Em produção, defina sempre `JWT_SECRET` no ambiente do Next; o modo legado (só exp) é fraco. */
+async function hasValidAuthToken(token: string | undefined): Promise<boolean> {
+  if (!token) {
+    return false;
+  }
+
+  const secret = process.env.JWT_SECRET;
+  if (secret) {
+    try {
+      await jwtVerify(token, new TextEncoder().encode(secret));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return hasValidAuthTokenLegacy(token);
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_ROUTES.has(pathname) || isResetPasswordRoute(pathname)) {
     return NextResponse.next();
   }
 
-  // Validate mirrored access token cookie to avoid allowing routes with a mere
-  // boolean session flag. Full server-issued HttpOnly cookie auth is still preferred.
-  const authToken = request.cookies.get('auth_token')?.value;
-  const sessionActive = hasValidAuthToken(authToken);
+  // HttpOnly `access_token` quando API passa pelo mesmo host (rewrite). Espelho
+  // `auth_token` só em modo cross-origin (API direta na porta do Nest).
+  const accessToken = request.cookies.get('access_token')?.value;
+  const authMirror = request.cookies.get('auth_token')?.value;
+  const raw = accessToken ?? authMirror;
+  const sessionActive = await hasValidAuthToken(raw);
 
   if (!sessionActive) {
     const loginUrl = new URL('/login', request.url);

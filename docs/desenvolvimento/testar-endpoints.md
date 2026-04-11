@@ -15,11 +15,10 @@
 }
 ```
 
-**Resposta esperada**:
+**Resposta esperada (JSON):** objeto `user` (sem `access_token` no corpo). O JWT de acesso vem no header **`Set-Cookie`** (`access_token`, HttpOnly).
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": "...",
     "email": "admin@hospitalteste.com",
@@ -33,6 +32,8 @@
   }
 }
 ```
+
+Para chamadas seguintes com **curl**, use `-c`/`-b` com um ficheiro de cookies após o login, ou `Authorization: Bearer <jwt>` com o valor do cookie `access_token`.
 
 ### 2. Register
 
@@ -140,6 +141,21 @@ X-Tenant-Id: {tenant-id}
   "source": "WHATSAPP"
 }
 ```
+
+---
+
+## 📋 Auditoria e export ML (papéis restritos)
+
+### Logs de auditoria
+
+- **GET** `http://localhost:3002/api/v1/audit-logs` e **GET** `.../audit-logs/summary`
+- **Autenticação:** JWT com papel **ADMIN** ou **COORDINATOR** (além do tenant válido).
+- Outros papéis recebem **403**.
+
+### Export de feedback de disposição (treino ML)
+
+- **GET** `http://localhost:3002/api/v1/disposition-feedback/export`
+- **Autenticação:** JWT **ADMIN**; export é **sempre** limitado ao tenant do token (não há export multi-tenant por query string).
 
 ---
 

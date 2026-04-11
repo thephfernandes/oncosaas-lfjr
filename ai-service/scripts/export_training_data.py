@@ -2,9 +2,10 @@
 """
 Export anonymized training data from the backend for ML retraining.
 
+Data is always scoped to the JWT tenant (ADMIN). There is no cross-tenant export.
+
 Usage:
   python -m scripts.export_training_data --token <admin_jwt> --out data.json
-  python -m scripts.export_training_data --token <admin_jwt> --out data.json --all
 """
 
 import argparse
@@ -19,11 +20,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s — %(
 logger = logging.getLogger("export_training_data")
 
 
-def export(backend_url: str, token: str, output_path: str, all_tenants: bool = False):
+def export(backend_url: str, token: str, output_path: str):
     url = f"{backend_url}/api/v1/disposition-feedback/export"
-    if all_tenants:
-        url += "?all=true"
-
     headers = {"Authorization": f"Bearer {token}"}
 
     logger.info("Fetching training data from %s...", url)
@@ -65,7 +63,6 @@ if __name__ == "__main__":
     parser.add_argument("--backend", default="http://localhost:3002", help="Backend URL")
     parser.add_argument("--token", required=True, help="Admin JWT token")
     parser.add_argument("--out", default="data/training_feedback.json", help="Output file path")
-    parser.add_argument("--all", action="store_true", dest="all_tenants", help="Export from all tenants (super admin)")
     args = parser.parse_args()
 
-    export(args.backend, args.token, args.out, args.all_tenants)
+    export(args.backend, args.token, args.out)

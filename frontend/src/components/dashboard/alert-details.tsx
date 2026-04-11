@@ -13,6 +13,7 @@ import {
 import { Alert } from '@/lib/api/alerts';
 import { Button } from '@/components/ui/button';
 import { useAcknowledgeAlert, useResolveAlert } from '@/hooks/useAlerts';
+import { maskPhone } from '@/lib/utils/mask-sensitive';
 
 interface AlertDetailsProps {
   alert: Alert | null;
@@ -150,7 +151,7 @@ export function AlertDetails({ alert, isLoading, onClose }: AlertDetailsProps) {
               <p className="font-semibold">{alert.patient.name}</p>
               {alert.patient.phone && (
                 <p className="text-sm text-gray-600 mt-1">
-                  {alert.patient.phone}
+                  {maskPhone(alert.patient.phone)}
                 </p>
               )}
               {alert.patient.priorityScore !== undefined && (

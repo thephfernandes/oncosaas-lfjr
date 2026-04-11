@@ -13,7 +13,7 @@ remain stable and useful in day-to-day workflows.
     - `python -m scripts.train_model --real data/training_feedback.json`
 
 - `export_training_data.py`
-  - Export anonymized disposition-feedback data from backend.
+  - Export anonymized disposition-feedback data from backend (scoped to the JWT tenant; ADMIN only).
   - Example:
     - `python -m scripts.export_training_data --token <admin_jwt> --out data/training_feedback.json`
 

@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestHeaders, AxiosRequestConfig } from 'axios';
-import { getApiUrl } from '@/lib/utils/api-config';
+import { getApiUrlForAxios, isRelativeApiEnabled } from '@/lib/utils/api-config';
 
 export interface ApiError {
   message: string | string[];
@@ -19,6 +19,15 @@ export class ApiClientError extends Error {
   }
 }
 
+/** Atributos de cookie de sessão: SameSite=Lax; Secure em HTTPS (produção). */
+function sessionCookieAttrs(): string {
+  const base = 'path=/; SameSite=Lax';
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    return `${base}; Secure`;
+  }
+  return base;
+}
+
 class ApiClient {
   private client: AxiosInstance;
   private tenantId: string | null = null;
@@ -32,24 +41,20 @@ class ApiClient {
   }
 
   constructor() {
-    const apiUrl = getApiUrl();
-    const baseURL = `${apiUrl}/api/v1`;
+    const apiUrl = getApiUrlForAxios();
+    const baseURL = apiUrl ? `${apiUrl.replace(/\/$/, '')}/api/v1` : '/api/v1';
 
     this.client = axios.create({
       baseURL,
+      withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    // Interceptor de request: adicionar token JWT e tenant
+    // Interceptor de request: tenant (JWT vem do cookie HttpOnly `access_token` no mesmo host da API)
     this.client.interceptors.request.use(
       (config) => {
-        const token = this.getToken();
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-
         const tenantId = this.getTenantId();
         if (tenantId) {
           config.headers['X-Tenant-Id'] = tenantId;
@@ -73,22 +78,12 @@ class ApiClient {
           !originalRequest?._retry &&
           originalRequest?.url !== '/auth/refresh'
         ) {
-          const refreshToken = this.getRefreshToken();
-          if (refreshToken) {
-            originalRequest._retry = true;
-            try {
-              const newAccessToken =
-                await this.refreshAccessToken(refreshToken);
-              originalRequest.headers = (originalRequest.headers ?? {}) as AxiosRequestHeaders;
-              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-              return this.client(originalRequest);
-            } catch {
-              this.clearAuth();
-              if (typeof window !== 'undefined') {
-                window.location.href = '/login';
-              }
-            }
-          } else {
+          originalRequest._retry = true;
+          try {
+            await this.refreshAccessToken();
+            originalRequest.headers = (originalRequest.headers ?? {}) as AxiosRequestHeaders;
+            return this.client(originalRequest);
+          } catch {
             this.clearAuth();
             if (typeof window !== 'undefined') {
               window.location.href = '/login';
@@ -119,24 +114,28 @@ class ApiClient {
     );
   }
 
-  private async refreshAccessToken(refreshToken: string): Promise<string> {
-    // Serializar chamadas concorrentes de refresh
+  /**
+   * Renova access token. Refresh token vem de cookie HttpOnly (ou legado em localStorage).
+   */
+  private async refreshAccessToken(): Promise<string> {
     if (this.refreshPromise) {
       return this.refreshPromise;
     }
 
     this.refreshPromise = (async () => {
-      const response = await axios.post(
-        `${this.client.defaults.baseURL}/auth/refresh`,
-        { refresh_token: refreshToken }
-      );
-      const { access_token, refresh_token: newRefreshToken } = response.data;
-      this.setToken(access_token);
-      if (newRefreshToken) {
-        this.setRefreshToken(newRefreshToken);
+      const legacy = this.getRefreshToken();
+      const response = await this.client.post<{
+        access_token?: string;
+      }>('/auth/refresh', legacy ? { refresh_token: legacy } : {});
+      const access_token = response.data?.access_token;
+      if (access_token) {
+        this.setMiddlewareRouteMirrorCookie(access_token);
       }
-      this.tokenRefreshListeners.forEach((fn) => fn(access_token as string));
-      return access_token as string;
+      if (legacy && typeof window !== 'undefined') {
+        localStorage.removeItem('refresh_token');
+      }
+      this.tokenRefreshListeners.forEach((fn) => fn(access_token ?? ''));
+      return access_token ?? '';
     })().finally(() => {
       this.refreshPromise = null;
     });
@@ -144,32 +143,50 @@ class ApiClient {
     return this.refreshPromise;
   }
 
-  // ─── Token management ───────────────────────────────────────────────────────
+  // ─── Sessão: JWT em cookie HttpOnly na API; espelho só para middleware Next (origem diferente em dev) ───
 
+  /**
+   * Espelha o JWT em cookie legível pelo middleware do Next.js (validação com JWT_SECRET).
+   * Não persiste em localStorage — o access real fica no cookie HttpOnly do backend.
+   */
+  setMiddlewareRouteMirrorCookie(accessToken: string): void {
+    if (isRelativeApiEnabled()) {
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      const attrs = sessionCookieAttrs();
+      document.cookie = `auth_token=${encodeURIComponent(accessToken)}; ${attrs}`;
+      document.cookie = `session_active=1; ${attrs}`;
+    }
+  }
+
+  /** @deprecated compat — usar setMiddlewareRouteMirrorCookie */
   setToken(token: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
-      // Mirror access token in a non-HttpOnly cookie so Next.js middleware can
-      // at least validate JWT shape/expiry before allowing protected routes.
-      // Security note: full server-issued HttpOnly cookie auth remains the ideal target.
-      document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; SameSite=Lax`;
-      document.cookie = 'session_active=1; path=/; SameSite=Lax';
-    }
+    this.setMiddlewareRouteMirrorCookie(token);
   }
 
+  /** Lê o espelho `auth_token` (não HttpOnly) para heurísticas como expiração; o Bearer não é mais usado. */
   getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_token');
+    if (typeof window === 'undefined') {
+      return null;
     }
-    return null;
+    const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
+    if (!match?.[1]) {
+      return null;
+    }
+    try {
+      return decodeURIComponent(match[1]);
+    } catch {
+      return null;
+    }
   }
 
-  setRefreshToken(token: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('refresh_token', token);
-    }
+  /** Legado: o backend grava refresh em cookie HttpOnly; não persistir no cliente. */
+  setRefreshToken(_token: string): void {
+    /* noop — compatível com chamadas antigas em auth.ts */
   }
 
+  /** Apenas migração de sessões antigas que ainda têm refresh no localStorage. */
   getRefreshToken(): string | null {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('refresh_token');
@@ -190,13 +207,12 @@ class ApiClient {
 
   clearAuth(): void {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('tenant_id');
       localStorage.removeItem('user');
-      // Clear auth/session cookies so middleware redirects unauthenticated requests
-      document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
-      document.cookie = 'session_active=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+      const attrs = sessionCookieAttrs();
+      document.cookie = `auth_token=; ${attrs}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      document.cookie = `session_active=; ${attrs}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     }
     this.tenantId = null;
   }
@@ -227,6 +243,19 @@ class ApiClient {
 
   async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.post<T>(url, data, config);
+    return response.data;
+  }
+
+  /** Upload multipart: reutiliza interceptors (auth, refresh, tenant). */
+  async postFormData<T>(url: string, formData: FormData): Promise<T> {
+    const response = await this.client.post<T>(url, formData, {
+      transformRequest: (data, headers) => {
+        if (data instanceof FormData) {
+          delete (headers as Record<string, unknown>)['Content-Type'];
+        }
+        return data;
+      },
+    });
     return response.data;
   }
 

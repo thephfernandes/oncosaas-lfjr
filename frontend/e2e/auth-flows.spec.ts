@@ -74,9 +74,10 @@ test.describe('Auth flows', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
+        headers: {
+          'Set-Cookie': `auth_token=${encodeURIComponent(validToken)}; Path=/; SameSite=Lax`,
+        },
         body: JSON.stringify({
-          access_token: validToken,
-          refresh_token: 'refresh-token-1',
           user: {
             id: 'u1',
             email: 'nurse@hospital.local',

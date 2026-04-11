@@ -10,7 +10,10 @@ import {
   UnauthorizedException,
   UseGuards,
   Request,
+  Req,
+  Res,
 } from '@nestjs/common';
+import type { Request as ExpressRequest, Response } from 'express';
 import {
   IsString,
   IsNotEmpty,
@@ -28,11 +31,20 @@ import { Public } from './decorators/public.decorator';
 import { Roles } from './decorators/roles.decorator';
 import { RolesGuard } from './guards/roles.guard';
 import { UserRole } from '@generated/prisma/client';
+import {
+  REFRESH_TOKEN_COOKIE,
+  clearAccessTokenCookie,
+  clearRefreshTokenCookie,
+  setAccessTokenCookie,
+  setRefreshTokenCookie,
+} from './auth-cookies.util';
+import { extractAccessJwtFromHttpRequest } from '@/common/utils/http-jwt.extractor';
 
 class RefreshDto {
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  refresh_token: string;
+  refresh_token?: string;
 }
 
 class ForgotPasswordDto {
@@ -85,26 +97,49 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() loginDto: LoginDto,
-    @Headers('x-tenant-id') headerTenantId?: string
+    @Headers('x-tenant-id') headerTenantId: string | undefined,
+    @Res({ passthrough: true }) res: Response
   ) {
     const tenantId = loginDto.tenantId || headerTenantId;
-    return this.authService.login(loginDto, tenantId);
+    const result = await this.authService.login(loginDto, tenantId);
+    setRefreshTokenCookie(res, result.refresh_token);
+    setAccessTokenCookie(res, result.access_token);
+    return {
+      user: result.user,
+    };
   }
 
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() body: RefreshDto) {
-    if (!body.refresh_token) {
+  async refresh(
+    @Req() req: ExpressRequest,
+    @Body() body: RefreshDto,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const fromCookie = req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined;
+    const refreshToken = fromCookie || body.refresh_token;
+    if (!refreshToken) {
       throw new UnauthorizedException('refresh_token é obrigatório');
     }
-    return this.authService.refresh(body.refresh_token);
+    const result = await this.authService.refresh(refreshToken);
+    setRefreshTokenCookie(res, result.refresh_token);
+    setAccessTokenCookie(res, result.access_token);
+    return {};
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async logout(@Body() body: Partial<RefreshDto>) {
-    await this.authService.logout(body.refresh_token || '');
+  async logout(
+    @Req() req: ExpressRequest,
+    @Body() body: Partial<RefreshDto>,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const fromCookie = req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined;
+    const refreshToken = fromCookie || body.refresh_token || '';
+    await this.authService.logout(refreshToken);
+    clearRefreshTokenCookie(res);
+    clearAccessTokenCookie(res);
   }
 
   @Public()
@@ -123,6 +158,21 @@ export class AuthController {
   async resetPassword(@Body() body: ResetPasswordDto) {
     await this.authService.resetPassword(body.token, body.password);
     return { message: 'Senha redefinida com sucesso.' };
+  }
+
+  /**
+   * Emite ticket de uso único (Redis) para o handshake Socket.io quando o cookie
+   * HttpOnly não chega à porta do Nest (API relativa no Next).
+   */
+  @Post('socket-ticket')
+  @HttpCode(HttpStatus.OK)
+  async socketTicket(@Req() req: ExpressRequest) {
+    const token = extractAccessJwtFromHttpRequest(req);
+    if (!token) {
+      throw new UnauthorizedException();
+    }
+    const ticket = await this.authService.issueSocketTicket(token);
+    return { ticket };
   }
 
   @Get('profile')
@@ -157,7 +207,15 @@ export class AuthController {
   @Public()
   @Post('register-institution')
   @HttpCode(HttpStatus.CREATED)
-  async registerInstitution(@Body() dto: RegisterInstitutionDto) {
-    return this.authService.registerInstitution(dto);
+  async registerInstitution(
+    @Body() dto: RegisterInstitutionDto,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const result = await this.authService.registerInstitution(dto);
+    setRefreshTokenCookie(res, result.refresh_token);
+    setAccessTokenCookie(res, result.access_token);
+    return {
+      user: result.user,
+    };
   }
 }

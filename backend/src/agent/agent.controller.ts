@@ -16,6 +16,9 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@generated/prisma/client';
 import { ConversationService } from './conversation.service';
 import { DecisionGateService } from './decision-gate.service';
 import { AgentService } from './agent.service';
@@ -23,7 +26,15 @@ import { ApproveDecisionDto } from './dto/agent-response.dto';
 import { ConversationStatus, ChannelType } from '@generated/prisma/client';
 
 @Controller('agent')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Roles(
+  UserRole.ADMIN,
+  UserRole.ONCOLOGIST,
+  UserRole.DOCTOR,
+  UserRole.NURSE_CHIEF,
+  UserRole.NURSE,
+  UserRole.COORDINATOR
+)
 export class AgentController {
   private readonly logger = new Logger(AgentController.name);
 
@@ -188,8 +199,8 @@ export class AgentController {
 
   @Get('patients/:patientId/summary')
   async getPatientSummary(
-    @Param('patientId') patientId: string,
-    @Request() req: any,
+    @Param('patientId', ParseUUIDPipe) patientId: string,
+    @Request() req: any
   ) {
     return this.agentService.getPatientSummary(patientId, req.user.tenantId);
   }
@@ -215,6 +226,7 @@ export class AgentController {
   }
 
   @Delete('observability/traces')
+  @Roles(UserRole.ADMIN)
   async clearObservabilityTraces(@Request() req: any) {
     return this.agentService.clearObservabilityTraces(req.user.tenantId);
   }

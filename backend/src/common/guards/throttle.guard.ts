@@ -30,6 +30,8 @@ export class ThrottleGuard implements CanActivate {
   private readonly defaultTtl = 60; // segundos
   private readonly loginLimit = 10;
   private readonly webhookLimit = 200;
+  /** Hidratação de sessão (várias montagens / Strict Mode); maior que o default para evitar 429 em rajadas legítimas. */
+  private readonly profileLimit = 400;
 
   constructor(private readonly redisService: RedisService) {
     // Limpeza periódica do fallback in-memory
@@ -115,7 +117,12 @@ export class ThrottleGuard implements CanActivate {
   }
 
   private getLimit(path: string): number {
-    if (path.includes('/auth/login') || path.includes('/auth/register')) {
+    if (
+      path.includes('/auth/login') ||
+      path.includes('/auth/register') ||
+      path.includes('/auth/refresh') ||
+      path.includes('/auth/socket-ticket')
+    ) {
       return this.loginLimit;
     }
     if (
@@ -123,6 +130,9 @@ export class ThrottleGuard implements CanActivate {
       (path.includes('/whatsapp-connections') && path.includes('/webhook'))
     ) {
       return this.webhookLimit;
+    }
+    if (path.includes('/auth/profile')) {
+      return this.profileLimit;
     }
     return this.defaultLimit;
   }

@@ -21,8 +21,16 @@ describe('api-config — HTTPS / mixed content', () => {
   it('alinha NEXT_PUBLIC_API_URL http→https quando a página está em HTTPS', async () => {
     vi.stubGlobal('window', { location: { protocol: 'https:' } });
     vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3002');
+    vi.stubEnv('NEXT_PUBLIC_USE_RELATIVE_API', '');
     const { getApiUrl } = await import('../api-config');
     expect(getApiUrl()).toBe('https://localhost:3002');
+  });
+
+  it('com API relativa (isRelativeApiEnabled), getApiUrl retorna vazio no browser', async () => {
+    vi.stubGlobal('window', { location: { protocol: 'http:' } });
+    vi.stubEnv('NEXT_PUBLIC_USE_RELATIVE_API', 'true');
+    const { getApiUrl } = await import('../api-config');
+    expect(getApiUrl()).toBe('');
   });
 
   it('mantém ws:// quando a página está em HTTP', async () => {

@@ -105,7 +105,7 @@ python scripts/train_model.py \
 - `featureSnapshot`: JSON de-identificado com as 32 features
 - `actualDisposition`: disposição final (aprovada pelo médico)
 - `predictedDisposition`: o que o modelo previu
-- Exportado via `GET /disposition-feedback/export`
+- Exportado via `GET /api/v1/disposition-feedback/export` (JWT ADMIN; dados apenas do tenant do token)
 
 ## Métricas de Avaliação
 
