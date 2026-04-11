@@ -138,5 +138,40 @@
     "cancer_types": ["ALL"],
     "title": "Seguimento após tratamento - prevenção de recidiva",
     "content": "Após completar o tratamento, o seguimento é essencial. Consultas regulares com o oncologista: geralmente a cada 3 meses no 1º-2º ano, a cada 6 meses no 3º-5º ano, depois anualmente. Exames de imagem e marcadores conforme protocolo do seu tipo de câncer. Hábitos que ajudam: não fumar; manter peso saudável; exercício regular; alimentação equilibrada; limitar álcool; controlar estresse. Sinais de alerta para recidiva: nódulos novos; dor persistente que não melhora; perda de peso sem explicação; cansaço extremo; sangramento. Informe a equipe se notar qualquer mudança."
+  },
+  {
+    "id": "faq-bexiga-hematuria-01",
+    "category": "emergencia",
+    "cancer_types": ["BLADDER"],
+    "title": "Sangue na urina (hematúria) — quando buscar ajuda",
+    "content": "Hematúria (sangue na urina) sempre merece avaliação médica. Se a urina estiver muito vermelha ou com coágulos, se houver tontura, falta de ar, dor abdominal forte ou não conseguir urinar, procure o pronto-socorro. Se tiver febre medida em termômetro de 38°C ou mais, com mal-estar ou dor ao urinar, busque avaliação urgência conforme orientação da sua equipe — pode ser infecção ou outra complicação. Entre as consultas, anote frequência e aspecto da urina para relatar ao urologista. Este texto não substitui avaliação presencial."
+  },
+  {
+    "id": "faq-bexiga-cistoscopia-01",
+    "category": "cuidados",
+    "cancer_types": ["BLADDER"],
+    "title": "Cistoscopia: o que esperar no exame da bexiga",
+    "content": "A cistoscopia usa um tubo fino com câmera pela uretra para o médico ver o interior da bexiga. Siga o jejum ou preparo que o seu serviço indicar. É comum sentir ardor ou urgência para urinar nas primeiras urinas após o exame; beba água conforme permitido. Pode haver um pouco de sangue na urina no mesmo dia — avise a equipe se aumentar, se não conseguir urinar ou se tiver febre de 38°C ou mais. Pergunte antes quais medicamentos deve suspender (ex.: anticoagulantes) e por quanto tempo."
+  },
+  {
+    "id": "faq-bexiga-bcg-01",
+    "category": "efeitos_colaterais",
+    "cancer_types": ["BLADDER"],
+    "title": "Terapia com BCG na bexiga — efeitos comuns e cuidados",
+    "content": "O BCG intravesical é um tratamento instilado na bexiga para certos tumores superficiais. É frequente ardor ao urinar, urgência e aumento da frequência urinária por alguns dias. Beba líquidos conforme orientação. Após a aplicação, siga o tempo de espera para urinar que a enfermagem indicar e lave bem as mãos após usar o banheiro. Se tiver febre de 38°C ou mais, calafrios intensos ou dor forte no baixo ventre, procure avaliação imediata no serviço de emergência — pode ser reação que precisa de tratamento. Não interrompa o esquema sem falar com o urologista."
+  },
+  {
+    "id": "faq-bexiga-turbt-01",
+    "category": "cuidados",
+    "cancer_types": ["BLADDER"],
+    "title": "Cuidados após ressecção de tumor na bexiga (TURBT)",
+    "content": "Após a ressecção transuretral (TURBT), é comum urina rosada ou com pouco sangue nos primeiros dias. Mantenha hidratação conforme orientação; repouse se o médico pedir. Use analgésicos apenas os prescritos. Retorne ao hospital se não conseguir urinar, se o sangramento piorar muito, se tiver febre de 38°C ou mais, dor forte no baixo ventre ou calafrios. Evite esforço pesado enquanto estiver com sangue visível na urina, salvo liberação médica. Comparecer aos retornos e ao patologista conforme agendado."
+  },
+  {
+    "id": "faq-bexiga-sintomas-01",
+    "category": "efeitos_colaterais",
+    "cancer_types": ["BLADDER"],
+    "title": "Ardor, urgência e infecção urinária durante o tratamento",
+    "content": "Ardor e vontade súbita de urinar podem ser irritação da bexiga, efeito de medicamentos ou infecção urinária. Beba água regularmente; não segure urina por muito tempo; mantenha higiene genital. Se aparecer febre de 38°C ou mais, dor no lombo, náuseas ou mal-estar forte, procure avaliação — pode ser infecção que precisa de antibiótico. Não use antibiótico por conta própria. Relate todos os sintomas ao urologista ou à enfermagem de referência."
   }
 ]
