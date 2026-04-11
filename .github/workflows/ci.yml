@@ -200,6 +200,12 @@ jobs:
       - name: Run Prisma migrations
         run: npx prisma migrate deploy
 
+      - name: Verify clinical protocol snapshot matches templates
+        working-directory: ${{ github.workspace }}
+        run: |
+          cd backend && npm run export-protocol-snapshot && cd ..
+          git diff --exit-code shared/clinical-protocol-snapshot.v1.json
+
       - name: Type check
         run: npm run type-check
 

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PatientSummaryCard } from './patient-summary-card';
-import { JOURNEY_STAGE_LABELS } from '@/lib/utils/journey-stage';
+import { journeyStageDisplayLabel } from '@/lib/utils/journey-stage';
 
 interface PatientOverviewTabProps {
   patient: PatientDetail;
@@ -100,8 +100,10 @@ export function PatientOverviewTab({ patient }: PatientOverviewTabProps) {
               </label>
               <div className="mt-1">
                 <Badge variant="outline">
-                  {JOURNEY_STAGE_LABELS[patient.currentStage] ||
-                    patient.currentStage}
+                  {journeyStageDisplayLabel({
+                    status: patient.status,
+                    currentStage: patient.currentStage,
+                  })}
                 </Badge>
               </div>
             </div>

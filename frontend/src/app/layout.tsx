@@ -1,10 +1,25 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 import { Providers } from './providers';
 import { Toaster } from 'sonner';
 
-const inter = Inter({ subsets: ['latin'] });
+// Inter via arquivos locais — build não depende de Google Fonts (CI/Docker).
+const inter = localFont({
+  src: [
+    {
+      path: '../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2',
+      weight: '100 900',
+      style: 'normal',
+    },
+    {
+      path: '../../node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2',
+      weight: '100 900',
+      style: 'normal',
+    },
+  ],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Plataforma Oncológica - ONCONAV',

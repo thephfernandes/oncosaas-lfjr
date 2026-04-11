@@ -49,3 +49,21 @@ export function requiresCurrentTreatmentField(
   const s = String(stage).trim().toUpperCase() as JourneyStage;
   return s === 'TREATMENT' || s === 'FOLLOW_UP' || s === 'PALLIATIVE';
 }
+
+/**
+ * Rótulo de estágio da jornada para exibição.
+ * `PatientStatus.PALLIATIVE_CARE` (cadastro) e `JourneyStage` (etapa da navegação) são campos
+ * independentes no backend — podem divergir (ex.: seguimento com linha de cuidado paliativo).
+ * Quando isso ocorre, o sufixo evita parecer erro entre seção "Tratamento Paliativo" e a etapa.
+ */
+export function journeyStageDisplayLabel(input: {
+  status: string;
+  currentStage: JourneyStage | string | null | undefined;
+}): string {
+  const stage = (input.currentStage || 'SCREENING') as JourneyStage;
+  const base = JOURNEY_STAGE_LABELS[stage] ?? String(stage);
+  if (input.status === 'PALLIATIVE_CARE' && stage !== 'PALLIATIVE') {
+    return `${base} (cuidados paliativos)`;
+  }
+  return base;
+}

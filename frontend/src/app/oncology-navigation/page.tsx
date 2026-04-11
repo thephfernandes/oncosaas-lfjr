@@ -47,6 +47,7 @@ import { useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   JOURNEY_STAGE_LABELS,
   JOURNEY_STAGES,
+  journeyStageDisplayLabel,
   type JourneyStage,
 } from '@/lib/utils/journey-stage';
 import {
@@ -80,7 +81,6 @@ const CANCER_TYPE_LABELS: Record<string, string> = {
   ...Object.fromEntries(
     Object.entries(BASE_CANCER_TYPE_LABELS).map(([k, v]) => [k, `Câncer de ${v}`])
   ),
-  palliative_care: 'Tratamento Paliativo',
 };
 
 /** Normaliza tipo de câncer para a chave canônica (ex.: pulmão → lung) para agrupamento e label. */
@@ -165,6 +165,11 @@ export default function OncologyNavigationPage() {
       )
         return true;
 
+      // Linha de cuidado paliativo (status de cadastro — não é tipo de tumor)
+      if (term.includes('paliat') && patient.status === 'PALLIATIVE_CARE') {
+        return true;
+      }
+
       // Buscar por email
       if (patient.email?.toLowerCase().includes(term)) return true;
 
@@ -183,44 +188,34 @@ export default function OncologyNavigationPage() {
     });
   }, [patients, debouncedSearchTerm]);
 
-  // Agrupar pacientes por tipo de câncer (após filtro de busca)
-  // Pacientes em tratamento paliativo são agrupados separadamente
+  // Agrupar por tipo de tumor (diagnóstico / cancerType). Cuidados paliativos são
+  // fase (JourneyStage) + status (PALLIATIVE_CARE), não um tipo de tumor — o
+  // badge no card indica linha paliativa.
   const patientsByCancerType = useMemo(() => {
     if (!filteredPatients) return {};
 
     const grouped: Record<string, Patient[]> = {};
 
-    filteredPatients.forEach((patient) => {
-      // Se paciente está em tratamento paliativo, agrupar separadamente
-      if (patient.status === 'PALLIATIVE_CARE') {
-        if (!grouped['palliative_care']) {
-          grouped['palliative_care'] = [];
-        }
-        // Evitar duplicatas
-        if (!grouped['palliative_care'].find((p) => p.id === patient.id)) {
-          grouped['palliative_care'].push(patient);
-        }
-        return; // Não adicionar em outros grupos
+    const addPatient = (key: string, patient: Patient): void => {
+      if (!grouped[key]) {
+        grouped[key] = [];
       }
+      if (!grouped[key].find((p) => p.id === patient.id)) {
+        grouped[key].push(patient);
+      }
+    };
 
-      // Verificar cancerDiagnoses primeiro
+    filteredPatients.forEach((patient) => {
       if (patient.cancerDiagnoses && patient.cancerDiagnoses.length > 0) {
         patient.cancerDiagnoses.forEach((diagnosis) => {
           const cancerType = normalizeCancerTypeKey(diagnosis.cancerType);
-          if (!grouped[cancerType]) {
-            grouped[cancerType] = [];
-          }
-          // Evitar duplicatas
-          if (!grouped[cancerType].find((p) => p.id === patient.id)) {
-            grouped[cancerType].push(patient);
-          }
+          addPatient(cancerType, patient);
         });
       } else if (patient.cancerType) {
         const cancerType = normalizeCancerTypeKey(patient.cancerType);
-        if (!grouped[cancerType]) {
-          grouped[cancerType] = [];
-        }
-        grouped[cancerType].push(patient);
+        addPatient(cancerType, patient);
+      } else {
+        addPatient('other', patient);
       }
     });
 
@@ -265,7 +260,7 @@ export default function OncologyNavigationPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar por nome, tipo de câncer, estágio, email ou telefone..."
+              placeholder="Buscar por nome, tipo de tumor, estágio, paliativo, email ou telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
@@ -318,7 +313,7 @@ export default function OncologyNavigationPage() {
             {/* Filtro por tipo de câncer */}
             <div className="bg-white rounded-lg shadow-sm p-4 border">
               <h2 className="text-lg font-semibold mb-3">
-                Filtrar por Tipo de Câncer
+                Filtrar por tipo de tumor
               </h2>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -350,7 +345,7 @@ export default function OncologyNavigationPage() {
               </div>
             </div>
 
-            {/* Lista de pacientes por tipo de câncer */}
+            {/* Lista de pacientes por tipo de tumor */}
             {(selectedCancerType ? [selectedCancerType] : cancerTypes).map(
               (cancerType) => {
                 const typePatients = patientsByCancerType[cancerType] || [];
@@ -419,7 +414,7 @@ function PatientNavigationCard({
     { stepKey: string; stepName: string; stepDescription?: string; isRequired: boolean; existingCount: number }[]
   >([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const [createStage, setCreateStage] = useState<string | null>(null);
+  const [createStage, setCreateStage] = useState<JourneyStage | null>(null);
   const [activeDragStepId, setActiveDragStepId] = useState<string | null>(null);
 
   const createFromTemplateMutation = useMutation({
@@ -597,7 +592,7 @@ function PatientNavigationCard({
                 <h3 className="font-semibold text-lg">{patient.name}</h3>
                 {isPalliativeCare && (
                   <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
-                    💜 Tratamento Paliativo
+                    Cuidados paliativos (linha de cuidado)
                   </span>
                 )}
               </div>
@@ -605,7 +600,10 @@ function PatientNavigationCard({
                 <span>
                   Etapa atual:{' '}
                   <strong>
-                    {JOURNEY_STAGE_LABELS[currentStage] || currentStage}
+                    {journeyStageDisplayLabel({
+                      status: patient.status,
+                      currentStage: patient.currentStage,
+                    })}
                   </strong>
                 </span>
                 <span>
