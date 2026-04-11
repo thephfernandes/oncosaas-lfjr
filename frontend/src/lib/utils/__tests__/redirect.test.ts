@@ -17,5 +17,7 @@ describe('getSafeRedirectTarget', () => {
   it('blocks unsafe external/protocol-relative redirects', () => {
     expect(getSafeRedirectTarget('https://evil.site')).toBe('/dashboard');
     expect(getSafeRedirectTarget('//evil.site')).toBe('/dashboard');
+    expect(getSafeRedirectTarget('/\\evil')).toBe('/dashboard');
+    expect(getSafeRedirectTarget('/%5Cevil')).toBe('/dashboard');
   });
 });

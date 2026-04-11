@@ -16,6 +16,8 @@ import {
 import { NurseAssistPanel } from './nurse-assist-panel';
 import type { NurseAssistResponse } from '@/lib/api/conversations';
 import { conversationsApi } from '@/lib/api/conversations';
+import { AgentSuggestionCard } from '@/components/chat/agent-suggestion-card';
+import type { SuggestionAction, SuggestionStatus } from '@/lib/api/messages';
 
 interface Message {
   id: string;
@@ -24,10 +26,20 @@ interface Message {
   timestamp: Date;
   type?: 'text' | 'audio';
   audioUrl?: string;
+  suggestedResponse?: string | null;
+  suggestionStatus?: SuggestionStatus | null;
+}
+
+interface SuggestionActionPayload {
+  messageId: string;
+  patientId: string;
+  action: SuggestionAction;
+  editedText?: string;
 }
 
 interface ConversationViewProps {
   conversationId?: string | null;
+  patientId?: string;
   patientName: string;
   patientInfo: {
     cancerType: string;
@@ -49,10 +61,13 @@ interface ConversationViewProps {
   isSending?: boolean;
   assumedBy?: string | null;
   assumedAt?: Date | null;
+  onSuggestionAction?: (payload: SuggestionActionPayload) => void;
+  suggestionLoadingId?: string | null;
 }
 
 export function ConversationView({
   conversationId,
+  patientId,
   patientName,
   patientInfo,
   messages,
@@ -65,6 +80,8 @@ export function ConversationView({
   isSending = false,
   assumedBy,
   assumedAt,
+  onSuggestionAction,
+  suggestionLoadingId,
 }: ConversationViewProps) {
   const [messageInput, setMessageInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -228,43 +245,71 @@ export function ConversationView({
         ) : (
           <>
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === 'patient' ? 'justify-start' : 'justify-end'}`}
-              >
+              <div key={message.id}>
                 <div
-                  className={`max-w-[70%] rounded-lg p-3 ${
-                    message.sender === 'patient'
-                      ? 'bg-gray-100'
-                      : message.sender === 'agent'
-                        ? 'bg-blue-100'
-                        : 'bg-green-100'
-                  }`}
+                  className={`flex ${message.sender === 'patient' ? 'justify-start' : 'justify-end'}`}
                 >
-                  <div className="text-xs font-semibold mb-1">
-                    {getSenderLabel(message.sender)}
-                  </div>
-                  {message.type === 'audio' && message.audioUrl ? (
-                    <audio
-                      controls
-                      className="w-full max-w-xs mt-1"
-                      src={message.audioUrl}
-                    >
-                      <span className="text-sm text-muted-foreground">
-                        {message.content || 'Mensagem de áudio'}
-                      </span>
-                    </audio>
-                  ) : (
-                    <div className="text-sm whitespace-pre-wrap break-words">
-                      {message.content}
+                  <div
+                    className={`max-w-[70%] rounded-lg p-3 ${
+                      message.sender === 'patient'
+                        ? 'bg-gray-100'
+                        : message.sender === 'agent'
+                          ? 'bg-blue-100'
+                          : 'bg-green-100'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold mb-1">
+                      {getSenderLabel(message.sender)}
                     </div>
-                  )}
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {format(new Date(message.timestamp), 'dd/MM/yyyy HH:mm', {
-                      locale: ptBR,
-                    })}
+                    {message.type === 'audio' && message.audioUrl ? (
+                      <audio
+                        controls
+                        className="w-full max-w-xs mt-1"
+                        src={message.audioUrl}
+                      >
+                        <span className="text-sm text-muted-foreground">
+                          {message.content || 'Mensagem de áudio'}
+                        </span>
+                      </audio>
+                    ) : (
+                      <div className="text-sm whitespace-pre-wrap break-words">
+                        {message.content}
+                      </div>
+                    )}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(message.timestamp), 'dd/MM/yyyy HH:mm', {
+                        locale: ptBR,
+                      })}
+                    </div>
                   </div>
                 </div>
+
+                {/* Card de sugestão do agente IA — exibido apenas para mensagens INBOUND com sugestão pendente */}
+                {message.sender === 'patient' &&
+                  message.suggestedResponse &&
+                  message.suggestionStatus === 'PENDING' &&
+                  onSuggestionAction &&
+                  patientId && (
+                    <div className="flex justify-start mt-1">
+                      <div className="max-w-[70%] w-full">
+                        <AgentSuggestionCard
+                          messageId={message.id}
+                          patientId={patientId}
+                          suggestedText={message.suggestedResponse}
+                          isLoading={suggestionLoadingId === message.id}
+                          onAccept={(msgId, pid) =>
+                            onSuggestionAction({ messageId: msgId, patientId: pid, action: 'ACCEPT' })
+                          }
+                          onEdit={(msgId, pid, text) =>
+                            onSuggestionAction({ messageId: msgId, patientId: pid, action: 'EDIT', editedText: text })
+                          }
+                          onReject={(msgId, pid) =>
+                            onSuggestionAction({ messageId: msgId, patientId: pid, action: 'REJECT' })
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
               </div>
             ))}
             {/* Elemento invisível para scroll automático */}

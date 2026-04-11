@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api/client';
 
 interface AuthState {
   user: User | null;
+  /** Sempre null: access JWT fica em cookie HttpOnly na API; espelho opcional só para middleware Next. */
   token: string | null;
   isAuthenticated: boolean;
   isInitializing: boolean;
@@ -16,6 +17,9 @@ interface AuthState {
   setToken: (token: string) => void;
   initialize: () => void;
 }
+
+/** Evita N chamadas paralelas a GET /auth/profile (rate limit / tempestade no Strict Mode). */
+let initializeInFlight: Promise<void> | null = null;
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -29,84 +33,61 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
 
-    set({ isInitializing: true });
+    if (initializeInFlight) {
+      return;
+    }
 
-    const token = localStorage.getItem('auth_token');
-    const userStr = localStorage.getItem('user');
-    const tenantId = localStorage.getItem('tenant_id');
+    initializeInFlight = (async () => {
+      set({ isInitializing: true });
 
-    // userStr deve ser JSON válido (objeto); evita JSON.parse("") ou dados corrompidos
-    const isUserStrValid =
-      userStr && typeof userStr === 'string' && userStr.trim().startsWith('{');
+      const userStr = localStorage.getItem('user');
+      const tenantId = localStorage.getItem('tenant_id');
 
-    if (token && isUserStrValid && tenantId) {
+      const isUserStrValid =
+        userStr && typeof userStr === 'string' && userStr.trim().startsWith('{');
+
+      if (!isUserStrValid || !tenantId) {
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isInitializing: false,
+        });
+        return;
+      }
+
       try {
-        // Verificar se o token expirou
-        if (apiClient.isTokenExpired()) {
-          const refreshToken = apiClient.getRefreshToken();
-          if (refreshToken) {
-            // Tentar renovar silenciosamente em background
-            apiClient
-              .post<{ access_token: string; refresh_token: string }>(
-                '/auth/refresh',
-                { refresh_token: refreshToken }
-              )
-              .then((res) => {
-                apiClient.setToken(res.access_token);
-                if (res.refresh_token) {
-                  apiClient.setRefreshToken(res.refresh_token);
-                }
-                const user = JSON.parse(userStr);
-                apiClient.setTenantId(tenantId);
-                set({
-                  user,
-                  token: res.access_token,
-                  isAuthenticated: true,
-                  isInitializing: false,
-                });
-                void authApi.refreshSessionUser().then((merged) => {
-                  if (merged) {
-                    set({ user: merged });
-                  }
-                });
-              })
-              .catch(() => {
-                apiClient.clearAuth();
-                set({
-                  user: null,
-                  token: null,
-                  isAuthenticated: false,
-                  isInitializing: false,
-                });
-              });
-            // Mantém inicializando enquanto o refresh ocorre em background
-            return;
-          }
+        JSON.parse(userStr);
+      } catch {
+        apiClient.clearAuth();
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isInitializing: false,
+        });
+        return;
+      }
 
-          apiClient.clearAuth();
+      apiClient.setTenantId(tenantId);
+
+      try {
+        const merged = await authApi.refreshSessionUser();
+        if (merged) {
           set({
-            user: null,
+            user: merged,
             token: null,
-            isAuthenticated: false,
+            isAuthenticated: true,
             isInitializing: false,
           });
           return;
         }
-
-        const user = JSON.parse(userStr);
-        apiClient.setToken(token);
-        apiClient.setTenantId(tenantId);
-
+        apiClient.clearAuth();
         set({
-          user,
-          token,
-          isAuthenticated: true,
+          user: null,
+          token: null,
+          isAuthenticated: false,
           isInitializing: false,
-        });
-        void authApi.refreshSessionUser().then((merged) => {
-          if (merged) {
-            set({ user: merged });
-          }
         });
       } catch {
         apiClient.clearAuth();
@@ -117,14 +98,9 @@ export const useAuthStore = create<AuthState>((set) => ({
           isInitializing: false,
         });
       }
-    } else {
-      set({
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        isInitializing: false,
-      });
-    }
+    })().finally(() => {
+      initializeInFlight = null;
+    });
   },
 
   login: async (email: string, password: string) => {
@@ -132,7 +108,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     set({
       user: response.user,
-      token: response.access_token,
+      token: null,
       isAuthenticated: true,
       isInitializing: false,
     });
@@ -143,7 +119,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     set({
       user: response.user,
-      token: response.access_token,
+      token: null,
       isAuthenticated: true,
       isInitializing: false,
     });
@@ -164,13 +140,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setToken: (token: string) => {
-    set({ token, isAuthenticated: true });
+    apiClient.setMiddlewareRouteMirrorCookie(token);
+    set({ token: null, isAuthenticated: true });
   },
 }));
 
-// Keep the Zustand token in sync when the API client silently refreshes it.
-// Registered once at module scope so it never accumulates on re-mounts.
-// This ensures useSocket (and other token consumers) reconnect with the new token.
-apiClient.onTokenRefreshed((newToken) => {
-  useAuthStore.setState({ token: newToken, isAuthenticated: true });
+apiClient.onTokenRefreshed(() => {
+  useAuthStore.setState({ isAuthenticated: true });
 });

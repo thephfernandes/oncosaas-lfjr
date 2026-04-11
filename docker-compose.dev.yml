@@ -116,6 +116,8 @@ services:
       - ./frontend/.env
     environment:
       NODE_ENV: development
+      BACKEND_URL: http://backend:3002
+      NEXT_PUBLIC_USE_RELATIVE_API: 'true'
     command: npm run dev
     develop:
       watch:

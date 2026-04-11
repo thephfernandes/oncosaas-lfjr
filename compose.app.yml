@@ -45,6 +45,8 @@ services:
       - ./frontend/.env
     environment:
       NODE_ENV: ${NODE_ENV:-production}
+      BACKEND_URL: http://backend:3002
+      NEXT_PUBLIC_USE_RELATIVE_API: 'true'
 
   ai-service:
     image: ${ECR_REGISTRY:-oncosaas}/oncosaas-ai-service:${IMAGE_TAG:-latest}

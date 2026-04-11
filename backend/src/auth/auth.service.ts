@@ -184,6 +184,13 @@ export class AuthService {
     }
   }
 
+  /** Ticket de uso único (45s) para handshake Socket.io sem expor JWT em JSON ao browser. */
+  async issueSocketTicket(accessJwt: string): Promise<string> {
+    const ticket = crypto.randomBytes(24).toString('hex');
+    await this.redisService.set(`wst:${ticket}`, accessJwt, 45);
+    return ticket;
+  }
+
   private async generateRefreshToken(userId: string): Promise<string> {
     const token = crypto.randomBytes(40).toString('hex');
     await this.redisService.set(
@@ -343,11 +350,9 @@ export class AuthService {
     const ttl = 60 * 60; // 1 hora
     await this.redisService.set(`prt:${token}`, user.id, ttl);
 
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const resetLink = `${frontendUrl}/reset-password/${token}`;
-
-    this.logger.log(`[DEV] Password reset link for ${email}: ${resetLink}`);
+    this.logger.log(
+      `[DEV] Password reset requested for ${email} (token stored in Redis; do not log tokens)`
+    );
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

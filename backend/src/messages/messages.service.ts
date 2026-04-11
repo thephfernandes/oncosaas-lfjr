@@ -1,7 +1,13 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
+import { UpdateSuggestionDto } from './dto/update-suggestion.dto';
 import { ChannelType, Message } from '@generated/prisma/client';
 import { MessagesGateway } from '../gateways/messages.gateway';
 import { AgentService } from '../agent/agent.service';
@@ -272,6 +278,91 @@ export class MessagesService {
     }
 
     return { count: unassumedMessages.length };
+  }
+
+  /**
+   * Avaliar sugestão do agente IA em modo assistido.
+   * ACCEPT → envia sem edição; EDIT → envia texto editado; REJECT → descarta.
+   */
+  async updateSuggestion(
+    id: string,
+    dto: UpdateSuggestionDto,
+    tenantId: string,
+    userId: string
+  ): Promise<Message> {
+    const message = await this.prisma.message.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!message) {
+      throw new NotFoundException(`Message with ID ${id} not found`);
+    }
+
+    if (!message.suggestedResponse) {
+      throw new BadRequestException(
+        `Message ${id} has no pending suggestion`
+      );
+    }
+
+    if (message.suggestionStatus && message.suggestionStatus !== 'PENDING') {
+      throw new BadRequestException(
+        `Suggestion for message ${id} has already been evaluated (status: ${message.suggestionStatus})`
+      );
+    }
+
+    if (dto.action === 'EDIT' && !dto.editedText?.trim()) {
+      throw new BadRequestException(
+        'editedText is required when action is EDIT'
+      );
+    }
+
+    const textToSend =
+      dto.action === 'EDIT' ? dto.editedText! : message.suggestedResponse;
+
+    const suggestionStatusMap = {
+      ACCEPT: 'ACCEPTED',
+      EDIT: 'EDITED',
+      REJECT: 'REJECTED',
+    } as const;
+
+    const updatedMessage = await this.prisma.message.update({
+      where: { id, tenantId },
+      data: {
+        suggestionStatus: suggestionStatusMap[dto.action],
+        assumedBy: userId,
+        assumedAt: new Date(),
+        processedBy: 'NURSING',
+      },
+      include: {
+        patient: {
+          select: { id: true, name: true, phone: true },
+        },
+      },
+    });
+
+    // Emitir evento WebSocket para atualizar o chat em tempo real
+    this.messagesGateway.emitMessageUpdate(tenantId, updatedMessage);
+
+    // Quando ACCEPT ou EDIT: enviar resposta ao paciente via agentService
+    if (dto.action !== 'REJECT') {
+      setImmediate(() => {
+        this.agentService
+          .sendAssistedReply(
+            message.patientId,
+            tenantId,
+            message.conversationId ?? undefined,
+            textToSend
+          )
+          .catch((error) =>
+            this.logger.error(
+              `Failed to send assisted reply for message ${id}`,
+              error instanceof Error ? error.stack : String(error)
+            )
+          );
+      });
+    }
+
+    return updatedMessage;
   }
 
   async getConversation(

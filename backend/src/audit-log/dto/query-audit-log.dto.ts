@@ -6,6 +6,8 @@ import {
   IsInt,
   Min,
   Max,
+  IsUUID,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AuditAction } from '@generated/prisma/client';
@@ -13,14 +15,15 @@ import { AuditAction } from '@generated/prisma/client';
 export class QueryAuditLogDto {
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   resourceType?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID('4')
   resourceId?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID('4')
   userId?: string;
 
   @IsOptional()

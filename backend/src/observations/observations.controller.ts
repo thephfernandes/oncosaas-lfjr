@@ -18,9 +18,20 @@ import { CreateObservationDto } from './dto/create-observation.dto';
 import { UpdateObservationDto } from './dto/update-observation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@generated/prisma/client';
 
 @Controller('observations')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Roles(
+  UserRole.ADMIN,
+  UserRole.ONCOLOGIST,
+  UserRole.DOCTOR,
+  UserRole.NURSE_CHIEF,
+  UserRole.NURSE,
+  UserRole.COORDINATOR
+)
 export class ObservationsController {
   constructor(private readonly observationsService: ObservationsService) {}
 

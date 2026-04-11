@@ -35,9 +35,9 @@ export class FHIRSchedulerService {
           continue; // Pular se integração não habilitada
         }
 
-        // Sincronizar apenas se configurado para pull ou bidirectional
+        // Push local → EHR: apenas push ou bidirectional
         if (
-          config.syncDirection === 'pull' ||
+          config.syncDirection === 'push' ||
           config.syncDirection === 'bidirectional'
         ) {
           await this.syncService.syncUnsyncedObservations(config, 50);

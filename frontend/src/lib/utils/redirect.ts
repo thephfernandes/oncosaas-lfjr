@@ -7,10 +7,24 @@ export function getSafeRedirectTarget(redirectParam: string | null): string {
     return '/dashboard';
   }
 
-  // Allow only in-app absolute paths and block protocol-relative/open redirects.
-  if (!redirectParam.startsWith('/') || redirectParam.startsWith('//')) {
+  const decoded = (() => {
+    try {
+      return decodeURIComponent(redirectParam);
+    } catch {
+      return redirectParam;
+    }
+  })();
+
+  // Apenas paths relativos ao app; bloqueia open redirect e esquemas.
+  if (
+    !decoded.startsWith('/') ||
+    decoded.startsWith('//') ||
+    decoded.includes(':\\') ||
+    decoded.includes('\\') ||
+    /[\u0000-\u001f\u007f]/.test(decoded)
+  ) {
     return '/dashboard';
   }
 
-  return redirectParam;
+  return decoded;
 }

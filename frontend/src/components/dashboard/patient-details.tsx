@@ -19,6 +19,7 @@ import { OncologyNavigationPanel } from './oncology-navigation-panel';
 import { PatientEditDialog } from '@/components/patients/patient-edit-dialog';
 import { Button } from '@/components/ui/button';
 import { JOURNEY_STAGE_LABELS } from '@/lib/utils/journey-stage';
+import { maskCpf, maskPhone } from '@/lib/utils/mask-sensitive';
 
 interface PatientDetailsProps {
   patient: Patient | null;
@@ -159,7 +160,7 @@ export function PatientDetails({
             <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm text-gray-500">CPF</p>
-              <p className="font-mono text-sm">{patient.cpf}</p>
+              <p className="font-mono text-sm">{maskCpf(patient.cpf)}</p>
             </div>
           </div>
         )}
@@ -169,7 +170,7 @@ export function PatientDetails({
             <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm text-gray-500">Telefone</p>
-              <p className="font-mono text-sm">{patient.phone}</p>
+              <p className="font-mono text-sm">{maskPhone(patient.phone)}</p>
             </div>
           </div>
         )}

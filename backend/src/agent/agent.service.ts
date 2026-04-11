@@ -1470,4 +1470,25 @@ export class AgentService {
       return { cleared: false };
     }
   }
+
+  /**
+   * Send an assisted reply — called when the nurse accepts or edits an AI suggestion.
+   * Delegates to ChannelGatewayService so the message is sent via WhatsApp
+   * and persisted as an OUTBOUND NURSING message.
+   */
+  async sendAssistedReply(
+    patientId: string,
+    tenantId: string,
+    conversationId: string | undefined,
+    content: string
+  ): Promise<void> {
+    await this.channelGateway.sendMessage(
+      patientId,
+      tenantId,
+      content,
+      undefined,
+      conversationId,
+      { structuredData: undefined, alertTriggered: false }
+    );
+  }
 }

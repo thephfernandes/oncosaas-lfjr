@@ -1,15 +1,19 @@
 import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@generated/prisma/client';
 import { AuditLogService } from './audit-log.service';
 import { QueryAuditLogDto } from './dto/query-audit-log.dto';
 
 @Controller('audit-logs')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 export class AuditLogController {
   constructor(private readonly auditLogService: AuditLogService) {}
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.COORDINATOR)
   async findAll(@Request() req, @Query() query: QueryAuditLogDto) {
     return this.auditLogService.findAll(req.user.tenantId, {
       resourceType: query.resourceType,
@@ -24,6 +28,7 @@ export class AuditLogController {
   }
 
   @Get('summary')
+  @Roles(UserRole.ADMIN, UserRole.COORDINATOR)
   async getSummary(
     @Request() req,
     @Query('from') from: string,

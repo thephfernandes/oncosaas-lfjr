@@ -6,7 +6,6 @@ import {
   Body,
   HttpCode,
   HttpStatus,
-  Query,
 } from '@nestjs/common';
 import { DispositionFeedbackService } from './disposition-feedback.service';
 import { CreateDispositionFeedbackDto } from './dto/create-feedback.dto';
@@ -51,12 +50,8 @@ export class DispositionFeedbackController {
    */
   @Get('export')
   @Roles(UserRole.ADMIN)
-  export(
-    @CurrentUser() user: { tenantId: string },
-    @Query('all') all?: string
-  ) {
-    const tenantId = all === 'true' ? undefined : user.tenantId;
-    return this.service.exportTrainingData(tenantId);
+  export(@CurrentUser() user: { tenantId: string }) {
+    return this.service.exportTrainingData(user.tenantId);
   }
 
   /**

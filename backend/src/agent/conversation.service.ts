@@ -202,9 +202,13 @@ export class ConversationService {
       }),
     ]);
 
-    return this.prisma.conversation.findUniqueOrThrow({
-      where: { id: conversation.id },
+    const updated = await this.prisma.conversation.findFirst({
+      where: { id: conversation.id, tenantId },
     });
+    if (!updated) {
+      throw new NotFoundException(`Conversation ${conversationId} not found`);
+    }
+    return updated;
   }
 
   /**

@@ -38,6 +38,8 @@ services:
     environment:
       NODE_ENV: production
       HOSTNAME: "0.0.0.0"
+      BACKEND_URL: http://backend:3002
+      NEXT_PUBLIC_USE_RELATIVE_API: 'true'
     healthcheck:
       # Imagem distroless: node não está no PATH; usar caminho absoluto /nodejs/bin/node.
       # CMD exec form bypassa o ENTRYPOINT da imagem, então o PATH do container não é herdado.

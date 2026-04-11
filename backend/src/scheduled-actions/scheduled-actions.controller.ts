@@ -14,12 +14,23 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@generated/prisma/client';
 import { ScheduledActionsService } from './scheduled-actions.service';
 import { CreateScheduledActionDto } from './dto/create-scheduled-action.dto';
 import { QueryScheduledActionsDto } from './dto/query-scheduled-actions.dto';
 
 @Controller('scheduled-actions')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Roles(
+  UserRole.ADMIN,
+  UserRole.ONCOLOGIST,
+  UserRole.DOCTOR,
+  UserRole.NURSE_CHIEF,
+  UserRole.NURSE,
+  UserRole.COORDINATOR
+)
 export class ScheduledActionsController {
   constructor(
     private readonly scheduledActionsService: ScheduledActionsService

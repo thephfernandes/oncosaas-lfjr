@@ -410,11 +410,10 @@ Todas as rotas (exceto auth) exigem header: `Authorization: Bearer <jwt_token>`
 }
 ```
 
-**Login Response:**
+**Login Response (JSON):** somente `user`. O JWT de acesso é enviado em cookie HttpOnly (`Set-Cookie: access_token=...`), não no corpo — alinhado ao cliente web (Axios com `withCredentials`).
 
 ```json
 {
-  "access_token": "eyJhbGci...",
   "user": {
     "id": "uuid",
     "email": "...",
@@ -545,9 +544,9 @@ search         string  busca por nome, CPF ou telefone
 
 ### 7.1 Fluxo JWT
 
-1. `POST /auth/login` → retorna `access_token` (JWT) + dados do usuário
-2. Cliente envia `Authorization: Bearer <token>` em todas as requisições
-3. Backend valida com `JwtStrategy` (Passport.js)
+1. `POST /auth/login` → JSON com `user`; JWT em cookie **`access_token`** (HttpOnly) + refresh em cookie separado
+2. Cliente envia o JWT no **cookie** (navegador) e/ou `Authorization: Bearer <token>` (APIs/ferramentas); `JwtStrategy` aceita ambos
+3. WebSocket: `POST /auth/socket-ticket` com sessão por cookie → resposta `{ ticket }` (uso único no Redis); o cliente envia `ticket` no `auth` do Socket.io
 4. Payload do JWT: `{ sub: userId, email, tenantId, role }`
 
 ### 7.2 Guards

@@ -1,5 +1,8 @@
 import { apiClient } from './client';
 
+export type SuggestionStatus = 'PENDING' | 'ACCEPTED' | 'EDITED' | 'REJECTED';
+export type SuggestionAction = 'ACCEPT' | 'REJECT' | 'EDIT';
+
 export interface Message {
   id: string;
   tenantId: string;
@@ -17,6 +20,8 @@ export interface Message {
   structuredData: Record<string, unknown> | null;
   criticalSymptomsDetected: string[];
   alertTriggered: boolean;
+  suggestedResponse: string | null;
+  suggestionStatus: SuggestionStatus | null;
   assumedBy: string | null;
   assumedAt: string | null;
   createdAt: string;
@@ -25,6 +30,11 @@ export interface Message {
     name: string;
     phone: string;
   };
+}
+
+export interface UpdateSuggestionDto {
+  action: SuggestionAction;
+  editedText?: string;
 }
 
 export interface MessageCount {
@@ -80,6 +90,13 @@ export const messagesApi = {
       `/messages/patient/${patientId}/assume`,
       {}
     );
+  },
+
+  async updateSuggestion(
+    id: string,
+    dto: UpdateSuggestionDto
+  ): Promise<Message> {
+    return apiClient.patch<Message>(`/messages/${id}/suggestion`, dto);
   },
 
   async send(data: SendMessageDto): Promise<Message> {

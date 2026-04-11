@@ -24,10 +24,18 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ARG NEXT_PUBLIC_API_URL=http://localhost:3002
+# Build-time público (embutido no bundle). Ajuste por ambiente na CI ou docker build --build-arg.
+ARG NEXT_PUBLIC_API_URL=
 ARG NEXT_PUBLIC_WS_URL=ws://localhost:3002
+ARG NEXT_PUBLIC_USE_RELATIVE_API=true
+ARG NEXT_PUBLIC_API_PORT=3002
+# Destino do rewrite server-side (não vai ao bundle; usado em next.config na build).
+ARG BACKEND_URL=http://backend:3002
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_USE_RELATIVE_API=$NEXT_PUBLIC_USE_RELATIVE_API
+ENV NEXT_PUBLIC_API_PORT=$NEXT_PUBLIC_API_PORT
+ENV BACKEND_URL=$BACKEND_URL
 
 RUN npm run build
 

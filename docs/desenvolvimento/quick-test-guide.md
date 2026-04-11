@@ -17,11 +17,10 @@ curl -X POST http://localhost:3002/api/v1/auth/login \
   }'
 ```
 
-**Resposta**:
+**Resposta (JSON)** — apenas o usuário; o **JWT de acesso** vem no header **`Set-Cookie`** (`access_token`, HttpOnly), não no corpo.
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": "...",
     "email": "admin@hospitalteste.com",
@@ -32,7 +31,22 @@ curl -X POST http://localhost:3002/api/v1/auth/login \
 }
 ```
 
-**Salve o `access_token` e o `tenantId` para usar nas próximas requisições!**
+**Como autenticar as próximas chamadas (curl)**:
+
+1. **Cookie jar (recomendado):** grave os cookies no login e reenvie nas requisições seguintes.
+
+```bash
+curl -c onconav.cookies -X POST http://localhost:3002/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@hospitalteste.com","password":"senha123"}'
+
+curl -b onconav.cookies -X GET http://localhost:3002/api/v1/patients \
+  -H "X-Tenant-Id: bae0e239-a98e-48dc-b12f-e90bdec6ad81"
+```
+
+2. **`Authorization: Bearer`** — o backend aceita JWT no header **ou** no cookie. Para usar Bearer, copie o valor do cookie `access_token` após o login (ou use `-v` no primeiro `curl` e extraia o token).
+
+**Guarde o `tenantId` retornado em `user` para o header `X-Tenant-Id`.**
 
 ---
 
@@ -46,7 +60,7 @@ curl -X GET http://localhost:3002/api/v1/patients \
 
 **Substitua**:
 
-- `{access_token}` pelo token recebido no login
+- `{access_token}` pelo JWT (cookie `access_token` após o login, ou Bearer)
 - `{tenantId}` pelo tenantId do usuário (ex: `bae0e239-a98e-48dc-b12f-e90bdec6ad81`)
 
 **Exemplo completo**:
@@ -206,11 +220,10 @@ curl -X POST http://localhost:3002/api/v1/alerts \
 Para facilitar os testes, você pode criar variáveis:
 
 ```bash
-# Após fazer login, salve o token e tenantId
+# Após obter o JWT (do cookie access_token ou copiando do Set-Cookie) e o tenantId do user:
 export ACCESS_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 export TENANT_ID="bae0e239-a98e-48dc-b12f-e90bdec6ad81"
 
-# Agora use nas requisições:
 curl -X GET http://localhost:3002/api/v1/patients \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "X-Tenant-Id: $TENANT_ID"
@@ -223,7 +236,7 @@ curl -X GET http://localhost:3002/api/v1/patients \
 ### Postman
 
 1. Importar collection de endpoints
-2. Configurar variáveis de ambiente (`access_token`, `tenant_id`)
+2. Configurar variáveis ou **salvar cookies** após `POST /auth/login` (Postman/Insomnia suportam cookies HttpOnly automaticamente no mesmo domínio)
 3. Testar todos os endpoints facilmente
 
 ### Insomnia

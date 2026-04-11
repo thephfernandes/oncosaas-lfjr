@@ -12,6 +12,8 @@ import { Logger, UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
+import { resolveSocketJwt } from '../common/utils/ws-jwt.resolver';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -35,15 +37,13 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private redisService: RedisService
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
-      // Autenticação via token JWT no handshake
-      const token =
-        client.handshake.auth?.token ||
-        client.handshake.headers?.authorization?.split(' ')[1];
+      const token = await resolveSocketJwt(client, this.redisService);
 
       if (!token) {
         this.logger.warn(`Client ${client.id} disconnected: No token provided`);
@@ -51,22 +51,14 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      // Verificar e decodificar token
       const jwtSecret = this.configService.get<string>('JWT_SECRET');
-      const isProduction =
-        this.configService.get<string>('NODE_ENV') === 'production';
-
-      if (isProduction && !jwtSecret) {
-        this.logger.error(
-          'JWT_SECRET must be configured in production environment'
-        );
+      if (!jwtSecret) {
+        this.logger.error('JWT_SECRET is not set; rejecting WebSocket connection');
         client.disconnect();
         return;
       }
 
-      const payload = this.jwtService.verify(token, {
-        secret: jwtSecret || 'your-secret-key',
-      });
+      const payload = this.jwtService.verify(token, { secret: jwtSecret });
 
       // Adicionar informações do usuário ao socket
       client.userId = payload.sub;

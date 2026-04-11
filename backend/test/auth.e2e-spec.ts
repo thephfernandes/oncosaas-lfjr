@@ -82,7 +82,7 @@ describe('Auth (e2e)', () => {
   // ─── POST /auth/login ────────────────────────────────────────────────────────
 
   describe('POST /auth/login', () => {
-    it('deve retornar 200 com access_token e refresh_token em login válido', async () => {
+    it('deve retornar 200 com user em login válido (JWT em cookie, não no JSON)', async () => {
       mockPrisma.user.findFirst.mockResolvedValue({
         id: 'user-1',
         email: 'nurse@example.com',
@@ -101,8 +101,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'nurse@example.com', password: 'senha123', tenantId: TENANT_ID });
 
       expect(status).toBe(200);
-      expect(body).toHaveProperty('access_token');
-      expect(body).toHaveProperty('refresh_token');
+      expect(body).not.toHaveProperty('access_token');
       expect(body.user.email).toBe('nurse@example.com');
       expect(body.user).not.toHaveProperty('password');
     });

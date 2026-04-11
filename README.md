@@ -53,6 +53,20 @@ cp ai-service/.env.example ai-service/.env
 
 2. Ajuste segredos e integrações por serviço (por exemplo: `backend/.env` para `JWT_SECRET` e `DATABASE_URL`; `ai-service/.env` para `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`).
 
+### Autenticação e sessão (cookies HttpOnly)
+
+- **Recomendação de segurança:** usar **`NEXT_PUBLIC_USE_RELATIVE_API=true`** + **`BACKEND_URL`** para o JWT ficar só em cookie **HttpOnly** na mesma origem do app e **não** depender do espelho legível **`auth_token`** (reduz impacto de XSS). Em desenvolvimento com Nest em HTTPS, alinhe `BACKEND_URL` ao protocolo do backend (ex.: `https://localhost:3002`).
+- **Dev local (Nest HTTPS + certificado autoassinado):** o proxy de `/api/v1` está em **`src/app/api/v1/[[...path]]/route.ts`** (não nos rewrites nativos do Next). O `fetch` usa um **Agent Undici** com `rejectUnauthorized: false` **apenas em `NODE_ENV !== 'production'`**, para aceitar cert local. Em produção o proxy usa verificação TLS normal — use certificados válidos ou HTTP interno (ex. Docker `http://backend:3002`).
+- O backend emite **refresh** (path `/api/v1/auth`) e **access** JWT em cookie **HttpOnly** com path `/` no host da API (inclui `/api/v1/*` e Socket.io). O cliente Axios **não** envia `Authorization: Bearer`; o JWT vai no cookie; use **`withCredentials: true`** (CORS com credenciais).
+- Com **`NEXT_PUBLIC_USE_RELATIVE_API=true`** e **`BACKEND_URL`** (ex.: `http://localhost:3002` ou `http://backend:3002` no Docker), o Next faz **rewrite** de `/api/v1/*` para o Nest: cookies ficam na **mesma origem** do app e o middleware valida o cookie **`access_token`** (HttpOnly). O espelho **`auth_token`** não é necessário nesse modo.
+- Com API **direta** na porta do Nest (`NEXT_PUBLIC_USE_RELATIVE_API=false`), o access token **não** é persistido em `localStorage`; pode manter-se um espelho **`auth_token`** (cookie legível) só para o middleware do Next, com **`JWT_SECRET`** em `frontend/.env`.
+- WebSocket continua tipicamente na URL do Nest (`NEXT_PUBLIC_WS_URL`); com API relativa, o cliente chama **`POST /api/v1/auth/socket-ticket`** (cookie de sessão) e envia o **`ticket`** opaco no `auth` do Socket.io — o JWT não vai no JSON da resposta HTTP.
+- Em produção, o `next.config` aplica **CSP** restritiva; `connect-src` inclui `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`, `NEXT_PUBLIC_CSP_CONNECT_EXTRA` e integrações declaradas. Em desenvolvimento o CSP não é aplicado (evita bloquear HMR); mantenha bibliotecas e `dangerouslySetInnerHTML` sob controlo — em produção a CSP ajuda a limitar XSS.
+- **Automação de browser / MCP:** trate sessões de login como postos com acesso clínico; não use credenciais reais ou dados de pacientes em fluxos automatizados em ambientes partilhados.
+- **Imagem Docker (build):** defina `ARG`/`ENV` na build — `NEXT_PUBLIC_*` e `BACKEND_URL` entram no `next build` (rewrite e bundle). Ex.: `docker build --build-arg BACKEND_URL=http://backend:3002 --build-arg NEXT_PUBLIC_USE_RELATIVE_API=true ...` (valores já têm padrão no `frontend/Dockerfile`).
+- **Exportação de dados:** CSV e relatórios com identificadores devem preferir **mascaramento** na UI; exportações completas só com **permissão** e, quando aplicável, **trilha de auditoria** no backend (evitar downloads não rastreados em postos compartilhados).
+- **Dependências:** rode `npm audit` no `frontend` e `backend` periodicamente e na CI; corrija vulnerabilidades críticas antes de releases.
+
 ## Subir com Docker (recomendado)
 
 ### Opção A: stack completa de desenvolvimento

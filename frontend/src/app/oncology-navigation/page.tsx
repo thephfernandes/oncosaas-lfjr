@@ -5,6 +5,7 @@ import { useDebounce } from '@/lib/utils/use-debounce';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { getApiUrl } from '@/lib/utils/api-config';
+import { buildSafeApiFileHref } from '@/lib/utils/safe-api-url';
 import { usePatients } from '@/hooks/usePatients';
 import {
   usePatientNavigationSteps,
@@ -112,13 +113,8 @@ export default function OncologyNavigationPage() {
   const router = useRouter();
   const { user, isAuthenticated, isInitializing, initialize } = useAuthStore();
 
-  // Obter URL da API dinamicamente (HTTP/HTTPS)
-  const apiUrl = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return getApiUrl();
-    }
-    return 'http://localhost:3002'; // Fallback para SSR
-  }, []);
+  /** Base da API para links de ficheiro (vazia = mesmo host com rewrite `/api/v1`). */
+  const apiUrl = useMemo(() => getApiUrl(), []);
 
   const { data: patients, isLoading: isLoadingPatients } = usePatients();
   const [selectedCancerType, setSelectedCancerType] = useState<string | null>(
@@ -1281,7 +1277,9 @@ function StepCard({ step, apiUrl, dragHandle }: StepCardProps) {
                     Arquivos anexados
                   </label>
                   <div className="space-y-1">
-                    {files.map((file: FileMetadata, index: number) => (
+                    {files.map((file: FileMetadata, index: number) => {
+                      const fileHref = buildSafeApiFileHref(apiUrl, file.path);
+                      return (
                       <div
                         key={index}
                         className="flex items-center gap-2 px-2 py-1 bg-gray-100 rounded text-sm"
@@ -1293,16 +1291,23 @@ function StepCard({ step, apiUrl, dragHandle }: StepCardProps) {
                         <span className="text-xs text-gray-500">
                           {formatFileSize(file.size)}
                         </span>
-                        <a
-                          href={`${apiUrl}${file.path}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-800"
-                        >
-                          Abrir
-                        </a>
+                        {fileHref ? (
+                          <a
+                            href={fileHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-800"
+                          >
+                            Abrir
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400" title="Link inválido">
+                            —
+                          </span>
+                        )}
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               )}
@@ -1407,7 +1412,9 @@ function StepCard({ step, apiUrl, dragHandle }: StepCardProps) {
                 <p className="text-sm font-medium text-gray-700 mb-1">
                   Arquivos Anexados:
                 </p>
-                {files.map((file: FileMetadata, index: number) => (
+                {files.map((file: FileMetadata, index: number) => {
+                  const fileHref = buildSafeApiFileHref(apiUrl, file.path);
+                  return (
                   <div
                     key={index}
                     className="flex items-center gap-2 px-2 py-1 bg-white rounded border border-gray-200 text-sm"
@@ -1417,16 +1424,23 @@ function StepCard({ step, apiUrl, dragHandle }: StepCardProps) {
                     <span className="text-xs text-gray-500">
                       {formatFileSize(file.size)}
                     </span>
-                    <a
-                      href={`${apiUrl}${file.path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:text-indigo-800 text-xs"
-                    >
-                      Abrir
-                    </a>
+                    {fileHref ? (
+                      <a
+                        href={fileHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 text-xs"
+                      >
+                        Abrir
+                      </a>
+                    ) : (
+                      <span className="text-xs text-gray-400" title="Link inválido">
+                        —
+                      </span>
+                    )}
                   </div>
-                ))}
+                );
+                })}
               </div>
             )}
 

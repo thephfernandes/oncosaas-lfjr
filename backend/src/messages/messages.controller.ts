@@ -12,6 +12,7 @@ import {
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
+import { UpdateSuggestionDto } from './dto/update-suggestion.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -163,5 +164,25 @@ export class MessagesController {
     @CurrentUser() user: any
   ) {
     return this.messagesService.assumeConversation(id, user.tenantId, user.id);
+  }
+
+  @Patch(':id/suggestion')
+  @Roles(
+    UserRole.NURSE,
+    UserRole.NURSE_CHIEF,
+    UserRole.ONCOLOGIST,
+    UserRole.ADMIN
+  )
+  updateSuggestion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSuggestionDto,
+    @CurrentUser() user: any
+  ) {
+    return this.messagesService.updateSuggestion(
+      id,
+      dto,
+      user.tenantId,
+      user.id
+    );
   }
 }

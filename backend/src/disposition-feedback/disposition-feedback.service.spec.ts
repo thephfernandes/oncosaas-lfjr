@@ -137,13 +137,13 @@ describe('DispositionFeedbackService', () => {
       expect(result[0].prediction_source).toBe('RULES');
     });
 
-    it('deve exportar sem filtro de tenant quando tenantId não fornecido', async () => {
+    it('deve sempre filtrar por tenantId no export', async () => {
       mockPrisma.clinicalDispositionFeedback.findMany.mockResolvedValue([]);
 
-      await service.exportTrainingData();
+      await service.exportTrainingData(TENANT);
 
       expect(mockPrisma.clinicalDispositionFeedback.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: {} })
+        expect.objectContaining({ where: { tenantId: TENANT } })
       );
     });
 

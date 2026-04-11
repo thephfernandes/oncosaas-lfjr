@@ -1,6 +1,8 @@
 // Global test setup
 // This file runs before all tests
 
+import 'reflect-metadata';
+
 // Mock environment variables
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';

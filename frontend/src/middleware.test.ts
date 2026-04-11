@@ -1,4 +1,8 @@
-import { describe, it, expect } from 'vitest';
+/** Ambiente Node evita falha `instanceof Uint8Array` do jose no jsdom. */
+// @vitest-environment node
+
+import { SignJWT } from 'jose';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { middleware } from './middleware';
 
@@ -16,45 +20,104 @@ const buildJwt = (exp: number) => {
   return `${header}.${payload}.signature`;
 };
 
-describe('middleware auth gating', () => {
-  it('allows public password recovery routes without session cookie', () => {
-    const forgotResponse = middleware(buildRequest('/forgot-password'));
-    const resetResponse = middleware(buildRequest('/reset-password/token-123'));
+describe('middleware auth gating (legacy, sem JWT_SECRET)', () => {
+  beforeEach(() => {
+    vi.stubEnv('JWT_SECRET', '');
+  });
+
+  it('allows public password recovery routes without session cookie', async () => {
+    const forgotResponse = await middleware(buildRequest('/forgot-password'));
+    const resetResponse = await middleware(buildRequest('/reset-password/token-123'));
 
     expect(forgotResponse.headers.get('location')).toBeNull();
     expect(resetResponse.headers.get('location')).toBeNull();
   });
 
-  it('redirects unauthenticated access to protected pages and preserves intent', () => {
-    const response = middleware(buildRequest('/dashboard'));
+  it('redirects unauthenticated access to protected pages and preserves intent', async () => {
+    const response = await middleware(buildRequest('/dashboard'));
     const location = response.headers.get('location');
 
     expect(location).toContain('/login');
     expect(location).toContain('redirect=%2Fdashboard');
   });
 
-  it('allows protected pages when session cookie is active', () => {
+  it('allows protected pages when session cookie is active', async () => {
     const validToken = buildJwt(Math.floor(Date.now() / 1000) + 60 * 5);
-    const response = middleware(
+    const response = await middleware(
       buildRequest('/dashboard', `auth_token=${validToken}`)
     );
     expect(response.headers.get('location')).toBeNull();
   });
 
-  it('rejects invalid token cookie values', () => {
-    const response = middleware(buildRequest('/dashboard', 'auth_token=invalid'));
+  it('rejects invalid token cookie values', async () => {
+    const response = await middleware(buildRequest('/dashboard', 'auth_token=invalid'));
     const location = response.headers.get('location');
 
     expect(location).toContain('/login');
   });
 
-  it('rejects expired auth tokens', () => {
+  it('rejects expired auth tokens', async () => {
     const expiredToken = buildJwt(Math.floor(Date.now() / 1000) - 60);
-    const response = middleware(
+    const response = await middleware(
       buildRequest('/dashboard', `auth_token=${expiredToken}`)
     );
     const location = response.headers.get('location');
 
     expect(location).toContain('/login');
+  });
+});
+
+describe('middleware com verificação de assinatura (JWT_SECRET)', () => {
+  const signingSecret = 'middleware-test-hs256-secret';
+
+  beforeEach(() => {
+    vi.stubEnv('JWT_SECRET', signingSecret);
+  });
+
+  it('aceita JWT assinado com o mesmo segredo', async () => {
+    const token = await new SignJWT({ sub: 'test' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('2h')
+      .sign(new TextEncoder().encode(signingSecret));
+
+    const response = await middleware(
+      buildRequest('/dashboard', `auth_token=${encodeURIComponent(token)}`)
+    );
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('aceita cookie access_token (HttpOnly no mesmo host) com JWT assinado', async () => {
+    const token = await new SignJWT({ sub: 'test' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('2h')
+      .sign(new TextEncoder().encode(signingSecret));
+
+    const response = await middleware(
+      buildRequest('/dashboard', `access_token=${encodeURIComponent(token)}`)
+    );
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('rejeita JWT assinado com outro segredo', async () => {
+    const token = await new SignJWT({ sub: 'test' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('2h')
+      .sign(new TextEncoder().encode('outro-segredo'));
+
+    const response = await middleware(
+      buildRequest('/dashboard', `auth_token=${encodeURIComponent(token)}`)
+    );
+    expect(response.headers.get('location')).toContain('/login');
+  });
+
+  it('rejeita JWT legado com assinatura fictícia quando JWT_SECRET está definido', async () => {
+    const fakeSigned = buildJwt(Math.floor(Date.now() / 1000) + 3600);
+    const response = await middleware(
+      buildRequest('/dashboard', `auth_token=${fakeSigned}`)
+    );
+    expect(response.headers.get('location')).toContain('/login');
   });
 });

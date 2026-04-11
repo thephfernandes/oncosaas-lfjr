@@ -17,6 +17,7 @@ import { patientsApi, Patient } from '@/lib/api/patients';
 import { dashboardApi, PendingAlert } from '@/lib/api/dashboard';
 import { Search, Download, Loader2, CalendarX } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { maskCpf, maskPhone } from '@/lib/utils/mask-sensitive';
 
 export type DrillDownFilterType =
   | 'priority'
@@ -306,11 +307,11 @@ export function ChartDrillDownModal({
     ];
     const rows = patientListToShow.map((p) => [
       p.name,
-      p.cpf || '-',
+      maskCpf(p.cpf),
       p.cancerType || '-',
       p.stage || '-',
       PRIORITY_LABELS[p.priorityCategory] || p.priorityCategory,
-      p.phone,
+      maskPhone(p.phone),
     ]);
     const csvContent = [
       headers.join(','),
@@ -445,7 +446,7 @@ export function ChartDrillDownModal({
                             {alert.patient.phone && (
                               <span className="text-gray-500 font-normal">
                                 {' '}
-                                · {alert.patient.phone}
+                                · {maskPhone(alert.patient.phone)}
                               </span>
                             )}
                           </span>
@@ -605,12 +606,12 @@ export function ChartDrillDownModal({
                         {patient.cpf && (
                           <div>
                             <span className="font-medium">CPF:</span>{' '}
-                            {patient.cpf}
+                            {maskCpf(patient.cpf)}
                           </div>
                         )}
                         <div>
                           <span className="font-medium">Telefone:</span>{' '}
-                          {patient.phone}
+                          {maskPhone(patient.phone)}
                         </div>
                         {patient.stage && (
                           <div>

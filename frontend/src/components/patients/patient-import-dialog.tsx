@@ -32,6 +32,7 @@ import {
 } from '@/lib/utils/xlsx-parser';
 import type { ParsedSheet, MappedHeader } from '@/lib/utils/xlsx-parser';
 import type { ImportSpreadsheetRow } from '@/lib/api/patients';
+import { maskCpf } from '@/lib/utils/mask-sensitive';
 
 interface PatientImportDialogProps {
   open: boolean;
@@ -485,7 +486,7 @@ export function PatientImportDialog({
                       {csvPreviewData.slice(0, 10).map((row, index) => (
                         <tr key={index}>
                           <td className="px-3 py-2">{row.name}</td>
-                          <td className="px-3 py-2">{row.cpf || '-'}</td>
+                          <td className="px-3 py-2">{maskCpf(row.cpf)}</td>
                           <td className="px-3 py-2">
                             {row.tipoCancer || '-'}
                           </td>

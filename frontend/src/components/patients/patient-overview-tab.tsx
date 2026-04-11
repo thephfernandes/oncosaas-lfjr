@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PatientSummaryCard } from './patient-summary-card';
 import { journeyStageDisplayLabel } from '@/lib/utils/journey-stage';
+import { maskCpf, maskPhone } from '@/lib/utils/mask-sensitive';
 
 interface PatientOverviewTabProps {
   patient: PatientDetail;
@@ -58,7 +59,7 @@ export function PatientOverviewTab({ patient }: PatientOverviewTabProps) {
             <label className="text-sm font-medium text-muted-foreground">
               CPF
             </label>
-            <p className="text-lg">{patient.cpf || '-'}</p>
+            <p className="text-lg">{maskCpf(patient.cpf)}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">
@@ -76,7 +77,7 @@ export function PatientOverviewTab({ patient }: PatientOverviewTabProps) {
             <label className="text-sm font-medium text-muted-foreground">
               Telefone
             </label>
-            <p className="text-lg">{patient.phone}</p>
+            <p className="text-lg">{maskPhone(patient.phone)}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">

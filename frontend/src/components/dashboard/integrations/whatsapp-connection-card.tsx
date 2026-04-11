@@ -14,6 +14,7 @@ import {
   Star,
   FlaskConical,
 } from 'lucide-react';
+import { maskPhone } from '@/lib/utils/mask-sensitive';
 
 interface WhatsAppConnectionCardProps {
   connection: WhatsAppConnection;
@@ -103,7 +104,9 @@ export function WhatsAppConnectionCard({
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-gray-600">{connection.phoneNumber}</p>
+            <p className="text-sm text-gray-600">
+              {maskPhone(connection.phoneNumber)}
+            </p>
           </div>
           <div className="flex flex-col items-end gap-2">
             {getStatusBadge()}

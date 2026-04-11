@@ -3,6 +3,8 @@
  * Usa certificados SSL autoassinados gerados pelo script generate-ssl-certs.js
  */
 
+// Proxy /api/v1 → BACKEND_URL: ver `src/app/api/v1/[[...path]]/route.ts` (Undici + Agent em dev).
+
 const { createServer } = require('https');
 const { parse } = require('url');
 const next = require('next');

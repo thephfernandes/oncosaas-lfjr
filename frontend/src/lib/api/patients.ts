@@ -1,5 +1,4 @@
 import { apiClient } from './client';
-import { getApiUrl } from '@/lib/utils/api-config';
 import type { JourneyStage } from '@/lib/utils/journey-stage';
 
 export interface PatientSummaryHighlight {
@@ -638,26 +637,7 @@ export const patientsApi = {
   async importCsv(file: File): Promise<ImportCsvResult> {
     const formData = new FormData();
     formData.append('file', file);
-
-    const API_URL = getApiUrl();
-    const token =
-      typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    const tenantId =
-      typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : null;
-
-    const axios = (await import('axios')).default;
-    const response = await axios.post<ImportCsvResult>(
-      `${API_URL}/api/v1/patients/import`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'X-Tenant-Id': tenantId || '',
-        },
-      }
-    );
-
-    return response.data;
+    return apiClient.postFormData<ImportCsvResult>('/patients/import', formData);
   },
 
   async importSpreadsheet(

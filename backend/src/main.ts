@@ -7,6 +7,7 @@ import { AppModule } from '@/app.module';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
 import { PrismaExceptionFilter } from '@/common/filters/prisma-exception.filter';
+import cookieParser = require('cookie-parser');
 
 const logger = new Logger('Bootstrap');
 
@@ -59,9 +60,14 @@ async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
-    httpsOptions ? { httpsOptions } : {}
+    {
+      rawBody: true,
+      ...(httpsOptions ? { httpsOptions } : {}),
+    }
   );
   app.enableShutdownHooks();
+
+  app.use(cookieParser());
 
   // // Criar diretório de uploads se não existir
   // const uploadsDir = join(process.cwd(), 'uploads', 'navigation-steps');
