@@ -3,6 +3,7 @@ import {
   JOURNEY_STAGE_LABELS,
   JOURNEY_STAGE_ORDER,
   JOURNEY_STAGES,
+  journeyStageDisplayLabel,
   type JourneyStage,
 } from '../journey-stage';
 
@@ -65,5 +66,25 @@ describe('JOURNEY_STAGE_ORDER', () => {
     const shuffled: JourneyStage[] = ['PALLIATIVE', 'SCREENING', 'TREATMENT', 'DIAGNOSIS', 'FOLLOW_UP'];
     const sorted = [...shuffled].sort((a, b) => JOURNEY_STAGE_ORDER[a] - JOURNEY_STAGE_ORDER[b]);
     expect(sorted).toEqual(['SCREENING', 'DIAGNOSIS', 'TREATMENT', 'FOLLOW_UP', 'PALLIATIVE']);
+  });
+});
+
+describe('journeyStageDisplayLabel', () => {
+  it('returns base label when status is not palliative care', () => {
+    expect(
+      journeyStageDisplayLabel({ status: 'ACTIVE', currentStage: 'FOLLOW_UP' })
+    ).toBe('Seguimento');
+  });
+
+  it('adds suffix when palliative care status but journey stage is not PALLIATIVE', () => {
+    expect(
+      journeyStageDisplayLabel({ status: 'PALLIATIVE_CARE', currentStage: 'FOLLOW_UP' })
+    ).toBe('Seguimento (cuidados paliativos)');
+  });
+
+  it('does not duplicate when already at PALLIATIVE stage', () => {
+    expect(
+      journeyStageDisplayLabel({ status: 'PALLIATIVE_CARE', currentStage: 'PALLIATIVE' })
+    ).toBe('Cuidados Paliativos');
   });
 });

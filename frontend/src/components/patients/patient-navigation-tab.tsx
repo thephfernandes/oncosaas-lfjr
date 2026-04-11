@@ -191,12 +191,10 @@ const STEP_STATUS_ICONS: Record<string, React.ReactNode> = {
   NOT_APPLICABLE: <AlertCircle className="h-4 w-4" />,
 };
 
-// Labels derivados do utilitário centralizado; palliative_care é específico de navegação
 const CANCER_TYPE_LABELS: Record<string, string> = {
   ...Object.fromEntries(
     Object.entries(BASE_CANCER_TYPE_LABELS).map(([k, v]) => [k, `Câncer de ${v}`])
   ),
-  palliative_care: 'Tratamento Paliativo',
 };
 
 
@@ -208,7 +206,7 @@ export function PatientNavigationTab({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [createStage, setCreateStage] = useState<{
     cancerType: string;
-    journeyStage: string;
+    journeyStage: JourneyStage;
   } | null>(null);
   const [stepToDelete, setStepToDelete] = useState<NavigationStep | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);

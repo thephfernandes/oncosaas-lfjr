@@ -1,10 +1,16 @@
 import axios from 'axios';
 import { apiClient } from './client';
 import { getApiUrl } from '@/lib/utils/api-config';
+import type { JourneyStage } from '@/lib/utils/journey-stage';
+
+/** Parâmetro de estágio da jornada (API oncology-navigation) — alinhado ao Prisma. */
+export type JourneyStageParam = JourneyStage;
 
 export interface NavigationStep {
   id: string;
+  tenantId?: string;
   patientId: string;
+  journeyId?: string | null;
   cancerType: string;
   journeyStage:
     | 'SCREENING'
@@ -53,6 +59,7 @@ export interface CreateNavigationStepDto {
   isRequired?: boolean;
   expectedDate?: string;
   dueDate?: string;
+  diagnosisId?: string;
   metadata?: Record<string, unknown>;
   notes?: string;
 }
@@ -100,11 +107,7 @@ export const oncologyNavigationApi = {
    */
   getStepsByStage: async (
     patientId: string,
-    journeyStage:
-      | 'SCREENING'
-      | 'DIAGNOSIS'
-      | 'TREATMENT'
-      | 'FOLLOW_UP'
+    journeyStage: JourneyStageParam
   ): Promise<NavigationStep[]> => {
     const data = await apiClient.get<NavigationStep[] | null>(
       `/oncology-navigation/patients/${patientId}/steps/${journeyStage}`
@@ -118,11 +121,7 @@ export const oncologyNavigationApi = {
   initializeSteps: async (
     patientId: string,
     cancerType: string,
-    currentStage:
-      | 'SCREENING'
-      | 'DIAGNOSIS'
-      | 'TREATMENT'
-      | 'FOLLOW_UP'
+    currentStage: JourneyStageParam
   ): Promise<void> => {
     await apiClient.post(
       `/oncology-navigation/patients/${patientId}/initialize`,
@@ -224,8 +223,12 @@ export const oncologyNavigationApi = {
     patientId: string,
     journeyStage: string,
     stepKey?: string
-  ): Promise<{ created: number; skipped: number }> => {
-    return apiClient.post<{ created: number; skipped: number }>(
+  ): Promise<{ created: number; skipped: number; message?: string }> => {
+    return apiClient.post<{
+      created: number;
+      skipped: number;
+      message?: string;
+    }>(
       `/oncology-navigation/patients/${patientId}/stages/${journeyStage}/create-missing`,
       stepKey ? { stepKey } : {}
     );

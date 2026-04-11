@@ -38,6 +38,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { navigationApi } from '@/lib/api/navigation';
+import type { JourneyStage } from '@/lib/utils/journey-stage';
 import { toast } from 'sonner';
 
 function slugify(text: string): string {
@@ -54,7 +55,7 @@ interface CreateNavigationStepDialogProps {
   onOpenChange: (open: boolean) => void;
   patientId: string;
   cancerType: string;
-  journeyStage: string;
+  journeyStage: JourneyStage;
   diagnosisId?: string | null;
   onSuccess?: () => void;
 }
