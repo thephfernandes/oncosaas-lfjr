@@ -9,7 +9,8 @@ import { BREAST_PROTOCOL } from './templates/breast.protocol';
 import { LUNG_PROTOCOL } from './templates/lung.protocol';
 import { OTHER_PROTOCOL } from './templates/other.protocol';
 
-const PROTOCOL_TEMPLATES: Record<string, any> = {
+/** Mapa canônico dos templates — reutilizado pelo export de snapshot (paridade ai-service). */
+export const PROTOCOL_TEMPLATES: Record<string, any> = {
   colorectal: COLORECTAL_PROTOCOL,
   bladder: BLADDER_PROTOCOL,
   renal: RENAL_PROTOCOL,

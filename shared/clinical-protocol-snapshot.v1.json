@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "cancerTypes": {
+    "colorectal": {
+      "checkInRules": {
+        "SCREENING": {
+          "frequency": "weekly",
+          "questionnaire": null
+        },
+        "DIAGNOSIS": {
+          "frequency": "twice_weekly",
+          "questionnaire": null
+        },
+        "TREATMENT": {
+          "frequency": "daily",
+          "questionnaire": "ESAS"
+        },
+        "FOLLOW_UP": {
+          "frequency": "weekly",
+          "questionnaire": "PRO_CTCAE"
+        }
+      }
+    },
+    "bladder": {
+      "checkInRules": {
+        "SCREENING": {
+          "frequency": "weekly",
+          "questionnaire": null
+        },
+        "DIAGNOSIS": {
+          "frequency": "twice_weekly",
+          "questionnaire": null
+        },
+        "TREATMENT": {
+          "frequency": "daily",
+          "questionnaire": "ESAS"
+        },
+        "FOLLOW_UP": {
+          "frequency": "weekly",
+          "questionnaire": "PRO_CTCAE"
+        }
+      }
+    },
+    "renal": {
+      "checkInRules": {
+        "SCREENING": {
+          "frequency": "weekly",
+          "questionnaire": null
+        },
+        "DIAGNOSIS": {
+          "frequency": "twice_weekly",
+          "questionnaire": null
+        },
+        "TREATMENT": {
+          "frequency": "daily",
+          "questionnaire": "ESAS"
+        },
+        "FOLLOW_UP": {
+          "frequency": "weekly",
+          "questionnaire": "PRO_CTCAE"
+        }
+      }
+    },
+    "prostate": {
+      "checkInRules": {
+        "SCREENING": {
+          "frequency": "weekly",
+          "questionnaire": null
+        },
+        "DIAGNOSIS": {
+          "frequency": "twice_weekly",
+          "questionnaire": null
+        },
+        "TREATMENT": {
+          "frequency": "daily",
+          "questionnaire": "ESAS"
+        },
+        "FOLLOW_UP": {
+          "frequency": "weekly",
+          "questionnaire": "PRO_CTCAE"
+        }
+      }
+    },
+    "breast": {
+      "checkInRules": {
+        "SCREENING": {
+          "frequency": "weekly",
+          "questionnaire": null
+        },
+        "DIAGNOSIS": {
+          "frequency": "twice_weekly",
+          "questionnaire": null
+        },
+        "TREATMENT": {
+          "frequency": "daily",
+          "questionnaire": "ESAS"
+        },
+        "FOLLOW_UP": {
+          "frequency": "weekly",
+          "questionnaire": "PRO_CTCAE"
+        }
+      }
+    },
+    "lung": {
+      "checkInRules": {
+        "SCREENING": {
+          "frequency": "weekly",
+          "questionnaire": null
+        },
+        "DIAGNOSIS": {
+          "frequency": "twice_weekly",
+          "questionnaire": null
+        },
+        "TREATMENT": {
+          "frequency": "daily",
+          "questionnaire": "ESAS"
+        },
+        "FOLLOW_UP": {
+          "frequency": "weekly",
+          "questionnaire": "PRO_CTCAE"
+        }
+      }
+    },
+    "other": {
+      "checkInRules": {
+        "SCREENING": {
+          "frequency": "weekly",
+          "questionnaire": null
+        },
+        "DIAGNOSIS": {
+          "frequency": "twice_weekly",
+          "questionnaire": null
+        },
+        "TREATMENT": {
+          "frequency": "daily",
+          "questionnaire": "ESAS"
+        },
+        "FOLLOW_UP": {
+          "frequency": "weekly",
+          "questionnaire": "PRO_CTCAE"
+        }
+      }
+    }
+  }
+}
