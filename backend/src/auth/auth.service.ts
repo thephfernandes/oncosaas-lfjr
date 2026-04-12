@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma, UserRole } from '@generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { LoginDto } from './dto/login.dto';
@@ -30,7 +31,8 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private redisService: RedisService
+    private redisService: RedisService,
+    private auditLogService: AuditLogService
   ) {}
 
   // ─── Account lockout helpers ────────────────────────────────────────────────
@@ -60,6 +62,15 @@ export class AuthService {
       this.logger.warn(
         `Account locked after ${MAX_FAILED_ATTEMPTS} failed attempts: ${email}`
       );
+      // [A-03] Audit account lockout — PHI-critical event
+      void this.auditLogService.log({
+        tenantId: 'system',
+        userId: undefined,
+        action: 'UPDATE',
+        resourceType: 'UserAuth',
+        resourceId: email,
+        newValues: { event: 'ACCOUNT_LOCKED', reason: `${MAX_FAILED_ATTEMPTS} failed login attempts` },
+      });
     }
   }
 
@@ -111,7 +122,7 @@ export class AuthService {
     return result;
   }
 
-  async login(loginDto: LoginDto, tenantId?: string) {
+  async login(loginDto: LoginDto, tenantId?: string, ipAddress?: string, userAgent?: string) {
     const user = await this.validateUser(
       loginDto.email,
       loginDto.password,
@@ -127,6 +138,18 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = await this.generateRefreshToken(user.id);
+
+    // [A-03] Audit successful login
+    void this.auditLogService.log({
+      tenantId: user.tenantId,
+      userId: user.id,
+      action: 'CREATE',
+      resourceType: 'UserSession',
+      resourceId: user.id,
+      newValues: { event: 'LOGIN', role: user.role },
+      ipAddress,
+      userAgent,
+    });
 
     return {
       access_token: accessToken,
@@ -172,15 +195,36 @@ export class AuthService {
       role: user.role,
     };
 
+    // [A-03] Audit token refresh
+    void this.auditLogService.log({
+      tenantId: user.tenantId,
+      userId: user.id,
+      action: 'UPDATE',
+      resourceType: 'UserSession',
+      resourceId: user.id,
+      newValues: { event: 'TOKEN_REFRESH' },
+    });
+
     return {
       access_token: this.jwtService.sign(payload),
       refresh_token: newRefreshToken,
     };
   }
 
-  async logout(refreshToken: string): Promise<void> {
+  async logout(refreshToken: string, userId?: string, tenantId?: string): Promise<void> {
     if (refreshToken) {
       await this.redisService.del(`rt:${refreshToken}`);
+    }
+    // [A-03] Audit logout when caller context is available
+    if (userId && tenantId) {
+      void this.auditLogService.log({
+        tenantId,
+        userId,
+        action: 'DELETE',
+        resourceType: 'UserSession',
+        resourceId: userId,
+        newValues: { event: 'LOGOUT' },
+      });
     }
   }
 

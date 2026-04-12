@@ -107,10 +107,13 @@ export class AuthController {
   async login(
     @Body() loginDto: LoginDto,
     @Headers('x-tenant-id') headerTenantId: string | undefined,
+    @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response
   ) {
     const tenantId = loginDto.tenantId || headerTenantId;
-    const result = await this.authService.login(loginDto, tenantId);
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'];
+    const result = await this.authService.login(loginDto, tenantId, ipAddress, userAgent);
     setRefreshTokenCookie(res, result.refresh_token);
     setAccessTokenCookie(res, result.access_token);
     return {
@@ -142,11 +145,12 @@ export class AuthController {
   async logout(
     @Req() req: ExpressRequest,
     @Body() body: Partial<RefreshDto>,
+    @CurrentUser() user: CurrentUserType,
     @Res({ passthrough: true }) res: Response
   ) {
     const fromCookie = req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined;
     const refreshToken = fromCookie || body.refresh_token || '';
-    await this.authService.logout(refreshToken);
+    await this.authService.logout(refreshToken, user?.id, user?.tenantId);
     clearRefreshTokenCookie(res);
     clearAccessTokenCookie(res);
   }
