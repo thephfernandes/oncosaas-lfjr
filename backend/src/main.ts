@@ -19,7 +19,14 @@ function validateEnv(): void {
     return;
   }
 
-  const required = ['DATABASE_URL', 'JWT_SECRET', 'ENCRYPTION_KEY', 'REDIS_URL', 'FRONTEND_URL'];
+  const required = [
+    'DATABASE_URL',
+    'JWT_SECRET',
+    'ENCRYPTION_KEY',
+    'REDIS_URL',
+    'FRONTEND_URL',
+    'BACKEND_SERVICE_TOKEN',
+  ];
   const missing = required.filter((key) => !process.env[key]);
   if (missing.length > 0) {
     throw new Error(
