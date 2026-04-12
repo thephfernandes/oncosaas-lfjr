@@ -21,6 +21,7 @@ import {
   decryptSensitiveData,
 } from '../whatsapp-connections/utils/encryption.util';
 import {
+  CLINICAL_NOTE_NAVIGATION_STEP_KEY,
   CLINICAL_NOTE_SECTION_KEYS,
   CLINICAL_NOTE_SECTION_MAX_LENGTH,
 } from './clinical-notes.constants';
@@ -91,6 +92,35 @@ export class ClinicalNotesService {
     const plaintext = decryptSensitiveData(encrypted, this.encryptionKey);
     const parsed = JSON.parse(plaintext) as Record<string, string>;
     return this.normalizeAndValidateSections(parsed);
+  }
+
+  /** Garante que a etapa pertence ao paciente/tenant e corresponde ao tipo de evolução. */
+  async validateNavigationStepForEvolution(
+    navigationStepId: string,
+    patientId: string,
+    tenantId: string,
+    noteType: ClinicalNoteType
+  ): Promise<void> {
+    const expectedKey =
+      noteType === ClinicalNoteType.MEDICAL
+        ? CLINICAL_NOTE_NAVIGATION_STEP_KEY.MEDICAL
+        : CLINICAL_NOTE_NAVIGATION_STEP_KEY.NURSING;
+    const step = await this.prisma.navigationStep.findFirst({
+      where: { id: navigationStepId, tenantId, patientId },
+      select: { id: true, stepKey: true },
+    });
+    if (!step) {
+      throw new NotFoundException(
+        'Etapa de navegação não encontrada para este paciente'
+      );
+    }
+    if (step.stepKey !== expectedKey) {
+      throw new BadRequestException(
+        noteType === ClinicalNoteType.MEDICAL
+          ? 'A evolução médica deve ser vinculada à etapa de consulta especializada.'
+          : 'A evolução de enfermagem deve ser vinculada à etapa de consulta de navegação oncológica.'
+      );
+    }
   }
 
   canCreateOrSignNoteType(
@@ -188,6 +218,7 @@ export class ClinicalNotesService {
     status: ClinicalNoteStatus;
     noteType: ClinicalNoteType;
     amendsClinicalNoteId: string | null;
+    navigationStepId: string | null;
     updatedAt: Date;
     versions: { versionNumber: number; sectionsContentHash: string }[];
   }) {
@@ -200,6 +231,7 @@ export class ClinicalNotesService {
       latestVersionNumber: latest?.versionNumber ?? 0,
       sectionsContentHash: latest?.sectionsContentHash ?? '',
       amendsClinicalNoteId: note.amendsClinicalNoteId,
+      navigationStepId: note.navigationStepId,
       updatedAt: note.updatedAt,
     };
   }
@@ -223,6 +255,13 @@ export class ClinicalNotesService {
       throw new NotFoundException(`Patient ${patientId} not found`);
     }
 
+    await this.validateNavigationStepForEvolution(
+      dto.navigationStepId,
+      patientId,
+      tenantId,
+      dto.noteType
+    );
+
     const sections = this.normalizeAndValidateSections(dto.sections);
     const { encrypted, hash } = this.encryptSectionsJson(sections);
 
@@ -234,6 +273,7 @@ export class ClinicalNotesService {
           noteType: dto.noteType,
           status: ClinicalNoteStatus.DRAFT,
           createdById: actor.id,
+          navigationStepId: dto.navigationStepId,
         },
       });
       await tx.clinicalNoteVersion.create({
@@ -294,6 +334,14 @@ export class ClinicalNotesService {
         include: {
           createdBy: { select: { id: true, name: true, role: true } },
           signedBy: { select: { id: true, name: true, role: true } },
+          navigationStep: {
+            select: {
+              id: true,
+              stepKey: true,
+              stepName: true,
+              journeyStage: true,
+            },
+          },
           versions: {
             orderBy: { versionNumber: 'desc' },
             take: 1,
@@ -316,6 +364,8 @@ export class ClinicalNotesService {
         noteType: n.noteType,
         status: n.status,
         amendsClinicalNoteId: n.amendsClinicalNoteId,
+        navigationStepId: n.navigationStepId,
+        navigationStep: n.navigationStep,
         createdAt: n.createdAt,
         updatedAt: n.updatedAt,
         createdBy: n.createdBy,
@@ -348,6 +398,14 @@ export class ClinicalNotesService {
         createdBy: { select: { id: true, name: true, role: true } },
         signedBy: { select: { id: true, name: true, role: true } },
         voidedBy: { select: { id: true, name: true, role: true } },
+        navigationStep: {
+          select: {
+            id: true,
+            stepKey: true,
+            stepName: true,
+            journeyStage: true,
+          },
+        },
         versions: {
           orderBy: { versionNumber: 'desc' },
           take: 1,
@@ -391,6 +449,8 @@ export class ClinicalNotesService {
       noteType: note.noteType,
       status: note.status,
       amendsClinicalNoteId: note.amendsClinicalNoteId,
+      navigationStepId: note.navigationStepId,
+      navigationStep: note.navigationStep,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,
       createdBy: note.createdBy,
@@ -469,6 +529,15 @@ export class ClinicalNotesService {
       throw new ForbiddenException('Sem permissão para editar esta nota');
     }
 
+    if (dto.navigationStepId !== undefined) {
+      await this.validateNavigationStepForEvolution(
+        dto.navigationStepId,
+        note.patientId,
+        tenantId,
+        note.noteType
+      );
+    }
+
     const sections = this.normalizeAndValidateSections(dto.sections);
     const { encrypted, hash } = this.encryptSectionsJson(sections);
     const nextVersion = (note.versions[0]?.versionNumber ?? 0) + 1;
@@ -488,7 +557,12 @@ export class ClinicalNotesService {
       });
       await tx.clinicalNote.update({
         where: { id: note.id, tenantId },
-        data: { updatedAt: new Date() },
+        data: {
+          updatedAt: new Date(),
+          ...(dto.navigationStepId !== undefined
+            ? { navigationStepId: dto.navigationStepId }
+            : {}),
+        },
       });
       return tx.clinicalNote.findFirstOrThrow({
         where: { id: note.id, tenantId },
@@ -582,6 +656,7 @@ export class ClinicalNotesService {
           status: ClinicalNoteStatus.DRAFT,
           createdById: actor.id,
           amendsClinicalNoteId: parent.id,
+          navigationStepId: parent.navigationStepId,
         },
       });
       await tx.clinicalNoteVersion.create({

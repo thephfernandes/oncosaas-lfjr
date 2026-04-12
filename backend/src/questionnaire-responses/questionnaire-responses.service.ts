@@ -11,6 +11,26 @@ export class QuestionnaireResponsesService {
     private readonly priorityRecalculationService: PriorityRecalculationService
   ) {}
 
+  /** Valida etapa do paciente/tenant quando informada (qualquer stepKey). */
+  private async assertNavigationStepForPatient(
+    navigationStepId: string | undefined,
+    patientId: string,
+    tenantId: string
+  ): Promise<void> {
+    if (!navigationStepId) {
+      return;
+    }
+    const step = await this.prisma.navigationStep.findFirst({
+      where: { id: navigationStepId, tenantId, patientId },
+      select: { id: true },
+    });
+    if (!step) {
+      throw new NotFoundException(
+        'Etapa de navegação não encontrada para este paciente'
+      );
+    }
+  }
+
   async create(
     createDto: CreateQuestionnaireResponseDto,
     tenantId: string
@@ -43,6 +63,12 @@ export class QuestionnaireResponsesService {
       );
     }
 
+    await this.assertNavigationStepForPatient(
+      createDto.navigationStepId,
+      createDto.patientId,
+      tenantId
+    );
+
     // Criar resposta
     const response = await this.prisma.questionnaireResponse.create({
       data: {
@@ -51,6 +77,7 @@ export class QuestionnaireResponsesService {
         questionnaireId: createDto.questionnaireId,
         responses: createDto.responses,
         messageId: createDto.messageId,
+        navigationStepId: createDto.navigationStepId,
         appliedBy: createDto.appliedBy || 'AGENT',
       },
     });
@@ -94,6 +121,14 @@ export class QuestionnaireResponsesService {
             name: true,
           },
         },
+        navigationStep: {
+          select: {
+            id: true,
+            stepKey: true,
+            stepName: true,
+            journeyStage: true,
+          },
+        },
       },
       orderBy: {
         completedAt: 'desc',
@@ -121,6 +156,14 @@ export class QuestionnaireResponsesService {
             id: true,
             code: true,
             name: true,
+          },
+        },
+        navigationStep: {
+          select: {
+            id: true,
+            stepKey: true,
+            stepName: true,
+            journeyStage: true,
           },
         },
       },

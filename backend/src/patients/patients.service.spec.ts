@@ -171,6 +171,36 @@ describe('PatientsService', () => {
     });
   });
 
+  // ─── findByPhone ───────────────────────────────────────────────────────────
+
+  describe('findByPhone', () => {
+    it('deve limitar alertas não resolvidos (take) como em findOne', async () => {
+      mockPrisma.patient.findFirst.mockResolvedValue(basePatient);
+
+      await service.findByPhone('+5511988888888', TENANT);
+
+      expect(mockPrisma.patient.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { tenantId: TENANT, phoneHash: expect.any(String) },
+          include: expect.objectContaining({
+            alerts: expect.objectContaining({
+              take: 20,
+              where: { status: { not: 'RESOLVED' } },
+            }),
+          }),
+        })
+      );
+    });
+
+    it('deve retornar null quando não há paciente com esse telefone', async () => {
+      mockPrisma.patient.findFirst.mockResolvedValue(null);
+
+      const result = await service.findByPhone('+5511988888888', TENANT);
+
+      expect(result).toBeNull();
+    });
+  });
+
   // ─── create ─────────────────────────────────────────────────────────────────
 
   describe('create', () => {

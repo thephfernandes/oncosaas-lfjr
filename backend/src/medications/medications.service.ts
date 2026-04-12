@@ -36,6 +36,7 @@ export class MedicationsService {
     return this.prisma.medication.findMany({
       where: { patientId, tenantId },
       orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
+      take: 500,
     });
   }
 

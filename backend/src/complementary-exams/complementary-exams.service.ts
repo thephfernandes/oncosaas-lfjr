@@ -46,6 +46,7 @@ export class ComplementaryExamsService {
     return this.prisma.complementaryExam.findMany({
       where,
       orderBy: [{ type: 'asc' }, { name: 'asc' }],
+      take: 500,
       include: {
         results: {
           where: { deletedAt: null },
@@ -165,6 +166,7 @@ export class ComplementaryExamsService {
         ...(includeDeleted ? {} : { deletedAt: null }),
       },
       orderBy: { performedAt: 'desc' },
+      take: 500,
     });
   }
 

@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Query,
   UseGuards,
   Body,
   HttpCode,
@@ -50,8 +51,27 @@ export class DispositionFeedbackController {
    */
   @Get('export')
   @Roles(UserRole.ADMIN)
-  export(@CurrentUser() user: { tenantId: string }) {
-    return this.service.exportTrainingData(user.tenantId);
+  export(
+    @CurrentUser() user: { tenantId: string },
+    @Query('all') all?: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string
+  ) {
+    const tenantId = all === 'true' ? undefined : user.tenantId;
+    const parseOpt = (s?: string) => {
+      if (s === undefined || s === null || s === '') {
+        return undefined;
+      }
+      const n = Number(s);
+      return Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined;
+    };
+    const limit = parseOpt(limitStr);
+    const offset = parseOpt(offsetStr);
+    const hasOpts = limit !== undefined || offset !== undefined;
+    return this.service.exportTrainingData(
+      tenantId,
+      hasOpts ? { limit, offset } : undefined
+    );
   }
 
   /**

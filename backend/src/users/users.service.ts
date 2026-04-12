@@ -14,7 +14,14 @@ import { ClinicalSubrole, UserRole } from '@generated/prisma/client';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(tenantId: string) {
+  async findAll(
+    tenantId: string,
+    options?: { limit?: number; offset?: number }
+  ) {
+    const limit =
+      options?.limit && options.limit > 0 ? Math.min(options.limit, 500) : 100;
+    const offset = options?.offset && options.offset > 0 ? options.offset : 0;
+
     return this.prisma.user.findMany({
       where: { tenantId },
       select: {
@@ -34,6 +41,8 @@ export class UsersService {
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
     });
   }
 

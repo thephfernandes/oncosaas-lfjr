@@ -7,6 +7,7 @@ const mockPrisma = {
     create: jest.fn(),
     findMany: jest.fn(),
   },
+  $queryRaw: jest.fn(),
 };
 
 const TENANT = 'tenant-abc';
@@ -98,6 +99,16 @@ describe('DispositionFeedbackService', () => {
         expect.objectContaining({ take: 50 })
       );
     });
+
+    it('deve limitar take a no máximo 500', async () => {
+      mockPrisma.clinicalDispositionFeedback.findMany.mockResolvedValue([]);
+
+      await service.findByTenant(TENANT, 99_999);
+
+      expect(mockPrisma.clinicalDispositionFeedback.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 500 })
+      );
+    });
   });
 
   // ─── exportTrainingData ──────────────────────────────────────────────────────
@@ -161,17 +172,32 @@ describe('DispositionFeedbackService', () => {
 
       expect(result[0]).not.toHaveProperty('patientId');
     });
+
+    it('deve repassar limit e offset ao findMany', async () => {
+      mockPrisma.clinicalDispositionFeedback.findMany.mockResolvedValue([]);
+
+      await service.exportTrainingData(TENANT, { limit: 500, offset: 1000 });
+
+      expect(mockPrisma.clinicalDispositionFeedback.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { tenantId: TENANT },
+          take: 500,
+          skip: 1000,
+        })
+      );
+    });
   });
 
   // ─── stats ───────────────────────────────────────────────────────────────────
 
   describe('stats', () => {
     it('deve retornar total e contagem de correções', async () => {
-      mockPrisma.clinicalDispositionFeedback.findMany.mockResolvedValue([
-        { predictedDisposition: 'ER_DAYS', correctedDisposition: 'ER_IMMEDIATE' }, // correção
-        { predictedDisposition: 'ER_DAYS', correctedDisposition: 'ER_DAYS' }, // correto
-        { predictedDisposition: 'ADVANCE_CONSULT', correctedDisposition: 'ADVANCE_CONSULT' }, // correto
-      ]);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ total: 3n, corrections: 1n }])
+        .mockResolvedValueOnce([
+          { predictedDisposition: 'ER_DAYS', total: 2n, correct: 1n },
+          { predictedDisposition: 'ADVANCE_CONSULT', total: 1n, correct: 1n },
+        ]);
 
       const result = await service.stats(TENANT);
 
@@ -180,11 +206,9 @@ describe('DispositionFeedbackService', () => {
     });
 
     it('deve calcular accuracy corretamente (2/3)', async () => {
-      mockPrisma.clinicalDispositionFeedback.findMany.mockResolvedValue([
-        { predictedDisposition: 'ER_DAYS', correctedDisposition: 'ER_IMMEDIATE' }, // errado
-        { predictedDisposition: 'ER_DAYS', correctedDisposition: 'ER_DAYS' }, // certo
-        { predictedDisposition: 'ADVANCE_CONSULT', correctedDisposition: 'ADVANCE_CONSULT' }, // certo
-      ]);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ total: 3n, corrections: 1n }])
+        .mockResolvedValueOnce([]);
 
       const result = await service.stats(TENANT);
 
@@ -192,7 +216,9 @@ describe('DispositionFeedbackService', () => {
     });
 
     it('deve retornar accuracy null quando total é zero', async () => {
-      mockPrisma.clinicalDispositionFeedback.findMany.mockResolvedValue([]);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ total: 0n, corrections: 0n }])
+        .mockResolvedValueOnce([]);
 
       const result = await service.stats(TENANT);
 
@@ -201,10 +227,11 @@ describe('DispositionFeedbackService', () => {
     });
 
     it('deve calcular classAccuracy por classe prevista', async () => {
-      mockPrisma.clinicalDispositionFeedback.findMany.mockResolvedValue([
-        { predictedDisposition: 'ER_DAYS', correctedDisposition: 'ER_DAYS' },
-        { predictedDisposition: 'ER_DAYS', correctedDisposition: 'ER_IMMEDIATE' },
-      ]);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ total: 2n, corrections: 1n }])
+        .mockResolvedValueOnce([
+          { predictedDisposition: 'ER_DAYS', total: 2n, correct: 1n },
+        ]);
 
       const result = await service.stats(TENANT);
 

@@ -82,4 +82,18 @@ describe('UsersService', () => {
 
     await expect(service.remove('admin-1', 'tenant-1')).rejects.toThrow(BadRequestException);
   });
+
+  it('findAll deve paginar com default 100 e teto 500', async () => {
+    mockPrisma.user.findMany.mockResolvedValue([]);
+
+    await service.findAll('tenant-1');
+    expect(mockPrisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 100, skip: 0 })
+    );
+
+    await service.findAll('tenant-1', { limit: 9999 });
+    expect(mockPrisma.user.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ take: 500 })
+    );
+  });
 });

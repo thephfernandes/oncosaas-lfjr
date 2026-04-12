@@ -51,6 +51,7 @@ export class ComorbiditiesService {
     return this.prisma.comorbidity.findMany({
       where: { patientId, tenantId },
       orderBy: [{ severity: 'desc' }, { name: 'asc' }],
+      take: 500,
     });
   }
 

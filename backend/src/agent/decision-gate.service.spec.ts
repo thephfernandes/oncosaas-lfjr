@@ -69,4 +69,14 @@ describe('DecisionGateService', () => {
       expect.objectContaining({ where: { id: 'd1', tenantId: 'tenant-1' } }),
     );
   });
+
+  it('getPendingDecisions deve limitar take a no máximo 200', async () => {
+    mockPrisma.agentDecisionLog.findMany.mockResolvedValue([]);
+
+    await service.getPendingDecisions('tenant-1', 9999);
+
+    expect(mockPrisma.agentDecisionLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 200 })
+    );
+  });
 });

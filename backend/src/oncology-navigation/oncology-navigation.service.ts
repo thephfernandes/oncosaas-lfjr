@@ -815,110 +815,125 @@ export class OncologyNavigationService {
     skipped: number;
     errors: number;
   }> {
-    // Buscar todos os pacientes com tipo de câncer mas sem etapas
-    const patients = await this.prisma.patient.findMany({
-      where: {
-        tenantId,
-        OR: [
-          { cancerType: { not: null } },
-          {
-            cancerDiagnoses: {
-              some: {
-                isActive: true,
-                isPrimary: true,
-              },
-            },
-          },
-        ],
-      },
-      include: {
-        cancerDiagnoses: {
-          where: { isActive: true },
-          orderBy: { isPrimary: 'desc' },
-        },
-        navigationSteps: {
-          select: { id: true },
-          take: 1, // Apenas verificar se existe
-        },
-      },
-    });
-
+    const PAGE_SIZE = 250;
+    let skip = 0;
     let initialized = 0;
     let skipped = 0;
     let errors = 0;
 
-    for (const patient of patients) {
-      try {
-        // Determinar tipo de câncer (prioridade: cancerType > primeiro diagnóstico primário)
-        const cancerTypeRaw =
-          patient.cancerType ||
-          patient.cancerDiagnoses?.[0]?.cancerType ||
-          null;
+    for (;;) {
+      const patients = await this.prisma.patient.findMany({
+        where: {
+          tenantId,
+          OR: [
+            { cancerType: { not: null } },
+            {
+              cancerDiagnoses: {
+                some: {
+                  isActive: true,
+                  isPrimary: true,
+                },
+              },
+            },
+          ],
+        },
+        include: {
+          cancerDiagnoses: {
+            where: { isActive: true },
+            orderBy: { isPrimary: 'desc' },
+          },
+          navigationSteps: {
+            select: { id: true },
+            take: 1, // Apenas verificar se existe
+          },
+        },
+        orderBy: { id: 'asc' },
+        take: PAGE_SIZE,
+        skip,
+      });
 
-        if (!cancerTypeRaw) {
-          skipped++;
-          continue;
-        }
-
-        const hasAnyStep = (patient.navigationSteps?.length ?? 0) > 0;
-
-        // Se já houver etapas, reinitialize apenas quando detectar assinatura legada.
-        const legacyStep = hasAnyStep
-          ? await this.prisma.navigationStep.findFirst({
-              where: {
-                patientId: patient.id,
-                tenantId,
-                OR: [
-                  // Fluxo antigo criava com default stepOrder=0
-                  { stepOrder: 0 },
-                  // Etapa dependente sem janela relativa completa
-                  {
-                    AND: [
-                      { dependsOnStepKey: { not: null } },
-                      {
-                        OR: [
-                          { relativeDaysMin: null },
-                          { relativeDaysMax: null },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              } as any,
-              select: { id: true },
-            })
-          : null;
-
-        // Inicializar quando:
-        // 1) não há etapas ainda; ou
-        // 2) há etapas, mas ao menos uma é legada e precisa migrar para grafo relativo.
-        if (!hasAnyStep || !!legacyStep) {
-          // Converter para minúsculas para garantir consistência
-          const cancerType = String(cancerTypeRaw).toLowerCase();
-
-          // Usar currentStage do paciente ou default SCREENING
-          const currentStage = patient.currentStage || JourneyStage.SCREENING;
-
-          // Re-inicializar todas as etapas (isso vai deletar as antigas e criar novas para todos os estágios)
-          await this.initializeNavigationSteps(
-            patient.id,
-            tenantId,
-            cancerType,
-            currentStage
-          );
-
-          initialized++;
-        } else {
-          // Já possui grafo moderno (não-legado)
-          skipped++;
-        }
-      } catch (error) {
-        this.logger.error(
-          `Erro ao inicializar etapas para paciente ${patient.id}:`,
-          error instanceof Error ? error.stack : String(error)
-        );
-        errors++;
+      if (patients.length === 0) {
+        break;
       }
+
+      for (const patient of patients) {
+        try {
+          // Determinar tipo de câncer (prioridade: cancerType > primeiro diagnóstico primário)
+          const cancerTypeRaw =
+            patient.cancerType ||
+            patient.cancerDiagnoses?.[0]?.cancerType ||
+            null;
+
+          if (!cancerTypeRaw) {
+            skipped++;
+            continue;
+          }
+
+          const hasAnyStep = (patient.navigationSteps?.length ?? 0) > 0;
+
+          // Se já houver etapas, reinitialize apenas quando detectar assinatura legada.
+          const legacyStep = hasAnyStep
+            ? await this.prisma.navigationStep.findFirst({
+                where: {
+                  patientId: patient.id,
+                  tenantId,
+                  OR: [
+                    // Fluxo antigo criava com default stepOrder=0
+                    { stepOrder: 0 },
+                    // Etapa dependente sem janela relativa completa
+                    {
+                      AND: [
+                        { dependsOnStepKey: { not: null } },
+                        {
+                          OR: [
+                            { relativeDaysMin: null },
+                            { relativeDaysMax: null },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                } as any,
+                select: { id: true },
+              })
+            : null;
+
+          // Inicializar quando:
+          // 1) não há etapas ainda; ou
+          // 2) há etapas, mas ao menos uma é legada e precisa migrar para grafo relativo.
+          if (!hasAnyStep || !!legacyStep) {
+            // Converter para minúsculas para garantir consistência
+            const cancerType = String(cancerTypeRaw).toLowerCase();
+
+            // Usar currentStage do paciente ou default SCREENING
+            const currentStage = patient.currentStage || JourneyStage.SCREENING;
+
+            // Re-inicializar todas as etapas (isso vai deletar as antigas e criar novas para todos os estágios)
+            await this.initializeNavigationSteps(
+              patient.id,
+              tenantId,
+              cancerType,
+              currentStage
+            );
+
+            initialized++;
+          } else {
+            // Já possui grafo moderno (não-legado)
+            skipped++;
+          }
+        } catch (error) {
+          this.logger.error(
+            `Erro ao inicializar etapas para paciente ${patient.id}:`,
+            error instanceof Error ? error.stack : String(error)
+          );
+          errors++;
+        }
+      }
+
+      if (patients.length < PAGE_SIZE) {
+        break;
+      }
+      skip += PAGE_SIZE;
     }
 
     return { initialized, skipped, errors };
@@ -936,55 +951,70 @@ export class OncologyNavigationService {
     alertsCreated: number;
   }> {
     const now = new Date();
-    const overdueSteps = await this.prisma.navigationStep.findMany({
-      where: {
-        tenantId,
-        patientId,
-        status: {
-          in: [NavigationStepStatus.PENDING, NavigationStepStatus.IN_PROGRESS],
-        },
-        isCompleted: false,
-        dueDate: {
-          lt: now,
-        },
-      },
-      include: {
-        patient: {
-          select: {
-            id: true,
-            name: true,
-            cancerType: true,
-            currentStage: true,
-          },
-        },
-      },
-    });
-
+    const BATCH = 500;
+    let checked = 0;
     let markedOverdue = 0;
     let alertsCreated = 0;
 
-    for (const step of overdueSteps) {
-      // Marcar como atrasada se ainda não estiver marcada
-      if (step.status !== NavigationStepStatus.OVERDUE) {
-        await this.prisma.navigationStep.update({
-          where: { id: step.id, tenantId },
-          data: { status: NavigationStepStatus.OVERDUE },
-        });
-        markedOverdue++;
+    for (;;) {
+      const overdueSteps = await this.prisma.navigationStep.findMany({
+        where: {
+          tenantId,
+          patientId,
+          status: {
+            in: [NavigationStepStatus.PENDING, NavigationStepStatus.IN_PROGRESS],
+          },
+          isCompleted: false,
+          dueDate: {
+            lt: now,
+          },
+        },
+        include: {
+          patient: {
+            select: {
+              id: true,
+              name: true,
+              cancerType: true,
+              currentStage: true,
+            },
+          },
+        },
+        take: BATCH,
+      });
+
+      if (overdueSteps.length === 0) {
+        break;
       }
 
-      // Verificar e criar alerta
-      const alertCreated = await this.checkAndCreateAlertForStep(
-        step,
-        tenantId
-      );
-      if (alertCreated) {
-        alertsCreated++;
+      checked += overdueSteps.length;
+
+      for (const step of overdueSteps) {
+        // Marcar como atrasada se ainda não estiver marcada
+        if (step.status !== NavigationStepStatus.OVERDUE) {
+          await this.prisma.navigationStep.update({
+            where: { id: step.id, tenantId },
+            data: { status: NavigationStepStatus.OVERDUE },
+          });
+          markedOverdue++;
+        }
+
+        // Verificar e criar alerta
+        const alertCreated = await this.checkAndCreateAlertForStep(
+          step,
+          tenantId
+        );
+        if (alertCreated) {
+          alertsCreated++;
+        }
+      }
+
+      if (overdueSteps.length < BATCH) {
+        break;
       }
     }
 
     return {
-      checked: overdueSteps.length,
+      checked,
       markedOverdue,
       alertsCreated,
     };
@@ -1000,55 +1030,70 @@ export class OncologyNavigationService {
     alertsCreated: number;
   }> {
     const now = new Date();
-    const overdueSteps = await this.prisma.navigationStep.findMany({
-      where: {
-        tenantId,
-        status: {
-          in: [NavigationStepStatus.PENDING, NavigationStepStatus.IN_PROGRESS],
-        },
-        isCompleted: false,
-        dueDate: {
-          lt: now,
-        },
-      },
-      include: {
-        patient: {
-          select: {
-            id: true,
-            name: true,
-            cancerType: true,
-            currentStage: true,
-          },
-        },
-      },
-    });
-
+    const BATCH = 500;
+    let checked = 0;
     let markedOverdue = 0;
     let alertsCreated = 0;
 
-    for (const step of overdueSteps) {
-      // Marcar como atrasada se ainda não estiver marcada
-      if (step.status !== NavigationStepStatus.OVERDUE) {
-        await this.prisma.navigationStep.update({
-          where: { id: step.id, tenantId },
-          data: { status: NavigationStepStatus.OVERDUE },
-        });
-        markedOverdue++;
+    for (;;) {
+      const overdueSteps = await this.prisma.navigationStep.findMany({
+        where: {
+          tenantId,
+          status: {
+            in: [NavigationStepStatus.PENDING, NavigationStepStatus.IN_PROGRESS],
+          },
+          isCompleted: false,
+          dueDate: {
+            lt: now,
+          },
+        },
+        include: {
+          patient: {
+            select: {
+              id: true,
+              name: true,
+              cancerType: true,
+              currentStage: true,
+            },
+          },
+        },
+        take: BATCH,
+      });
+
+      if (overdueSteps.length === 0) {
+        break;
       }
 
-      // Criar alerta apenas se não existir um alerta pendente para esta etapa
-      // A verificação de duplicidade é feita dentro de checkAndCreateAlertForStep
-      const alertCreated = await this.checkAndCreateAlertForStep(
-        step,
-        tenantId
-      );
-      if (alertCreated) {
-        alertsCreated++;
+      checked += overdueSteps.length;
+
+      for (const step of overdueSteps) {
+        // Marcar como atrasada se ainda não estiver marcada
+        if (step.status !== NavigationStepStatus.OVERDUE) {
+          await this.prisma.navigationStep.update({
+            where: { id: step.id, tenantId },
+            data: { status: NavigationStepStatus.OVERDUE },
+          });
+          markedOverdue++;
+        }
+
+        // Criar alerta apenas se não existir um alerta pendente para esta etapa
+        // A verificação de duplicidade é feita dentro de checkAndCreateAlertForStep
+        const alertCreated = await this.checkAndCreateAlertForStep(
+          step,
+          tenantId
+        );
+        if (alertCreated) {
+          alertsCreated++;
+        }
+      }
+
+      if (overdueSteps.length < BATCH) {
+        break;
       }
     }
 
     return {
-      checked: overdueSteps.length,
+      checked,
       markedOverdue,
       alertsCreated,
     };
@@ -1090,6 +1135,7 @@ export class OncologyNavigationService {
         id: true,
         context: true,
       },
+      take: 200,
     });
 
     // Verificar se algum alerta tem o stepId no context

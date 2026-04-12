@@ -10,6 +10,7 @@ import {
   ClinicalContext,
   AgentResponse,
 } from './interfaces/agent-decision.interface';
+import { resolveNavigationStepIdForAgentQuestionnaire } from './questionnaire-navigation.helper';
 
 @Injectable()
 export class AgentService {
@@ -1096,6 +1097,13 @@ export class AgentService {
         });
       }
 
+      const navigationStepId =
+        await resolveNavigationStepIdForAgentQuestionnaire(
+          this.prisma,
+          tenantId,
+          patientId
+        );
+
       await this.prisma.questionnaireResponse.create({
         data: {
           tenantId,
@@ -1105,11 +1113,18 @@ export class AgentService {
           responses: answers,
           scores: scores || {},
           completedAt: new Date(),
+          navigationStepId,
         },
       });
 
+      this.priorityRecalculationService.triggerRecalculation(
+        patientId,
+        tenantId
+      );
+
       this.logger.log(
-        `Saved ${questionnaireType} questionnaire for patient ${patientId}`
+        `Saved ${questionnaireType} questionnaire for patient ${patientId}` +
+          (navigationStepId ? ` (navigationStepId=${navigationStepId})` : '')
       );
 
       // If scores have high-severity alerts, emit a real-time alert

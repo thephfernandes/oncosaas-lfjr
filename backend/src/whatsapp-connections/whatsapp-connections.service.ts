@@ -109,6 +109,7 @@ export class WhatsAppConnectionsService {
     return this.prisma.whatsAppConnection.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 

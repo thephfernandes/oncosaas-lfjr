@@ -94,12 +94,15 @@ export class ConversationService {
       where.patientId = options.patientId;
     }
 
+    const take = Math.min(Math.max(options?.limit ?? 50, 1), 200);
+    const skip = Math.max(options?.offset ?? 0, 0);
+
     const [conversations, total] = await Promise.all([
       this.prisma.conversation.findMany({
         where,
         orderBy: { lastMessageAt: 'desc' },
-        take: options?.limit || 50,
-        skip: options?.offset || 0,
+        take,
+        skip,
         include: {
           patient: {
             select: {
@@ -123,10 +126,11 @@ export class ConversationService {
    * Get recent message history for a conversation
    */
   async getRecentHistory(conversationId: string, limit: number = 20) {
+    const take = Math.min(Math.max(limit, 1), 200);
     return this.prisma.message.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'asc' },
-      take: limit,
+      take,
       select: {
         id: true,
         content: true,

@@ -55,6 +55,22 @@ describe('MessagesService', () => {
     jest.useRealTimers();
   });
 
+  describe('findAll', () => {
+    it('deve usar take 100 por omissão e no máximo 200', async () => {
+      mockPrisma.message.findMany.mockResolvedValue([]);
+
+      await service.findAll('tenant-1');
+      expect(mockPrisma.message.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 100, skip: 0 })
+      );
+
+      await service.findAll('tenant-1', undefined, 9999);
+      expect(mockPrisma.message.findMany).toHaveBeenLastCalledWith(
+        expect.objectContaining({ take: 200 })
+      );
+    });
+  });
+
   it('should reject create when patient does not belong to tenant', async () => {
     mockPrisma.patient.findFirst.mockResolvedValue(null);
 

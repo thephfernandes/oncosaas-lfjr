@@ -33,11 +33,16 @@ export class MessagesService {
       where.patientId = patientId;
     }
 
+    // Paginação obrigatória: default 100, máx. 200 (performance / OOM)
+    const take =
+      limit && limit > 0 ? Math.min(limit, 200) : 100;
+    const skip = offset && offset > 0 ? offset : 0;
+
     return this.prisma.message.findMany({
       where,
       orderBy: { createdAt: 'asc' },
-      take: limit && limit > 0 ? Math.min(limit, 200) : undefined,
-      skip: offset && offset > 0 ? offset : undefined,
+      take,
+      skip,
       include: {
         patient: {
           select: {
@@ -237,47 +242,57 @@ export class MessagesService {
     tenantId: string,
     userId: string
   ): Promise<{ count: number }> {
-    const unassumedMessages = await this.prisma.message.findMany({
-      where: {
-        patientId,
-        tenantId,
-        direction: 'INBOUND',
-        assumedBy: null,
-      },
-      select: { id: true },
-    });
-
-    if (unassumedMessages.length === 0) {
-      return { count: 0 };
-    }
-
+    const BATCH = 500;
+    let totalCount = 0;
     const now = new Date();
-    await this.prisma.message.updateMany({
-      where: {
-        id: { in: unassumedMessages.map((m) => m.id) },
-        tenantId,
-      },
-      data: {
-        assumedBy: userId,
-        assumedAt: now,
-        processedBy: 'NURSING',
-      },
-    });
 
-    // Buscar mensagens atualizadas e emitir via WebSocket para atualizar caches
-    const updatedMessages = await this.prisma.message.findMany({
-      where: { id: { in: unassumedMessages.map((m) => m.id) } },
-      include: {
-        patient: {
-          select: { id: true, name: true, phone: true },
+    for (;;) {
+      const unassumedMessages = await this.prisma.message.findMany({
+        where: {
+          patientId,
+          tenantId,
+          direction: 'INBOUND',
+          assumedBy: null,
         },
-      },
-    });
-    for (const msg of updatedMessages) {
-      this.messagesGateway.emitMessageUpdate(tenantId, msg);
+        select: { id: true },
+        take: BATCH,
+      });
+
+      if (unassumedMessages.length === 0) {
+        break;
+      }
+
+      await this.prisma.message.updateMany({
+        where: {
+          id: { in: unassumedMessages.map((m) => m.id) },
+          tenantId,
+        },
+        data: {
+          assumedBy: userId,
+          assumedAt: now,
+          processedBy: 'NURSING',
+        },
+      });
+
+      const updatedMessages = await this.prisma.message.findMany({
+        where: { id: { in: unassumedMessages.map((m) => m.id) } },
+        include: {
+          patient: {
+            select: { id: true, name: true, phone: true },
+          },
+        },
+      });
+      for (const msg of updatedMessages) {
+        this.messagesGateway.emitMessageUpdate(tenantId, msg);
+      }
+
+      totalCount += unassumedMessages.length;
+      if (unassumedMessages.length < BATCH) {
+        break;
+      }
     }
 
-    return { count: unassumedMessages.length };
+    return { count: totalCount };
   }
 
   /**
@@ -379,13 +394,15 @@ export class MessagesService {
       throw new NotFoundException(`Patient with ID ${patientId} not found`);
     }
 
+    const take = Math.min(Math.max(limit, 1), 200);
+
     return this.prisma.message.findMany({
       where: {
         patientId,
         tenantId,
       },
       orderBy: { createdAt: 'asc' }, // Ordem cronológica para conversa
-      take: limit,
+      take,
     });
   }
 

@@ -78,4 +78,14 @@ describe('ScheduledActionsService', () => {
       }),
     );
   });
+
+  it('findUpcoming deve limitar take a 500', async () => {
+    mockPrisma.scheduledAction.findMany.mockResolvedValue([]);
+
+    await service.findUpcoming('tenant-1');
+
+    expect(mockPrisma.scheduledAction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 500 })
+    );
+  });
 });
