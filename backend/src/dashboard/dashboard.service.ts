@@ -22,6 +22,7 @@ import {
   JourneyStage,
   AlertSeverity,
   AlertStatus,
+  NavigationStepStatus,
 } from '@generated/prisma/client';
 
 @Injectable()
@@ -114,6 +115,8 @@ export class DashboardService {
         createdAt: true,
         resolvedAt: true,
       },
+      orderBy: { resolvedAt: 'desc' },
+      take: 10_000,
     });
 
     let averageResponseTimeMinutes: number | null = null;
@@ -471,6 +474,8 @@ export class DashboardService {
         createdAt: true,
         severity: true,
       },
+      orderBy: { createdAt: 'asc' },
+      take: 20_000,
     });
 
     // Agrupar por data e severidade
@@ -526,6 +531,8 @@ export class DashboardService {
         priorityScore: true,
         status: true,
       },
+      orderBy: { createdAt: 'asc' },
+      take: 20_000,
     });
 
     const patientsByDate = new Map<
@@ -662,6 +669,8 @@ export class DashboardService {
         createdAt: true,
         resolvedAt: true,
       },
+      orderBy: { resolvedAt: 'desc' },
+      take: 10_000,
     });
 
     let averageResponseTimeMinutes: number | null = null;
@@ -743,6 +752,8 @@ export class DashboardService {
       select: {
         criticalSymptomsDetected: true,
       },
+      orderBy: { createdAt: 'desc' },
+      take: 10_000,
     });
 
     // Contar sintomas
@@ -785,39 +796,42 @@ export class DashboardService {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-    // Etapas atrasadas (OVERDUE ou dueDate no passado)
-    const overdueSteps = await this.prisma.navigationStep.findMany({
-      where: {
-        tenantId,
-        status: {
-          in: ['OVERDUE', 'PENDING', 'IN_PROGRESS'],
-        },
-        isCompleted: false,
-        OR: [
-          { status: 'OVERDUE' },
-          {
-            dueDate: {
-              lt: now,
-            },
-          },
+    // Etapas atrasadas — usar count (evita carregar todas as linhas)
+    const overdueStepsWhere = {
+      tenantId,
+      status: {
+        in: [
+          NavigationStepStatus.OVERDUE,
+          NavigationStepStatus.PENDING,
+          NavigationStepStatus.IN_PROGRESS,
         ],
       },
-    });
+      isCompleted: false,
+      OR: [
+        { status: NavigationStepStatus.OVERDUE },
+        {
+          dueDate: {
+            lt: now,
+          },
+        },
+      ],
+    };
 
-    const overdueStepsCount = overdueSteps.length;
+    const cutoffCriticalDue = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-    // Etapas críticas atrasadas (obrigatórias + >14 dias)
-    const criticalOverdueSteps = overdueSteps.filter((step) => {
-      if (!step.isRequired || !step.dueDate) {
-        return false;
-      }
-      const daysOverdue = Math.floor(
-        (now.getTime() - new Date(step.dueDate).getTime()) /
-          (1000 * 60 * 60 * 24)
-      );
-      return daysOverdue > 14;
-    });
-    const criticalOverdueStepsCount = criticalOverdueSteps.length;
+    const [overdueStepsCount, criticalOverdueStepsCount] = await Promise.all([
+      this.prisma.navigationStep.count({ where: overdueStepsWhere }),
+      this.prisma.navigationStep.count({
+        where: {
+          ...overdueStepsWhere,
+          isRequired: true,
+          dueDate: {
+            not: null,
+            lt: cutoffCriticalDue,
+          },
+        },
+      }),
+    ]);
 
     // Pacientes por fase da jornada
     const patientsByStage = await this.prisma.patient.groupBy({
@@ -861,18 +875,13 @@ export class DashboardService {
       },
     });
 
-    // Taxa de conclusão geral de etapas
-    const allSteps = await this.prisma.navigationStep.findMany({
-      where: {
-        tenantId,
-      },
-      select: {
-        isCompleted: true,
-      },
-    });
-
-    const totalSteps = allSteps.length;
-    const completedSteps = allSteps.filter((s) => s.isCompleted).length;
+    // Taxa de conclusão geral de etapas (agregação no banco)
+    const [totalSteps, completedSteps] = await Promise.all([
+      this.prisma.navigationStep.count({ where: { tenantId } }),
+      this.prisma.navigationStep.count({
+        where: { tenantId, isCompleted: true },
+      }),
+    ]);
     const overallCompletionRate =
       totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
 
@@ -902,31 +911,30 @@ export class DashboardService {
     };
 
     for (const stage of Object.keys(stageCounts) as JourneyStage[]) {
-      // Buscar etapas desta fase
-      const stageSteps = await this.prisma.navigationStep.findMany({
-        where: {
-          tenantId,
-          journeyStage: stage,
-        },
-        select: {
-          isCompleted: true,
-          status: true,
-          createdAt: true,
-          completedAt: true,
-          dueDate: true,
-        },
-      });
-
-      const totalStageSteps = stageSteps.length;
-      const completedStageSteps = stageSteps.filter(
-        (s) => s.isCompleted
-      ).length;
-      const pendingStageSteps = stageSteps.filter(
-        (s) => !s.isCompleted && s.status !== 'OVERDUE'
-      ).length;
-      const overdueStageSteps = stageSteps.filter(
-        (s) => s.status === 'OVERDUE'
-      ).length;
+      const [
+        totalStageSteps,
+        completedStageSteps,
+        overdueStageSteps,
+        pendingStageSteps,
+      ] = await Promise.all([
+        this.prisma.navigationStep.count({
+          where: { tenantId, journeyStage: stage },
+        }),
+        this.prisma.navigationStep.count({
+          where: { tenantId, journeyStage: stage, isCompleted: true },
+        }),
+        this.prisma.navigationStep.count({
+          where: { tenantId, journeyStage: stage, status: 'OVERDUE' },
+        }),
+        this.prisma.navigationStep.count({
+          where: {
+            tenantId,
+            journeyStage: stage,
+            isCompleted: false,
+            status: { not: 'OVERDUE' },
+          },
+        }),
+      ]);
 
       const completionRate =
         totalStageSteps > 0
@@ -943,6 +951,8 @@ export class DashboardService {
             in: ['ACTIVE', 'IN_TREATMENT', 'FOLLOW_UP'],
           },
         },
+        orderBy: { id: 'asc' },
+        take: 600,
         include: {
           navigationSteps: {
             where: {
@@ -951,6 +961,7 @@ export class DashboardService {
             orderBy: {
               createdAt: 'asc',
             },
+            take: 200, // teto por paciente/fase — evita include ilimitado em jornadas grandes
           },
         },
       });
@@ -1082,8 +1093,6 @@ export class DashboardService {
     }
   ): Promise<PatientWithCriticalStepDto[]> {
     const now = new Date();
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
     // Buscar etapas críticas (OVERDUE obrigatórias ou próximas do prazo)
     const criticalSteps = await this.prisma.navigationStep.findMany({
@@ -1144,6 +1153,61 @@ export class DashboardService {
       take: filters?.maxResults || 50,
     });
 
+    if (criticalSteps.length === 0) {
+      return [];
+    }
+
+    const uniquePatientIds = [
+      ...new Set(criticalSteps.map((s) => s.patient.id)),
+    ];
+
+    const [stepTotals, stepCompleted, navAlertGroups] = await Promise.all([
+      this.prisma.navigationStep.groupBy({
+        by: ['patientId'],
+        where: { tenantId, patientId: { in: uniquePatientIds } },
+        _count: { id: true },
+      }),
+      this.prisma.navigationStep.groupBy({
+        by: ['patientId'],
+        where: {
+          tenantId,
+          patientId: { in: uniquePatientIds },
+          isCompleted: true,
+        },
+        _count: { id: true },
+      }),
+      this.prisma.alert.groupBy({
+        by: ['patientId'],
+        where: {
+          tenantId,
+          patientId: { in: uniquePatientIds },
+          type: {
+            in: [
+              'NAVIGATION_DELAY',
+              'MISSING_EXAM',
+              'STAGING_INCOMPLETE',
+              'TREATMENT_DELAY',
+              'FOLLOW_UP_OVERDUE',
+            ],
+          },
+          status: {
+            in: ['PENDING', 'ACKNOWLEDGED'],
+          },
+        },
+        _count: { id: true },
+      }),
+    ]);
+
+    const totalStepsByPatient = new Map(
+      stepTotals.map((r) => [r.patientId, r._count.id])
+    );
+    const completedStepsByPatient = new Map(
+      stepCompleted.map((r) => [r.patientId, r._count.id])
+    );
+    const navigationAlertsByPatient = new Map(
+      navAlertGroups.map((r) => [r.patientId, r._count.id])
+    );
+
     // Agrupar por paciente e pegar a etapa mais crítica de cada um
     const patientMap = new Map<string, PatientWithCriticalStepDto>();
 
@@ -1187,43 +1251,13 @@ export class DashboardService {
           ? new Date().getFullYear() - new Date(patient.birthDate).getFullYear()
           : 0;
 
-        // Contar etapas totais e concluídas do paciente
-        const allPatientSteps = await this.prisma.navigationStep.findMany({
-          where: {
-            tenantId,
-            patientId,
-          },
-          select: {
-            isCompleted: true,
-          },
-        });
-
-        const totalSteps = allPatientSteps.length;
-        const completedSteps = allPatientSteps.filter(
-          (s) => s.isCompleted
-        ).length;
+        const totalSteps = totalStepsByPatient.get(patientId) ?? 0;
+        const completedSteps = completedStepsByPatient.get(patientId) ?? 0;
         const completionRate =
           totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
 
-        // Contar alertas de navegação do paciente
-        const navigationAlertsCount = await this.prisma.alert.count({
-          where: {
-            tenantId,
-            patientId,
-            type: {
-              in: [
-                'NAVIGATION_DELAY',
-                'MISSING_EXAM',
-                'STAGING_INCOMPLETE',
-                'TREATMENT_DELAY',
-                'FOLLOW_UP_OVERDUE',
-              ],
-            },
-            status: {
-              in: ['PENDING', 'ACKNOWLEDGED'],
-            },
-          },
-        });
+        const navigationAlertsCount =
+          navigationAlertsByPatient.get(patientId) ?? 0;
 
         patientMap.set(patientId, {
           patientId,

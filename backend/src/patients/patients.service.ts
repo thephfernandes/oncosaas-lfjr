@@ -265,6 +265,7 @@ export class PatientsService {
               status: { not: 'RESOLVED' },
             },
             orderBy: { createdAt: 'desc' },
+            take: 20, // alinhado a findOne — evita carregar histórico ilimitado no match por telefone
           },
         },
       });
@@ -1518,6 +1519,7 @@ export class PatientsService {
         ...(includeInactive ? {} : { isActive: true }),
       },
       orderBy: [{ isPrimary: 'desc' }, { diagnosisDate: 'desc' }],
+      take: 100,
     });
   }
 

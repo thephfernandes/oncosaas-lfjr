@@ -19,6 +19,7 @@ const createMockPrisma = () => ({
   navigationStep: {
     count: jest.fn(),
     findMany: jest.fn(),
+    groupBy: jest.fn(),
   },
   patientJourney: {
     findMany: jest.fn(),

@@ -202,6 +202,7 @@ export class DecisionGateService {
    * Get pending decisions requiring approval
    */
   async getPendingDecisions(tenantId: string, limit: number = 50) {
+    const take = Math.min(Math.max(limit, 1), 200);
     return this.prisma.agentDecisionLog.findMany({
       where: {
         tenantId,
@@ -210,7 +211,7 @@ export class DecisionGateService {
         rejected: false,
       },
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      take,
       include: {
         conversation: {
           include: {

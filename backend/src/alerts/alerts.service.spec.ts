@@ -329,4 +329,22 @@ describe('AlertsService', () => {
       );
     });
   });
+
+  describe('getCriticalAlerts', () => {
+    it('should cap list with take 500', async () => {
+      mockPrisma.alert.findMany.mockResolvedValue([]);
+
+      await service.getCriticalAlerts(TENANT);
+
+      expect(mockPrisma.alert.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            tenantId: TENANT,
+            severity: 'CRITICAL',
+          }),
+          take: 500,
+        })
+      );
+    });
+  });
 });

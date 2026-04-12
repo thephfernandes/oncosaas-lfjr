@@ -261,6 +261,7 @@ export class AlertsService {
         status: { not: 'RESOLVED' },
       },
       orderBy: { createdAt: 'desc' },
+      take: 500,
       include: {
         patient: {
           select: {

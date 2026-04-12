@@ -149,6 +149,7 @@ export class TreatmentsService {
       orderBy: {
         startDate: 'desc',
       },
+      take: 500,
     });
   }
 
@@ -167,6 +168,7 @@ export class TreatmentsService {
       orderBy: {
         startDate: 'desc',
       },
+      take: 500,
     });
   }
 

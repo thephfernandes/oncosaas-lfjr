@@ -30,7 +30,8 @@ export class ObservationsService {
   async findAll(
     tenantId: string,
     patientId?: string,
-    code?: string
+    code?: string,
+    options?: { limit?: number; offset?: number }
   ): Promise<Observation[]> {
     const where: any = { tenantId };
     if (patientId) {
@@ -39,6 +40,10 @@ export class ObservationsService {
     if (code) {
       where.code = code;
     }
+
+    const limit =
+      options?.limit && options.limit > 0 ? Math.min(options.limit, 200) : 100;
+    const offset = options?.offset && options.offset > 0 ? options.offset : 0;
 
     return this.prisma.observation.findMany({
       where,
@@ -51,6 +56,8 @@ export class ObservationsService {
           },
         },
       },
+      take: limit,
+      skip: offset,
     });
   }
 
@@ -290,15 +297,24 @@ export class ObservationsService {
   }
 
   /**
-   * Buscar observações não sincronizadas com EHR
+   * Buscar observações não sincronizadas com EHR (lista limitada para evitar OOM).
    */
-  async findUnsynced(tenantId: string): Promise<Observation[]> {
+  async findUnsynced(
+    tenantId: string,
+    options?: { limit?: number }
+  ): Promise<Observation[]> {
+    const take =
+      options?.limit && options.limit > 0
+        ? Math.min(options.limit, 2000)
+        : 500;
+
     return this.prisma.observation.findMany({
       where: {
         tenantId,
         syncedToEHR: false,
       },
       orderBy: { effectiveDateTime: 'desc' },
+      take,
       include: {
         patient: {
           select: {

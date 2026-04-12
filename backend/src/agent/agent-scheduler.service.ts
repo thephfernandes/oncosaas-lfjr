@@ -4,7 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChannelGatewayService } from '../channel-gateway/channel-gateway.service';
 import { ClinicalProtocolsService } from '../clinical-protocols/clinical-protocols.service';
-import { ScheduledActionStatus } from '@generated/prisma/client';
+import { PatientStatus, ScheduledActionStatus } from '@generated/prisma/client';
 import { ChannelType, JourneyStage } from '@generated/prisma/client';
 
 const FREQUENCY_DAYS: Record<string, number> = {
@@ -36,92 +36,132 @@ export class AgentSchedulerService {
   async scheduleProactiveQuestionnaires() {
     try {
       const now = new Date();
-      const patients = await this.prisma.patient.findMany({
-        where: {
-          status: { in: ['ACTIVE', 'IN_TREATMENT'] },
-          cancerType: { not: null },
-          currentStage: { in: STAGES_WITH_QUESTIONNAIRES },
-          conversations: { some: {} },
-        },
-        select: {
-          id: true,
-          tenantId: true,
-          cancerType: true,
-          currentStage: true,
-          conversations: {
-            where: { status: 'ACTIVE' },
-            orderBy: { lastMessageAt: 'desc' },
-            take: 1,
-            select: { id: true, channel: true },
-          },
-        },
+      const tenants = await this.prisma.tenant.findMany({
+        select: { id: true },
       });
 
+      const basePatientFilter = {
+        status: { in: [PatientStatus.ACTIVE, PatientStatus.IN_TREATMENT] },
+        cancerType: { not: null },
+        currentStage: { in: STAGES_WITH_QUESTIONNAIRES },
+        conversations: { some: {} },
+      };
+
+      const PAGE_SIZE = 200;
       let created = 0;
-      for (const patient of patients) {
-        const cancerType = patient.cancerType as string;
-        const stage = patient.currentStage as string;
-        const conversation = patient.conversations[0];
-        if (!conversation || !cancerType) {continue;}
 
-        const checkInRules = await this.clinicalProtocols.getCheckInRules(
-          patient.tenantId,
-          cancerType,
-        );
-        if (!checkInRules) {continue;}
-
-        const rule = checkInRules[stage] as
-          | { frequency: string; questionnaire: string | null }
-          | undefined;
-        if (!rule?.questionnaire) {continue;}
-
-        const questionnaireType = rule.questionnaire;
-        const frequencyDays = FREQUENCY_DAYS[rule.frequency] ?? 7;
-
-        const lastResponse = await this.prisma.questionnaireResponse.findFirst({
-          where: {
-            patientId: patient.id,
-            questionnaire: {
-              type: questionnaireType as 'ESAS' | 'PRO_CTCAE',
+      for (const { id: tenantId } of tenants) {
+        let skip = 0;
+        while (true) {
+          const patients = await this.prisma.patient.findMany({
+            where: {
+              tenantId,
+              ...basePatientFilter,
             },
-          },
-          orderBy: { completedAt: 'desc' },
-          select: { completedAt: true },
-        });
+            select: {
+              id: true,
+              tenantId: true,
+              cancerType: true,
+              currentStage: true,
+              conversations: {
+                where: { status: 'ACTIVE' },
+                orderBy: { lastMessageAt: 'desc' },
+                take: 1,
+                select: { id: true, channel: true },
+              },
+            },
+            orderBy: { id: 'asc' },
+            take: PAGE_SIZE,
+            skip,
+          });
 
-        const lastAt = lastResponse?.completedAt;
-        if (lastAt) {
-          const daysSince = Math.floor(
-            (now.getTime() - lastAt.getTime()) / (24 * 60 * 60 * 1000),
-          );
-          if (daysSince < frequencyDays) {continue;}
+          if (patients.length === 0) {
+            break;
+          }
+
+          for (const patient of patients) {
+            const cancerType = patient.cancerType as string;
+            const stage = patient.currentStage as string;
+            const conversation = patient.conversations[0];
+            if (!conversation || !cancerType) {
+              continue;
+            }
+
+            const checkInRules = await this.clinicalProtocols.getCheckInRules(
+              patient.tenantId,
+              cancerType,
+            );
+            if (!checkInRules) {
+              continue;
+            }
+
+            const rule = checkInRules[stage] as
+              | { frequency: string; questionnaire: string | null }
+              | undefined;
+            if (!rule?.questionnaire) {
+              continue;
+            }
+
+            const questionnaireType = rule.questionnaire;
+            const frequencyDays = FREQUENCY_DAYS[rule.frequency] ?? 7;
+
+            const lastResponse =
+              await this.prisma.questionnaireResponse.findFirst({
+                where: {
+                  patientId: patient.id,
+                  questionnaire: {
+                    type: questionnaireType as 'ESAS' | 'PRO_CTCAE',
+                  },
+                },
+                orderBy: { completedAt: 'desc' },
+                select: { completedAt: true },
+              });
+
+            const lastAt = lastResponse?.completedAt;
+            if (lastAt) {
+              const daysSince = Math.floor(
+                (now.getTime() - lastAt.getTime()) / (24 * 60 * 60 * 1000),
+              );
+              if (daysSince < frequencyDays) {
+                continue;
+              }
+            }
+
+            const existing = await this.prisma.scheduledAction.findFirst({
+              where: {
+                patientId: patient.id,
+                actionType: 'QUESTIONNAIRE',
+                status: ScheduledActionStatus.PENDING,
+              },
+            });
+            if (existing) {
+              continue;
+            }
+
+            await this.prisma.scheduledAction.create({
+              data: {
+                tenantId: patient.tenantId,
+                patientId: patient.id,
+                conversationId: conversation.id,
+                actionType: 'QUESTIONNAIRE',
+                channel:
+                  (conversation.channel as ChannelType) ?? ChannelType.WHATSAPP,
+                scheduledAt: now,
+                payload: {
+                  questionnaireType,
+                  frequency: rule.frequency,
+                  source: 'proactive_job',
+                },
+              },
+            });
+            created++;
+          }
+
+          if (patients.length < PAGE_SIZE) {
+            break;
+          }
+          skip += PAGE_SIZE;
         }
-
-        const existing = await this.prisma.scheduledAction.findFirst({
-          where: {
-            patientId: patient.id,
-            actionType: 'QUESTIONNAIRE',
-            status: ScheduledActionStatus.PENDING,
-          },
-        });
-        if (existing) {continue;}
-
-        await this.prisma.scheduledAction.create({
-          data: {
-            tenantId: patient.tenantId,
-            patientId: patient.id,
-            conversationId: conversation.id,
-            actionType: 'QUESTIONNAIRE',
-            channel: (conversation.channel as ChannelType) ?? ChannelType.WHATSAPP,
-            scheduledAt: now,
-            payload: {
-              questionnaireType,
-              frequency: rule.frequency,
-              source: 'proactive_job',
-            },
-          },
-        });
-        created++;
       }
 
       if (created > 0) {

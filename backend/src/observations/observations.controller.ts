@@ -48,14 +48,34 @@ export class ObservationsController {
   findAll(
     @Request() req,
     @Query('patientId') patientId?: string,
-    @Query('code') code?: string
+    @Query('code') code?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string
   ) {
-    return this.observationsService.findAll(req.user.tenantId, patientId, code);
+    return this.observationsService.findAll(
+      req.user.tenantId,
+      patientId,
+      code,
+      {
+        limit: limit ? parseInt(limit, 10) : undefined,
+        offset: offset ? parseInt(offset, 10) : undefined,
+      }
+    );
   }
 
   @Get('unsynced')
-  findUnsynced(@Request() req) {
-    return this.observationsService.findUnsynced(req.user.tenantId);
+  findUnsynced(
+    @Request() req,
+    @Query('limit') limit?: string
+  ) {
+    const parsed =
+      limit != null && limit !== '' ? parseInt(limit, 10) : undefined;
+    return this.observationsService.findUnsynced(req.user.tenantId, {
+      limit:
+        parsed !== undefined && Number.isFinite(parsed) && parsed > 0
+          ? parsed
+          : undefined,
+    });
   }
 
   @Get(':id')

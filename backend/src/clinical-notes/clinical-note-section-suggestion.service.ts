@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@generated/prisma/client';
+import { ClinicalNoteType, Prisma } from '@generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildEvolutionSectionScaffolds } from './clinical-note-evolution-scaffolds';
 import {
   CLINICAL_NOTE_SECTION_KEYS,
   type ClinicalNoteSectionKey,
@@ -28,15 +29,6 @@ const TREATMENT_STATUS_LABELS: Record<string, string> = {
   SUSPENDED: 'Suspenso',
   DISCONTINUED: 'Descontinuado',
   CANCELLED: 'Cancelado',
-};
-
-const NAV_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Pendente',
-  IN_PROGRESS: 'Em andamento',
-  COMPLETED: 'Concluída',
-  OVERDUE: 'Atrasada',
-  CANCELLED: 'Cancelada',
-  NOT_APPLICABLE: 'Não aplicável',
 };
 
 function ymdInTimeZone(d: Date, timeZone: string): string {
@@ -80,14 +72,38 @@ function formatDatePt(d: Date | null | undefined): string {
   }
 }
 
+export interface SectionSuggestionsOptions {
+  /** Etapa à qual a evolução será vinculada — ajusta foco e dicas por tipo de exame/consulta */
+  navigationStepId?: string;
+  /** MEDICAL = consulta especializada; NURSING = consulta de navegação — define modelo de texto das seções SOAP */
+  noteType?: ClinicalNoteType;
+}
+
 @Injectable()
 export class ClinicalNoteSectionSuggestionService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getSectionSuggestions(
     patientId: string,
-    tenantId: string
+    tenantId: string,
+    options?: SectionSuggestionsOptions
   ): Promise<Record<ClinicalNoteSectionKey, string>> {
+    if (options?.navigationStepId) {
+      const stepOk = await this.prisma.navigationStep.findFirst({
+        where: {
+          id: options.navigationStepId,
+          tenantId,
+          patientId,
+        },
+        select: { id: true },
+      });
+      if (!stepOk) {
+        throw new NotFoundException(
+          'Etapa de navegação não encontrada para este paciente'
+        );
+      }
+    }
+
     const patient = await this.prisma.patient.findFirst({
       where: { id: patientId, tenantId },
       include: {
@@ -349,19 +365,37 @@ export class ClinicalNoteSectionSuggestionService {
     });
     out.tratamentos = treatLines.join('\n');
 
-    const navLines = patient.navigationSteps.map((s) => {
-      const st = NAV_STATUS_LABELS[s.status] ?? s.status;
-      const due = s.dueDate ? ` — prazo: ${formatDatePt(s.dueDate)}` : '';
-      return `• ${s.stepName} (${st})${due}${s.notes?.trim() ? ` — ${s.notes.trim()}` : ''}`;
-    });
-    out.navegacao = navLines.join('\n');
+    const { sections, examesComplementaresAppend } =
+      buildEvolutionSectionScaffolds({
+        cancerType: patient.cancerType ?? null,
+        currentStage: patient.currentStage,
+        noteType: options?.noteType ?? null,
+        navigationSteps: patient.navigationSteps.map((s) => ({
+          id: s.id,
+          stepKey: s.stepKey,
+          stepName: s.stepName,
+          status: s.status,
+          journeyStage: s.journeyStage,
+          stepOrder: s.stepOrder,
+          notes: s.notes,
+          dueDate: s.dueDate,
+        })),
+        focusNavigationStepId: options?.navigationStepId ?? null,
+      });
 
-    out.hda = '';
-    out.subjetivo = '';
-    out.exameFisico = '';
-    out.analise = '';
-    out.conduta = '';
-    out.planos = '';
+    for (const key of Object.keys(sections) as ClinicalNoteSectionKey[]) {
+      const v = sections[key];
+      if (v !== undefined && v !== '') {
+        out[key] = v;
+      }
+    }
+
+    if (examesComplementaresAppend.trim()) {
+      const base = out.examesComplementares.trim();
+      out.examesComplementares = base
+        ? `${base}\n${examesComplementaresAppend}`
+        : examesComplementaresAppend.trim();
+    }
 
     return out;
   }

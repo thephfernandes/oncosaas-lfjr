@@ -1,8 +1,19 @@
-import { IsEnum, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 import { ClinicalNoteType } from '@generated/prisma/client';
 export class CreateClinicalNoteDto {
   @IsEnum(ClinicalNoteType)
   noteType!: ClinicalNoteType;
+
+  /** Etapa de navegação: consulta especializada (MEDICAL) ou consulta de navegação (NURSING) */
+  @IsUUID()
+  navigationStepId!: string;
 
   @IsObject()
   sections!: Record<string, string>;
@@ -11,6 +22,10 @@ export class CreateClinicalNoteDto {
 export class UpdateClinicalNoteDto {
   @IsObject()
   sections!: Record<string, string>;
+
+  @IsOptional()
+  @IsUUID()
+  navigationStepId?: string;
 
   @IsOptional()
   @IsString()

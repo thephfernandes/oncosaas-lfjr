@@ -24,6 +24,11 @@ export class CreateQuestionnaireResponseDto {
   @IsOptional()
   messageId?: string; // Se aplicado via WhatsApp
 
+  /** Etapa de navegação associada (ex.: check-in alinhado a uma fase da jornada) */
+  @IsUUID()
+  @IsOptional()
+  navigationStepId?: string;
+
   @IsEnum(ProcessedBy)
   @IsOptional()
   appliedBy?: ProcessedBy; // AGENT ou NURSING

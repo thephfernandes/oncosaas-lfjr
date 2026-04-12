@@ -12,6 +12,7 @@ export class PerformanceStatusService {
     return this.prisma.performanceStatusHistory.findMany({
       where: { patientId, tenantId },
       orderBy: { assessedAt: 'desc' },
+      take: 200,
     });
   }
 

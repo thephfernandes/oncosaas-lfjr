@@ -707,15 +707,17 @@ describe('OncologyNavigationService', () => {
 
   describe('initializeAllPatientsSteps', () => {
     it('reinitializes patients that already have legacy navigation steps', async () => {
-      mockPrisma.patient.findMany.mockResolvedValue([
-        {
-          id: 'patient-legacy',
-          cancerType: 'breast',
-          currentStage: JourneyStage.DIAGNOSIS,
-          cancerDiagnoses: [],
-          navigationSteps: [{ id: 'existing-step' }],
-        },
-      ]);
+      mockPrisma.patient.findMany
+        .mockResolvedValueOnce([
+          {
+            id: 'patient-legacy',
+            cancerType: 'breast',
+            currentStage: JourneyStage.DIAGNOSIS,
+            cancerDiagnoses: [],
+            navigationSteps: [{ id: 'existing-step' }],
+          },
+        ])
+        .mockResolvedValueOnce([]);
       mockPrisma.navigationStep.findFirst.mockResolvedValue({ id: 'legacy-step' });
 
       const initializeSpy = jest
@@ -744,15 +746,17 @@ describe('OncologyNavigationService', () => {
     });
 
     it('skips patients that already have non-legacy navigation graph', async () => {
-      mockPrisma.patient.findMany.mockResolvedValue([
-        {
-          id: 'patient-modern',
-          cancerType: 'breast',
-          currentStage: JourneyStage.DIAGNOSIS,
-          cancerDiagnoses: [],
-          navigationSteps: [{ id: 'existing-step' }],
-        },
-      ]);
+      mockPrisma.patient.findMany
+        .mockResolvedValueOnce([
+          {
+            id: 'patient-modern',
+            cancerType: 'breast',
+            currentStage: JourneyStage.DIAGNOSIS,
+            cancerDiagnoses: [],
+            navigationSteps: [{ id: 'existing-step' }],
+          },
+        ])
+        .mockResolvedValueOnce([]);
       mockPrisma.navigationStep.findFirst.mockResolvedValue(null);
 
       const initializeSpy = jest
@@ -776,15 +780,17 @@ describe('OncologyNavigationService', () => {
     });
 
     it('initializes patients with no existing navigation steps', async () => {
-      mockPrisma.patient.findMany.mockResolvedValue([
-        {
-          id: 'patient-empty',
-          cancerType: 'breast',
-          currentStage: JourneyStage.SCREENING,
-          cancerDiagnoses: [],
-          navigationSteps: [],
-        },
-      ]);
+      mockPrisma.patient.findMany
+        .mockResolvedValueOnce([
+          {
+            id: 'patient-empty',
+            cancerType: 'breast',
+            currentStage: JourneyStage.SCREENING,
+            cancerDiagnoses: [],
+            navigationSteps: [],
+          },
+        ])
+        .mockResolvedValueOnce([]);
 
       const initializeSpy = jest
         .spyOn(

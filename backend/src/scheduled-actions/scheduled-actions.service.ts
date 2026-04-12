@@ -119,6 +119,7 @@ export class ScheduledActionsService {
         scheduledAt: { gte: now, lte: until },
       },
       orderBy: { scheduledAt: 'asc' },
+      take: 500,
     });
   }
 }

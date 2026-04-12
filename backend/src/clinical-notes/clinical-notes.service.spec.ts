@@ -130,11 +130,13 @@ describe('ClinicalNotesService', () => {
         status: ClinicalNoteStatus.DRAFT,
         noteType: ClinicalNoteType.NURSING,
         amendsClinicalNoteId: null,
+        navigationStepId: 'ns-1',
         updatedAt: new Date(),
         versions: [{ versionNumber: 2, sectionsContentHash: 'abc' }],
       });
       expect(r.latestVersionNumber).toBe(2);
       expect(r.sectionsContentHash).toBe('abc');
+      expect(r.navigationStepId).toBe('ns-1');
     });
   });
 });

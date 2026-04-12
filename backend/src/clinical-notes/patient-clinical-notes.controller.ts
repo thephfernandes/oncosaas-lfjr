@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -16,7 +17,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUser as CurrentUserType } from '../auth/decorators/current-user.decorator';
-import { UserRole } from '@generated/prisma/client';
+import { ClinicalNoteType, UserRole } from '@generated/prisma/client';
 import { ClinicalNotesService } from './clinical-notes.service';
 import { ClinicalNoteSectionSuggestionService } from './clinical-note-section-suggestion.service';
 import { CreateClinicalNoteDto } from './dto/clinical-note-sections.dto';
@@ -73,11 +74,39 @@ export class PatientClinicalNotesController {
   )
   getSectionSuggestions(
     @Param('patientId', ParseUUIDPipe) patientId: string,
+    @Query('navigationStepId') navigationStepId: string | undefined,
+    @Query('noteType') noteTypeRaw: string | undefined,
     @CurrentUser() user: CurrentUserType
   ) {
+    const uuidRe =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (
+      navigationStepId !== undefined &&
+      navigationStepId !== '' &&
+      !uuidRe.test(navigationStepId)
+    ) {
+      throw new BadRequestException('navigationStepId inválido');
+    }
+    let noteType: ClinicalNoteType | undefined;
+    if (noteTypeRaw !== undefined && noteTypeRaw !== '') {
+      if (
+        noteTypeRaw !== ClinicalNoteType.MEDICAL &&
+        noteTypeRaw !== ClinicalNoteType.NURSING
+      ) {
+        throw new BadRequestException('noteType deve ser MEDICAL ou NURSING');
+      }
+      noteType = noteTypeRaw as ClinicalNoteType;
+    }
     return this.sectionSuggestionService.getSectionSuggestions(
       patientId,
-      user.tenantId
+      user.tenantId,
+      {
+        navigationStepId:
+          navigationStepId && navigationStepId !== ''
+            ? navigationStepId
+            : undefined,
+        noteType,
+      }
     );
   }
 
