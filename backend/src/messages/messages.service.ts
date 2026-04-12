@@ -241,7 +241,7 @@ export class MessagesService {
     let totalCount = 0;
     const now = new Date();
 
-    while (true) {
+    for (;;) {
       const unassumedMessages = await this.prisma.message.findMany({
         where: {
           patientId,

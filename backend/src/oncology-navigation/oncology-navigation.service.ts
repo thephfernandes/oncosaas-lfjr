@@ -821,7 +821,7 @@ export class OncologyNavigationService {
     let skipped = 0;
     let errors = 0;
 
-    while (true) {
+    for (;;) {
       const patients = await this.prisma.patient.findMany({
         where: {
           tenantId,
@@ -956,7 +956,7 @@ export class OncologyNavigationService {
     let markedOverdue = 0;
     let alertsCreated = 0;
 
-    while (true) {
+    for (;;) {
       const overdueSteps = await this.prisma.navigationStep.findMany({
         where: {
           tenantId,
@@ -1035,7 +1035,7 @@ export class OncologyNavigationService {
     let markedOverdue = 0;
     let alertsCreated = 0;
 
-    while (true) {
+    for (;;) {
       const overdueSteps = await this.prisma.navigationStep.findMany({
         where: {
           tenantId,

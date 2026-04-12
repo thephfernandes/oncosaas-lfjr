@@ -53,17 +53,23 @@ export function WelcomeOnboarding() {
   }, []);
 
   useEffect(() => {
-    setMounted(true);
+    queueMicrotask(() => {
+      setMounted(true);
+    });
   }, []);
 
   useEffect(() => {
-    if (!mounted || !isAuthenticated || !user) return;
-    try {
-      const done = localStorage.getItem(STORAGE_KEY);
-      setOpen(!done);
-    } catch {
-      setOpen(true);
+    if (!mounted || !isAuthenticated || !user) {
+      return;
     }
+    queueMicrotask(() => {
+      try {
+        const done = localStorage.getItem(STORAGE_KEY);
+        setOpen(!done);
+      } catch {
+        setOpen(true);
+      }
+    });
   }, [mounted, isAuthenticated, user]);
 
   const handleOpenChange = (next: boolean) => {

@@ -908,19 +908,21 @@ function StepCard({ step, apiUrl, dragHandle }: StepCardProps) {
     if (isEditing) {
       return;
     }
-    setNotes(step.notes || '');
-    setIsCompleted(step.isCompleted);
-    setInstitutionName(step.institutionName || '');
-    setProfessionalName(step.professionalName || '');
-    setResult(step.result || '');
-    setFindings(step.findings || []);
-    setActualDate(
-      step.actualDate ? new Date(step.actualDate).toISOString().split('T')[0] : ''
-    );
-    setDueDate(
-      step.dueDate ? new Date(step.dueDate).toISOString().split('T')[0] : ''
-    );
-    setStepDetail(parseStepDetailFromMetadata(step.metadata, variant));
+    queueMicrotask(() => {
+      setNotes(step.notes || '');
+      setIsCompleted(step.isCompleted);
+      setInstitutionName(step.institutionName || '');
+      setProfessionalName(step.professionalName || '');
+      setResult(step.result || '');
+      setFindings(step.findings || []);
+      setActualDate(
+        step.actualDate ? new Date(step.actualDate).toISOString().split('T')[0] : ''
+      );
+      setDueDate(
+        step.dueDate ? new Date(step.dueDate).toISOString().split('T')[0] : ''
+      );
+      setStepDetail(parseStepDetailFromMetadata(step.metadata, variant));
+    });
   }, [step, isEditing, variant]);
 
   const handleSave = async (): Promise<void> => {

@@ -69,7 +69,9 @@ export class ObservationsController {
     @Query('limit') limit?: string
   ) {
     const parsed =
-      limit != null && limit !== '' ? parseInt(limit, 10) : undefined;
+      limit !== undefined && limit !== null && limit !== ''
+        ? parseInt(limit, 10)
+        : undefined;
     return this.observationsService.findUnsynced(req.user.tenantId, {
       limit:
         parsed !== undefined && Number.isFinite(parsed) && parsed > 0
