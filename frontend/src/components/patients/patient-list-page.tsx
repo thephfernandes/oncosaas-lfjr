@@ -1,24 +1,30 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { usePatients } from '@/hooks/usePatients';
 import { PatientFilters } from './patient-filters';
 import { PatientTable } from './patient-table';
 import { Button } from '@/components/ui/button';
 import { QueryErrorRetry } from '@/components/shared/query-error-retry';
-import { Plus, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Upload } from 'lucide-react';
 import { PatientImportDialog } from './patient-import-dialog';
 import { PatientCreateDialog } from './patient-create-dialog';
 import { Patient } from '@/lib/api/patients';
 
+const PATIENTS_PAGE_SIZE = 100;
+
 export function PatientListPage() {
+  const [page, setPage] = useState(1);
   const {
     data: patients = [],
     isLoading,
     error,
     refetch,
     isFetching,
-  } = usePatients();
+  } = usePatients({
+    limit: PATIENTS_PAGE_SIZE,
+    offset: (page - 1) * PATIENTS_PAGE_SIZE,
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [cancerTypeFilter, setCancerTypeFilter] = useState('all');
   const [stageFilter, setStageFilter] = useState('all');
@@ -26,6 +32,16 @@ export function PatientListPage() {
   const [navigationStageFilter, setNavigationStageFilter] = useState('all');
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    searchTerm,
+    cancerTypeFilter,
+    stageFilter,
+    priorityFilter,
+    navigationStageFilter,
+  ]);
 
   const filteredPatients = useMemo(() => {
     if (!patients) return [];
@@ -135,8 +151,37 @@ export function PatientListPage() {
         </div>
       ) : (
         <div>
-          <div className="mb-4 text-sm text-muted-foreground">
-            {filteredPatients.length} paciente(s) encontrado(s)
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {filteredPatients.length} paciente(s) nesta página
+              {page > 1 ? ` · página ${page}` : ''}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page <= 1 || isFetching}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label="Página anterior"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={
+                  patients.length < PATIENTS_PAGE_SIZE || isFetching
+                }
+                onClick={() => setPage((p) => p + 1)}
+                aria-label="Próxima página"
+              >
+                Próxima
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </Button>
+            </div>
           </div>
           <PatientTable patients={filteredPatients} />
         </div>
