@@ -52,7 +52,7 @@ export class AgentSchedulerService {
 
       for (const { id: tenantId } of tenants) {
         let skip = 0;
-        while (true) {
+        for (;;) {
           const patients = await this.prisma.patient.findMany({
             where: {
               tenantId,

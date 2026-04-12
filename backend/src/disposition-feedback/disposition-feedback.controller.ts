@@ -59,7 +59,9 @@ export class DispositionFeedbackController {
   ) {
     const tenantId = all === 'true' ? undefined : user.tenantId;
     const parseOpt = (s?: string) => {
-      if (s == null || s === '') return undefined;
+      if (s === undefined || s === null || s === '') {
+        return undefined;
+      }
       const n = Number(s);
       return Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined;
     };
