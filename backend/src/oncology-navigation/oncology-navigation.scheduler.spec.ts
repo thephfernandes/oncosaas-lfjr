@@ -23,7 +23,9 @@ const mockAlertsService = {
 
 const mockConfig = {
   get: jest.fn((key: string) => {
-    if (key === 'AI_SERVICE_URL') return 'http://ai-service:8001';
+    if (key === 'AI_SERVICE_URL') {
+      return 'http://ai-service:8001';
+    }
     return undefined;
   }),
 };

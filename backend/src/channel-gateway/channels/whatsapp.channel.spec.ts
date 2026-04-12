@@ -41,8 +41,12 @@ describe('WhatsAppChannel.validateWebhookSignature', () => {
   describe('quando META_APP_SECRET não está configurado', () => {
     it('deve retornar true (skip) em NODE_ENV=development', () => {
       configGet.mockImplementation((key: string) => {
-        if (key === 'META_APP_SECRET') return undefined;
-        if (key === 'NODE_ENV') return 'development';
+        if (key === 'META_APP_SECRET') {
+          return undefined;
+        }
+        if (key === 'NODE_ENV') {
+          return 'development';
+        }
         return undefined;
       });
 
@@ -56,8 +60,12 @@ describe('WhatsAppChannel.validateWebhookSignature', () => {
 
     it('deve retornar false em NODE_ENV=staging', () => {
       configGet.mockImplementation((key: string) => {
-        if (key === 'META_APP_SECRET') return undefined;
-        if (key === 'NODE_ENV') return 'staging';
+        if (key === 'META_APP_SECRET') {
+          return undefined;
+        }
+        if (key === 'NODE_ENV') {
+          return 'staging';
+        }
         return undefined;
       });
 
@@ -71,8 +79,12 @@ describe('WhatsAppChannel.validateWebhookSignature', () => {
 
     it('deve retornar false em NODE_ENV=production', () => {
       configGet.mockImplementation((key: string) => {
-        if (key === 'META_APP_SECRET') return undefined;
-        if (key === 'NODE_ENV') return 'production';
+        if (key === 'META_APP_SECRET') {
+          return undefined;
+        }
+        if (key === 'NODE_ENV') {
+          return 'production';
+        }
         return undefined;
       });
 
@@ -91,8 +103,12 @@ describe('WhatsAppChannel.validateWebhookSignature', () => {
 
     beforeEach(() => {
       configGet.mockImplementation((key: string) => {
-        if (key === 'META_APP_SECRET') return APP_SECRET;
-        if (key === 'NODE_ENV') return 'production';
+        if (key === 'META_APP_SECRET') {
+          return APP_SECRET;
+        }
+        if (key === 'NODE_ENV') {
+          return 'production';
+        }
         return undefined;
       });
     });
