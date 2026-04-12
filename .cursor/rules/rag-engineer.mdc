@@ -349,6 +349,8 @@ Executar após qualquer modificação no corpus ou em `knowledge_base.py`. Todas
 | `"quando ir ao pronto-socorro"` | Quando procurar emergência durante o tratamento |
 | `"estou com muito cansaço"` | Fadiga e cansaço durante tratamento oncológico |
 | `"dor muito forte"` | Manejo da dor oncológica |
+| `"cistoscopia o que esperar"` (com `cancer_type=BLADDER`) | Cistoscopia: o que esperar no exame da bexiga |
+| `"sangue na urina"` (com `cancer_type=BLADDER`) | Sangue na urina (hematúria) — quando buscar ajuda |
 
 ### Diagnóstico por tipo de problema
 
