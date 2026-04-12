@@ -161,16 +161,13 @@ export class WhatsAppChannel implements IChannel {
       this.configService.get<string>('NODE_ENV') === 'production';
 
     if (!configuredKey) {
-      if (isProduction) {
-        this.logger.error(
-          'ENCRYPTION_KEY not configured; cannot decrypt WhatsApp tokens'
-        );
-        return null;
-      }
+      this.logger.error(
+        'ENCRYPTION_KEY not configured; cannot decrypt WhatsApp tokens'
+      );
+      return null;
     }
 
-    const encryptionKey =
-      configuredKey || 'default-dev-key-32-bytes-long!!';
+    const encryptionKey = configuredKey;
 
     if (connection.oauthAccessToken) {
       try {
