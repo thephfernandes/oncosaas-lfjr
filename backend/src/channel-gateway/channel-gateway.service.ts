@@ -124,7 +124,7 @@ export class ChannelGatewayService {
       },
       include: {
         patient: {
-          select: { id: true, name: true, phone: true },
+          select: { id: true, name: true },
         },
       },
     });
@@ -260,7 +260,7 @@ export class ChannelGatewayService {
       },
       include: {
         patient: {
-          select: { id: true, name: true, phone: true },
+          select: { id: true, name: true },
         },
       },
     });

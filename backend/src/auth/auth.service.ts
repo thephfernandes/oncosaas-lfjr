@@ -279,7 +279,7 @@ export class AuthService {
       return this.getProfile(userId);
     }
 
-    await this.prisma.user.update({ where: { id: userId }, data: updateData });
+    await this.prisma.user.update({ where: { id: userId, tenantId: user.tenantId }, data: updateData });
     return this.getProfile(userId);
   }
 
@@ -363,20 +363,25 @@ export class AuthService {
       throw new UnauthorizedException('Token inválido ou expirado');
     }
 
+    // Fetch user before invalidating token so we have tenantId for the scoped update
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      await this.redisService.del(key);
+      throw new UnauthorizedException('Token inválido ou expirado');
+    }
+
+    // Invalidate token BEFORE updating password to prevent replay on partial failure
+    await this.redisService.del(key);
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await this.prisma.user.update({
-      where: { id: userId },
+      where: { id: userId, tenantId: user.tenantId },
       data: { password: hashedPassword },
     });
 
-    // Invalidate token after use
-    await this.redisService.del(key);
-    // Also clear any account lockout
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (user) {
-      await this.clearFailedAttempts(user.email);
-    }
+    // Clear any account lockout
+    await this.clearFailedAttempts(user.email);
   }
 
   async register(registerDto: RegisterDto) {

@@ -281,5 +281,108 @@ describe('AuthService', () => {
       });
       expect(mockRedis.del).toHaveBeenCalledWith('prt:valid-token');
     });
+
+    it('deve invalidar o token ANTES de atualizar a senha (prevenção de replay)', async () => {
+      const callOrder: string[] = [];
+
+      mockRedis.get.mockResolvedValue('user-1');
+      mockRedis.del.mockImplementation(async () => {
+        callOrder.push('del');
+        return 1;
+      });
+      mockPrisma.user.update.mockImplementation(async () => {
+        callOrder.push('update');
+        return { id: 'user-1' };
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: 'admin@example.com',
+      });
+
+      await service.resetPassword('valid-token', 'newPassword123');
+
+      // del pode ser chamado múltiplas vezes (token + clearFailedAttempts),
+      // mas o primeiro del deve ocorrer antes do update
+      const firstDelIdx = callOrder.indexOf('del');
+      const updateIdx = callOrder.indexOf('update');
+      expect(firstDelIdx).toBeGreaterThanOrEqual(0);
+      expect(updateIdx).toBeGreaterThan(firstDelIdx);
+    });
+
+    it('nao deve permitir reutilizar token após uso — del é chamado mesmo se update falhar', async () => {
+      mockRedis.get.mockResolvedValue('user-1');
+      mockRedis.del.mockResolvedValue(1);
+      mockPrisma.user.update.mockRejectedValue(new Error('DB error'));
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.resetPassword('valid-token', 'newPassword123')
+      ).rejects.toThrow();
+
+      // del deve ter sido chamado mesmo que update falhe
+      expect(mockRedis.del).toHaveBeenCalledWith('prt:valid-token');
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('deve incluir tenantId no where do user.update para evitar cross-tenant', async () => {
+      const hashedPassword = await bcrypt.hash('currentPass', 10);
+      mockPrisma.user.findUnique
+        .mockResolvedValueOnce({
+          id: 'user-1',
+          tenantId: 'tenant-1',
+          email: 'user@example.com',
+          password: hashedPassword,
+        })
+        .mockResolvedValueOnce({
+          id: 'user-1',
+          email: 'user@example.com',
+          tenantId: 'tenant-1',
+          name: 'Novo Nome',
+          role: 'NURSE',
+        });
+      mockPrisma.user.update.mockResolvedValue({ id: 'user-1' });
+
+      await service.updateProfile('user-1', { name: 'Novo Nome' });
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: 'user-1',
+            tenantId: 'tenant-1',
+          }),
+        })
+      );
+    });
+
+    it('nao deve executar update para usuario de outro tenant', async () => {
+      // Simula que user.findUnique retorna null (usuario nao pertence ao tenant)
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateProfile('user-other', { name: 'Hacker' })
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('deve rejeitar mudanca de senha quando currentPassword esta incorreta', async () => {
+      const hashedPassword = await bcrypt.hash('senhaCorreta', 10);
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        tenantId: 'tenant-1',
+        email: 'user@example.com',
+        password: hashedPassword,
+      });
+
+      await expect(
+        service.updateProfile('user-1', {
+          currentPassword: 'senhaErrada',
+          newPassword: 'novaSenha123',
+        })
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
   });
 });

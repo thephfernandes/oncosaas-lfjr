@@ -173,7 +173,7 @@ export class OncologyNavigationScheduler {
                 };
 
                 await this.prisma.patient.update({
-                  where: { id: result.patient_id },
+                  where: { id: result.patient_id, tenantId: tenant.id },
                   data: {
                     priorityScore: Math.round(result.priority_score),
                     priorityCategory: (categoryMap[result.priority_category] || 'LOW') as any,

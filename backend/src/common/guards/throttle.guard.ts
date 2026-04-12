@@ -121,7 +121,9 @@ export class ThrottleGuard implements CanActivate {
       path.includes('/auth/login') ||
       path.includes('/auth/register') ||
       path.includes('/auth/refresh') ||
-      path.includes('/auth/socket-ticket')
+      path.includes('/auth/socket-ticket') ||
+      path.includes('/auth/forgot-password') ||
+      path.includes('/auth/reset-password')
     ) {
       return this.loginLimit;
     }
