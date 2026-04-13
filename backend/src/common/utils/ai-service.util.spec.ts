@@ -18,8 +18,12 @@ describe('ai-service.util (SEC-002 tenant binding)', () => {
   it('getAiServiceHeadersWithTenant inclui X-Tenant-Auth quando há token', () => {
     const config = {
       get: jest.fn((key: string) => {
-        if (key === 'AI_SERVICE_URL') return 'http://localhost:8001';
-        if (key === 'BACKEND_SERVICE_TOKEN') return 'secret-token';
+        if (key === 'AI_SERVICE_URL') {
+          return 'http://localhost:8001';
+        }
+        if (key === 'BACKEND_SERVICE_TOKEN') {
+          return 'secret-token';
+        }
         return undefined;
       }),
     } as unknown as ConfigService;
@@ -36,8 +40,12 @@ describe('ai-service.util (SEC-002 tenant binding)', () => {
   it('getAiServiceHeadersWithTenant omite X-Tenant-Auth sem BACKEND_SERVICE_TOKEN', () => {
     const config = {
       get: jest.fn((key: string) => {
-        if (key === 'AI_SERVICE_URL') return 'http://localhost:8001';
-        if (key === 'BACKEND_SERVICE_TOKEN') return undefined;
+        if (key === 'AI_SERVICE_URL') {
+          return 'http://localhost:8001';
+        }
+        if (key === 'BACKEND_SERVICE_TOKEN') {
+          return undefined;
+        }
         return undefined;
       }),
     } as unknown as ConfigService;
