@@ -1,5 +1,4 @@
 import { middleware } from './middleware';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 function buildRequest(pathname: string, cookie?: string) {
   const url = `https://onconav.local${pathname}`;
@@ -17,6 +16,8 @@ function buildRequest(pathname: string, cookie?: string) {
 describe('middleware auth gating (probe no backend)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    // Garantir que `fetch` e outros globals stubados não vazem entre testes.
+    vi.unstubAllGlobals?.();
   });
 
   it('allows public password recovery routes without session cookie', async () => {

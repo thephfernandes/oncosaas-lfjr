@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
@@ -11,13 +11,6 @@ vi.mock('@/lib/api/patients', () => ({
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-  },
-}));
-
-vi.mock('sonner', () => ({
-  toast: {
-    success: vi.fn(),
-    error: vi.fn(),
   },
 }));
 
@@ -146,7 +139,11 @@ describe('usePatient', () => {
 // ─── useCreatePatient ─────────────────────────────────────────────────────────
 
 describe('useCreatePatient', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (toast as unknown as { success: unknown; error: unknown }).success = vi.fn();
+    (toast as unknown as { success: unknown; error: unknown }).error = vi.fn();
+  });
 
   it('chama patientsApi.create com os dados fornecidos', async () => {
     vi.mocked(patientsApi.create).mockResolvedValue(mockPatient as never);
@@ -183,7 +180,11 @@ describe('useCreatePatient', () => {
 // ─── useUpdatePatient ─────────────────────────────────────────────────────────
 
 describe('useUpdatePatient', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (toast as unknown as { success: unknown; error: unknown }).success = vi.fn();
+    (toast as unknown as { success: unknown; error: unknown }).error = vi.fn();
+  });
 
   it('chama patientsApi.update com id e dados', async () => {
     const updated = { ...mockPatient, name: 'Maria Atualizada' };
@@ -211,7 +212,11 @@ describe('useUpdatePatient', () => {
 // ─── useDeletePatient ─────────────────────────────────────────────────────────
 
 describe('useDeletePatient', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (toast as unknown as { success: unknown; error: unknown }).success = vi.fn();
+    (toast as unknown as { success: unknown; error: unknown }).error = vi.fn();
+  });
 
   it('chama patientsApi.delete com o id correto', async () => {
     vi.mocked(patientsApi.delete).mockResolvedValue(undefined as never);

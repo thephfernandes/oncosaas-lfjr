@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { createPatientSchema, editPatientSchema } from '../patient';
 
 // Dados mínimos válidos para um paciente em Rastreamento
