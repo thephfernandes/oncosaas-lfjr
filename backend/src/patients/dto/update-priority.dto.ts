@@ -1,5 +1,6 @@
 import { IsInt, IsEnum, IsOptional, IsString, Min, Max } from 'class-validator';
 import { PriorityCategory } from '@generated/prisma/client';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class UpdatePriorityDto {
   @IsInt()
@@ -12,6 +13,7 @@ export class UpdatePriorityDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   reason?: string;
 
   @IsString()

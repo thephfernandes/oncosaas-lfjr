@@ -7,11 +7,13 @@ import {
   MaxLength,
   IsInt,
 } from 'class-validator';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class PriorHospitalizationDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)
+  @IsPlainText()
   summary: string;
 
   @IsInt()
@@ -29,5 +31,6 @@ export class PriorHospitalizationDto {
   @IsString()
   @IsOptional()
   @MaxLength(2000)
+  @IsPlainText()
   notes?: string;
 }

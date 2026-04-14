@@ -7,6 +7,7 @@ import {
   IsDateString,
 } from 'class-validator';
 import { ComorbidityType, ComorbiditySeverity } from '@generated/prisma/client';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class CreateComorbidityDto {
   @IsString()
@@ -31,5 +32,6 @@ export class CreateComorbidityDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   notes?: string;
 }

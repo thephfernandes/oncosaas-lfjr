@@ -8,6 +8,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { MedicationCategory } from '@generated/prisma/client';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class CreateMedicationDto {
   /** Obrigatório se não houver catalogKey (nome livre ou "Outro"). */
@@ -55,5 +56,6 @@ export class CreateMedicationDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   notes?: string;
 }

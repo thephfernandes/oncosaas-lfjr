@@ -18,6 +18,7 @@ import {
   TreatmentStatus,
   TreatmentResponse,
 } from '@generated/prisma/client';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class CreateTreatmentDto {
   @IsUUID()
@@ -29,10 +30,12 @@ export class CreateTreatmentDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   treatmentName?: string;
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   protocol?: string;
 
   @IsInt()
@@ -89,6 +92,7 @@ export class CreateTreatmentDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   discontinuationReason?: string;
 
   @IsArray()
@@ -101,18 +105,22 @@ export class CreateTreatmentDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   frequency?: string;
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   administrationRoute?: string;
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   institutionName?: string;
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   physicianName?: string;
 
   @IsArray()
@@ -149,10 +157,12 @@ export class CreateTreatmentDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   responseNotes?: string;
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   notes?: string;
 
   @IsObject()

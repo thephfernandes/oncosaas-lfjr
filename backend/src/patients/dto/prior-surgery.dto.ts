@@ -8,11 +8,13 @@ import {
   MaxLength,
   IsInt,
 } from 'class-validator';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class PriorSurgeryDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)
+  @IsPlainText()
   procedureName: string;
 
   @IsInt()
@@ -24,10 +26,12 @@ export class PriorSurgeryDto {
   @IsString()
   @IsOptional()
   @MaxLength(500)
+  @IsPlainText()
   institution?: string;
 
   @IsString()
   @IsOptional()
   @MaxLength(2000)
+  @IsPlainText()
   notes?: string;
 }
