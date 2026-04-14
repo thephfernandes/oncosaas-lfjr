@@ -97,4 +97,4 @@ Incluir sempre: pedido do utilizador, **passo k/N**, **modo strict**, paths `@` 
 
 ## Skills legadas (atalhos)
 
-`backend`, `frontend`, `ia`, `db`, `arquitetura`, `docs`, `po`, `seguranca`, `gerar-testes`, `acessibilidade`, `rag`, `modelo`, `prompt`, `deploy`, `infra`, `perf`, `whatsapp`, `fhir`, `validar-clinico`, `edital-centelha-es-fase2`, etc.
+`backend`, `frontend`, `ia`, `db`, `arquitetura`, `docs`, `po`, `seguranca`, `gerar-testes`, `acessibilidade`, `rag`, `modelo`, `prompt`, `deploy`, `infra`, `perf`, `whatsapp`, `fhir`, `validar-clinico`, `openevidence-pesquisa-casos-clinicos`, `edital-centelha-es-fase2`, etc.
