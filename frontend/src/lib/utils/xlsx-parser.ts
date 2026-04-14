@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import type { CellValue, Worksheet } from 'exceljs';
 import type { ImportSpreadsheetRow } from '@/lib/api/patients';
 
 /**
@@ -279,14 +279,74 @@ export function buildRowsFromMapping(
   return { rows, skippedEmpty };
 }
 
+function cellValueToPlain(value: CellValue): string | number | boolean | Date {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (value instanceof Date) return value;
+  if (typeof value === 'object') {
+    if ('richText' in value && Array.isArray(value.richText)) {
+      return value.richText.map((t: { text: string }) => t.text).join('');
+    }
+    if ('text' in value && typeof (value as { text?: string }).text === 'string') {
+      return (value as { text: string }).text;
+    }
+    if ('formula' in value) {
+      const res = (value as { result?: unknown }).result;
+      if (res instanceof Date) return res;
+      if (typeof res === 'string' || typeof res === 'number' || typeof res === 'boolean') {
+        return res;
+      }
+      return res == null ? '' : String(res);
+    }
+    if ('sharedFormula' in value) {
+      const res = (value as { result?: unknown }).result;
+      if (res instanceof Date) return res;
+      if (typeof res === 'string' || typeof res === 'number' || typeof res === 'boolean') {
+        return res;
+      }
+      return res == null ? '' : String(res);
+    }
+    if ('hyperlink' in value) {
+      const h = value as { text?: string; hyperlink?: string };
+      return h.text ?? h.hyperlink ?? '';
+    }
+    if ('error' in value) return '';
+  }
+  return String(value);
+}
+
+/**
+ * Converte uma planilha ExcelJS numa matriz compatível com o antigo sheet_to_json(..., { header: 1, defval: '' }).
+ */
+function worksheetToMatrix(worksheet: Worksheet): any[][] {
+  const lastRow = worksheet.rowCount || 0;
+  const lastCol = worksheet.columnCount || 0;
+  if (lastRow === 0 || lastCol === 0) {
+    return [];
+  }
+
+  const matrix: any[][] = [];
+  for (let r = 1; r <= lastRow; r++) {
+    const row = worksheet.getRow(r);
+    const arr: any[] = [];
+    for (let c = 1; c <= lastCol; c++) {
+      arr.push(cellValueToPlain(row.getCell(c).value));
+    }
+    matrix.push(arr);
+  }
+  return matrix;
+}
+
 /**
  * Gera e faz download do template XLSX para importação de pacientes.
  * Inclui todos os campos mapeáveis com exemplos e uma aba de instruções.
  */
-export function downloadXlsxTemplate(): void {
-  const wb = XLSX.utils.book_new();
+export async function downloadXlsxTemplate(): Promise<void> {
+  const ExcelJS = (await import('exceljs')).default;
+  const workbook = new ExcelJS.Workbook();
 
-  // ── Aba 1: Dados ──────────────────────────────────────────────────────────
   const headers = [
     'NOME',
     'PRONTUÁRIO',
@@ -387,37 +447,34 @@ export function downloadXlsxTemplate(): void {
     ],
   ];
 
-  const wsData = XLSX.utils.aoa_to_sheet([headers, ...examples]);
-
-  // Larguras de coluna
-  wsData['!cols'] = [
-    { wch: 30 }, // NOME
-    { wch: 14 }, // PRONTUÁRIO
-    { wch: 12 }, // D. N
-    { wch: 6 },  // SEXO
-    { wch: 16 }, // OCUPAÇÃO
-    { wch: 10 }, // TABAGISTA
-    { wch: 14 }, // CPF
-    { wch: 14 }, // TELEFONE
-    { wch: 12 }, // INTERNAÇÃO
-    { wch: 12 }, // ALTA
-    { wch: 14 }, // EMISSÃO AIH
-    { wch: 12 }, // CIRURGIA
-    { wch: 22 }, // TIPO DE CIRURGIA
-    { wch: 32 }, // REINTERNAÇÃO
-    { wch: 7 },  // RE-OP
-    { wch: 26 }, // QT NEO
-    { wch: 10 }, // DERIVAÇÃO
-    { wch: 16 }, // MORTALIDADE INTRA
-    { wch: 18 }, // MORTALIDADE 30 DIAS
-    { wch: 22 }, // MORTALIDADE 90 DIAS
-    { wch: 32 }, // DIAGNÓSTICO
-    { wch: 12 }, // DATA
+  const wsData = workbook.addWorksheet('Pacientes');
+  wsData.addRow(headers);
+  examples.forEach((row) => wsData.addRow(row));
+  wsData.columns = [
+    { width: 30 },
+    { width: 14 },
+    { width: 12 },
+    { width: 6 },
+    { width: 16 },
+    { width: 10 },
+    { width: 14 },
+    { width: 14 },
+    { width: 12 },
+    { width: 12 },
+    { width: 14 },
+    { width: 12 },
+    { width: 22 },
+    { width: 32 },
+    { width: 7 },
+    { width: 26 },
+    { width: 10 },
+    { width: 16 },
+    { width: 18 },
+    { width: 22 },
+    { width: 32 },
+    { width: 12 },
   ];
 
-  XLSX.utils.book_append_sheet(wb, wsData, 'Pacientes');
-
-  // ── Aba 2: Instruções ─────────────────────────────────────────────────────
   const instructions = [
     ['Campo', 'Cabeçalho na Planilha', 'Obrigatório', 'Formato / Valores aceitos', 'Exemplo'],
     ['Nome', 'NOME', 'SIM', 'Texto (mín. 2 caracteres)', 'MARIA SILVA SANTOS'],
@@ -446,34 +503,42 @@ export function downloadXlsxTemplate(): void {
     ['Obs:', '', '', 'Pacientes com o mesmo PRONTUÁRIO serão atualizados (nova cirurgia adicionada). Tipo de câncer: bexiga (padrão MVP).'],
   ];
 
-  const wsInst = XLSX.utils.aoa_to_sheet(instructions);
-  wsInst['!cols'] = [
-    { wch: 22 },
-    { wch: 20 },
-    { wch: 12 },
-    { wch: 52 },
-    { wch: 30 },
-  ];
+  const wsInst = workbook.addWorksheet('Instruções');
+  instructions.forEach((row) => wsInst.addRow(row));
+  wsInst.columns = [{ width: 22 }, { width: 20 }, { width: 12 }, { width: 52 }, { width: 30 }];
 
-  XLSX.utils.book_append_sheet(wb, wsInst, 'Instruções');
-
-  XLSX.writeFile(wb, 'template_importacao_pacientes.xlsx');
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'template_importacao_pacientes.xlsx';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /**
  * Parseia o arquivo XLSX e retorna as sheets com dados mapeados.
+ * Apenas formato Office Open XML (.xlsx / .xlsm). Ficheiros .xls (Excel 97–2003) não são suportados.
  */
-export function parseXlsxFile(buffer: ArrayBuffer): { sheets: ParsedSheet[] } {
-  const workbook = XLSX.read(buffer, { type: 'array' });
+export async function parseXlsxFile(buffer: ArrayBuffer): Promise<{ sheets: ParsedSheet[] }> {
+  const ExcelJS = (await import('exceljs')).default;
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+
   const sheets: ParsedSheet[] = [];
 
-  for (const sheetName of workbook.SheetNames) {
-    const ws = workbook.Sheets[sheetName];
-    const rawData: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  workbook.eachSheet((worksheet) => {
+    const sheetName = worksheet.name;
+    const rawData = worksheetToMatrix(worksheet);
 
-    if (rawData.length < 2) continue; // Sem dados
+    if (rawData.length < 2) return;
 
-    // Encontrar a linha de cabeçalho (primeira com >= 3 colunas não-vazias)
     let headerRowIdx = 0;
     for (let i = 0; i < Math.min(5, rawData.length); i++) {
       const nonEmpty = rawData[i].filter((c: any) => c != null && String(c).trim() !== '').length;
@@ -486,7 +551,6 @@ export function parseXlsxFile(buffer: ArrayBuffer): { sheets: ParsedSheet[] } {
     const rawHeaders: string[] = rawData[headerRowIdx].map((h: any) => String(h).trim());
     const normalizedHeaders = rawHeaders.map(normalizeHeader);
 
-    // Mapear headers automaticamente
     const mappedHeaders: MappedHeader[] = rawHeaders.map((raw, i) => ({
       raw,
       mapped: HEADER_MAP[normalizedHeaders[i]] || null,
@@ -503,7 +567,7 @@ export function parseXlsxFile(buffer: ArrayBuffer): { sheets: ParsedSheet[] } {
       rawData,
       headerRowIdx,
     });
-  }
+  });
 
   return { sheets };
 }

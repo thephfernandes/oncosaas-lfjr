@@ -33,6 +33,7 @@ import {
 import type { ParsedSheet, MappedHeader } from '@/lib/utils/xlsx-parser';
 import type { ImportSpreadsheetRow } from '@/lib/api/patients';
 import { maskCpf } from '@/lib/utils/mask-sensitive';
+import { toast } from 'sonner';
 
 interface PatientImportDialogProps {
   open: boolean;
@@ -184,7 +185,9 @@ export function PatientImportDialog({
   );
 
   const downloadTemplate = () => {
-    downloadXlsxTemplate();
+    void downloadXlsxTemplate().catch(() => {
+      toast.error('Não foi possível gerar o modelo. Tente novamente.');
+    });
   };
 
   const handleFileSelect = async (
@@ -226,19 +229,28 @@ export function PatientImportDialog({
           setCsvValidationErrors(errors);
         },
       });
-    } else if (extension === 'xlsx' || extension === 'xls') {
+    } else if (extension === 'xlsx' || extension === 'xls' || extension === 'xlsm') {
       setImportMode('xlsx');
       const buffer = await selectedFile.arrayBuffer();
-      const { sheets } = parseXlsxFile(buffer);
-      setXlsxSheets(sheets);
-      // Auto-selecionar a sheet com mais dados
-      if (sheets.length > 0) {
-        const bestIdx = sheets.reduce(
-          (best, s, i) =>
-            s.rows.length > sheets[best].rows.length ? i : best,
-          0,
+      try {
+        const { sheets } = await parseXlsxFile(buffer);
+        setXlsxSheets(sheets);
+        if (sheets.length > 0) {
+          const bestIdx = sheets.reduce(
+            (best, s, i) =>
+              s.rows.length > sheets[best].rows.length ? i : best,
+            0,
+          );
+          setSelectedSheetIndex(bestIdx);
+        }
+      } catch {
+        toast.error(
+          extension === 'xls'
+            ? 'Ficheiros .xls (Excel 97–2003) não são suportados. Guarde como .xlsx e tente novamente.'
+            : 'Não foi possível ler a planilha. Verifique se o ficheiro é um Excel (.xlsx) válido.',
         );
-        setSelectedSheetIndex(bestIdx);
+        setImportMode(null);
+        setFile(null);
       }
     }
 
@@ -290,7 +302,7 @@ export function PatientImportDialog({
           <div className="border-2 border-dashed rounded-lg p-6 text-center">
             <input
               type="file"
-              accept=".csv,.xlsx,.xls"
+              accept=".csv,.xlsx,.xls,.xlsm"
               onChange={handleFileSelect}
               className="hidden"
               id="file-upload"
