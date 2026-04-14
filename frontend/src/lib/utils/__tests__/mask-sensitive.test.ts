@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { maskCpf, maskPhone } from '../mask-sensitive';
 
 describe('maskCpf', () => {

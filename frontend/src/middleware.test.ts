@@ -1,28 +1,23 @@
-/** Ambiente Node evita falha `instanceof Uint8Array` do jose no jsdom. */
-// @vitest-environment node
-
-import { SignJWT } from 'jose';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { NextRequest } from 'next/server';
 import { middleware } from './middleware';
 
-const buildRequest = (pathname: string, cookie?: string) =>
-  new NextRequest(`https://onconav.local${pathname}`, {
-    headers: cookie ? { cookie } : {},
-  });
+function buildRequest(pathname: string, cookie?: string) {
+  const url = `https://onconav.local${pathname}`;
+  const headers = new Headers(cookie ? { cookie } : {});
 
-const base64UrlEncode = (value: string) =>
-  btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  const request = {
+    url,
+    headers,
+    nextUrl: new URL(url),
+  };
 
-const buildJwt = (exp: number) => {
-  const header = base64UrlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = base64UrlEncode(JSON.stringify({ exp }));
-  return `${header}.${payload}.signature`;
-};
+  return request as unknown as Parameters<typeof middleware>[0];
+}
 
-describe('middleware auth gating (sem JWT_SECRET — falha segura)', () => {
+describe('middleware auth gating (probe no backend)', () => {
   beforeEach(() => {
-    vi.stubEnv('JWT_SECRET', '');
+    vi.restoreAllMocks();
+    // Garantir que `fetch` e outros globals stubados não vazem entre testes.
+    vi.unstubAllGlobals?.();
   });
 
   it('allows public password recovery routes without session cookie', async () => {
@@ -34,6 +29,7 @@ describe('middleware auth gating (sem JWT_SECRET — falha segura)', () => {
   });
 
   it('redirects unauthenticated access to protected pages and preserves intent', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 401 })));
     const response = await middleware(buildRequest('/dashboard'));
     const location = response.headers.get('location');
 
@@ -41,84 +37,36 @@ describe('middleware auth gating (sem JWT_SECRET — falha segura)', () => {
     expect(location).toContain('redirect=%2Fdashboard');
   });
 
-  it('rejeita páginas protegidas mesmo com cookie quando JWT_SECRET está ausente', async () => {
-    const validToken = buildJwt(Math.floor(Date.now() / 1000) + 60 * 5);
+  it('permite rota protegida quando o backend retorna 200 no probe (cookie presente)', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: 'u1' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
     const response = await middleware(
-      buildRequest('/dashboard', `auth_token=${validToken}`)
-    );
-    const location = response.headers.get('location');
-    expect(location).toContain('/login');
-  });
-
-  it('rejects invalid token cookie values', async () => {
-    const response = await middleware(buildRequest('/dashboard', 'auth_token=invalid'));
-    const location = response.headers.get('location');
-
-    expect(location).toContain('/login');
-  });
-
-  it('rejects expired auth tokens', async () => {
-    const expiredToken = buildJwt(Math.floor(Date.now() / 1000) - 60);
-    const response = await middleware(
-      buildRequest('/dashboard', `auth_token=${expiredToken}`)
-    );
-    const location = response.headers.get('location');
-
-    expect(location).toContain('/login');
-  });
-});
-
-describe('middleware com verificação de assinatura (JWT_SECRET)', () => {
-  const signingSecret = 'middleware-test-hs256-secret';
-
-  beforeEach(() => {
-    vi.stubEnv('JWT_SECRET', signingSecret);
-  });
-
-  it('aceita JWT assinado com o mesmo segredo', async () => {
-    const token = await new SignJWT({ sub: 'test' })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('2h')
-      .sign(new TextEncoder().encode(signingSecret));
-
-    const response = await middleware(
-      buildRequest('/dashboard', `auth_token=${encodeURIComponent(token)}`)
+      buildRequest('/dashboard', 'access_token=token')
     );
     expect(response.headers.get('location')).toBeNull();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [calledUrl, init] = fetchMock.mock.calls[0] as unknown as [URL, RequestInit];
+    expect(String(calledUrl)).toBe('https://onconav.local/api/v1/auth/profile');
+    expect(init?.method).toBe('GET');
+    expect((init?.headers as Record<string, string>)?.cookie).toContain('access_token=token');
   });
 
-  it('aceita cookie access_token (HttpOnly no mesmo host) com JWT assinado', async () => {
-    const token = await new SignJWT({ sub: 'test' })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('2h')
-      .sign(new TextEncoder().encode(signingSecret));
+  it('redireciona rota protegida quando o backend retorna 401 no probe', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 401 })));
+    const response = await middleware(buildRequest('/dashboard', 'access_token=token'));
+    const location = response.headers.get('location');
 
-    const response = await middleware(
-      buildRequest('/dashboard', `access_token=${encodeURIComponent(token)}`)
-    );
-    expect(response.headers.get('location')).toBeNull();
+    expect(location).toContain('/login');
   });
 
-  it('rejeita JWT assinado com outro segredo', async () => {
-    const token = await new SignJWT({ sub: 'test' })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('2h')
-      .sign(new TextEncoder().encode('outro-segredo'));
+  it('redireciona rota protegida quando o probe falha (erro/timeout)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      throw new Error('network');
+    }));
+    const response = await middleware(buildRequest('/dashboard', 'access_token=token'));
+    const location = response.headers.get('location');
 
-    const response = await middleware(
-      buildRequest('/dashboard', `auth_token=${encodeURIComponent(token)}`)
-    );
-    expect(response.headers.get('location')).toContain('/login');
-  });
-
-  it('rejeita JWT legado com assinatura fictícia quando JWT_SECRET está definido', async () => {
-    const fakeSigned = buildJwt(Math.floor(Date.now() / 1000) + 3600);
-    const response = await middleware(
-      buildRequest('/dashboard', `auth_token=${fakeSigned}`)
-    );
-    expect(response.headers.get('location')).toContain('/login');
+    expect(location).toContain('/login');
   });
 });

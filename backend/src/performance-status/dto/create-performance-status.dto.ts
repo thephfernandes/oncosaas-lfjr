@@ -8,6 +8,7 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class CreatePerformanceStatusDto {
   @IsInt()
@@ -31,5 +32,6 @@ export class CreatePerformanceStatusDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   notes?: string;
 }

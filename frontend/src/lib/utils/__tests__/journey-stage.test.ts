@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import {
   JOURNEY_STAGE_LABELS,
   JOURNEY_STAGE_ORDER,

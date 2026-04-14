@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { filterPatientsBySearch, filterPatients } from '../patient-filtering';
 import type { Patient } from '@/lib/api/patients';
 

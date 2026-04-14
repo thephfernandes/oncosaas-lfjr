@@ -18,6 +18,7 @@ import type { NurseAssistResponse } from '@/lib/api/conversations';
 import { conversationsApi } from '@/lib/api/conversations';
 import { AgentSuggestionCard } from '@/components/chat/agent-suggestion-card';
 import type { SuggestionAction, SuggestionStatus } from '@/lib/api/messages';
+import { buildSafeMediaSrc } from '@/lib/utils/safe-media-url';
 
 interface Message {
   id: string;
@@ -262,15 +263,23 @@ export function ConversationView({
                       {getSenderLabel(message.sender)}
                     </div>
                     {message.type === 'audio' && message.audioUrl ? (
-                      <audio
-                        controls
-                        className="w-full max-w-xs mt-1"
-                        src={message.audioUrl}
-                      >
-                        <span className="text-sm text-muted-foreground">
-                          {message.content || 'Mensagem de áudio'}
-                        </span>
-                      </audio>
+                      (() => {
+                        const safeSrc = buildSafeMediaSrc(message.audioUrl);
+                        if (!safeSrc) {
+                          return (
+                            <div className="mt-1 text-sm text-muted-foreground">
+                              Áudio indisponível (URL inválida).
+                            </div>
+                          );
+                        }
+                        return (
+                          <audio controls className="w-full max-w-xs mt-1" src={safeSrc}>
+                            <span className="text-sm text-muted-foreground">
+                              {message.content || 'Mensagem de áudio'}
+                            </span>
+                          </audio>
+                        );
+                      })()
                     ) : (
                       <div className="text-sm whitespace-pre-wrap break-words">
                         {message.content}

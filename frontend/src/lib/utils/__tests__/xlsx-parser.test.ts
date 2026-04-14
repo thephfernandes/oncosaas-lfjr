@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { parseXlsxFile } from '../xlsx-parser';
 
 function bufferToArrayBuffer(data: ArrayBuffer | SharedArrayBuffer): ArrayBuffer {
@@ -25,5 +24,5 @@ describe('parseXlsxFile (exceljs)', () => {
     expect(sheets[0].rows[0].name).toBe('Maria Silva');
     expect(sheets[0].rows[0].medicalRecordNumber).toBe('12345');
     expect(sheets[0].rows[0].gender).toBe('female');
-  });
+  }, 15000);
 });

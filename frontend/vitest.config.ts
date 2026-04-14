@@ -25,6 +25,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'next/server': path.resolve(__dirname, './src/test/next-server.mock.ts'),
     },
   },
 });

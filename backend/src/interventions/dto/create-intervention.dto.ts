@@ -6,6 +6,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { InterventionType } from '@generated/prisma/client';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class CreateInterventionDto {
   @IsUUID()
@@ -22,5 +23,6 @@ export class CreateInterventionDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   notes?: string;
 }

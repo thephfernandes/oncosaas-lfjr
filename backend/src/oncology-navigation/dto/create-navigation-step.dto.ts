@@ -9,6 +9,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { JourneyStage } from '@generated/prisma/client';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class CreateNavigationStepDto {
   @IsUUID()
@@ -33,6 +34,7 @@ export class CreateNavigationStepDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   stepDescription?: string;
 
   @IsBoolean()
@@ -53,6 +55,7 @@ export class CreateNavigationStepDto {
 
   @IsString()
   @IsOptional()
+  @IsPlainText()
   notes?: string;
 
   @IsUUID()

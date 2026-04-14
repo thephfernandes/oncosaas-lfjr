@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsPlainText } from '../../common/validators/is-plain-text.decorator';
 
 export class CreateInternalNoteDto {
   @IsUUID()
@@ -7,5 +8,6 @@ export class CreateInternalNoteDto {
 
   @IsString()
   @IsNotEmpty()
+  @IsPlainText()
   content: string;
 }
