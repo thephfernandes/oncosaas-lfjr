@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose';
 
 const PUBLIC_ROUTES = new Set([
   '/login',
@@ -15,26 +14,31 @@ function isResetPasswordRoute(pathname: string): boolean {
   return /^\/reset-password\/[^/]+$/.test(pathname);
 }
 
-/** Valida assinatura HS256 do JWT usando JWT_SECRET.
- *  [M-01] JWT_SECRET é obrigatório em todos os ambientes — sem ele, toda sessão é rejeitada.
- *  Não existe fallback de expiração: qualquer JWT forjado seria aceito sem verificação de assinatura. */
-async function hasValidAuthToken(token: string | undefined): Promise<boolean> {
-  if (!token) {
-    return false;
-  }
+const SESSION_PROBE_PATH = '/api/v1/auth/profile';
+const SESSION_PROBE_TIMEOUT_MS = 2000;
 
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    // Falha segura: sem JWT_SECRET configurado não há como validar assinatura.
-    // Isso rejeita todas as sessões até que JWT_SECRET seja configurado corretamente.
-    return false;
-  }
+async function hasActiveSession(request: NextRequest): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), SESSION_PROBE_TIMEOUT_MS);
 
   try {
-    await jwtVerify(token, new TextEncoder().encode(secret));
-    return true;
+    const url = new URL(SESSION_PROBE_PATH, request.url);
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        // Importante: repassar cookies para o backend validar `access_token`/`refresh_token` HttpOnly.
+        cookie: request.headers.get('cookie') ?? '',
+      },
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+
+    return res.ok;
   } catch {
+    // Falha segura: erro/timeout no probe => exigir novo login.
     return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -45,12 +49,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // HttpOnly `access_token` quando API passa pelo mesmo host (rewrite). Espelho
-  // `auth_token` só em modo cross-origin (API direta na porta do Nest).
-  const accessToken = request.cookies.get('access_token')?.value;
-  const authMirror = request.cookies.get('auth_token')?.value;
-  const raw = accessToken ?? authMirror;
-  const sessionActive = await hasValidAuthToken(raw);
+  const sessionActive = await hasActiveSession(request);
 
   if (!sessionActive) {
     const loginUrl = new URL('/login', request.url);
