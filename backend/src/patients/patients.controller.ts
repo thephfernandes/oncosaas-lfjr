@@ -23,6 +23,7 @@ import { CreateCancerDiagnosisDto } from './dto/create-cancer-diagnosis.dto';
 import { UpdateCancerDiagnosisDto } from './dto/update-cancer-diagnosis.dto';
 import { ImportSpreadsheetDto } from './dto/import-spreadsheet.dto';
 import { QueryPatientsDto } from './dto/query-patients.dto';
+import { TimelineQueryDto } from './dto/timeline-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -150,6 +151,21 @@ export class PatientsController {
   ) {
     const patient = await this.patientsService.getDetail(id, user.tenantId);
     return { data: patient };
+  }
+
+  @Get(':id/timeline')
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.ONCOLOGIST,
+    UserRole.NURSE,
+    UserRole.COORDINATOR
+  )
+  getTimeline(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Query() query: TimelineQueryDto
+  ) {
+    return this.patientsService.getTimeline(id, user.tenantId, query);
   }
 
   @Get(':id/cancer-diagnoses')

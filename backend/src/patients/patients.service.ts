@@ -16,6 +16,7 @@ import { ImportSpreadsheetRowDto } from './dto/import-spreadsheet.dto';
 import { PatientDetailResponse } from './dto/patient-detail-response.dto';
 import { CreateCancerDiagnosisDto } from './dto/create-cancer-diagnosis.dto';
 import { UpdateCancerDiagnosisDto } from './dto/update-cancer-diagnosis.dto';
+import { TimelineQueryDto } from './dto/timeline-query.dto';
 import { Patient, Prisma, JourneyStage } from '@generated/prisma/client';
 import { OncologyNavigationService } from '../oncology-navigation/oncology-navigation.service';
 import { PriorityRecalculationService } from '../oncology-navigation/priority-recalculation.service';
@@ -34,6 +35,24 @@ type PatientWithDiagnoses = Prisma.PatientGetPayload<{
     cancerDiagnoses: true;
   };
 }>;
+
+/** Tipos de evento alinhados ao contrato `TimelineEventType` do frontend. */
+const TIMELINE_EVENT_TYPES = [
+  'symptom',
+  'alert',
+  'exam',
+  'navigation_step',
+  'consultation',
+  'diagnosis',
+  'treatment',
+  'note',
+  'intervention',
+  'questionnaire',
+] as const;
+
+type TimelineEventType = (typeof TIMELINE_EVENT_TYPES)[number];
+
+const TIMELINE_SOURCE_FETCH_CAP = 2500;
 
 @Injectable()
 export class PatientsService {
@@ -1521,6 +1540,489 @@ export class PatientsService {
       orderBy: [{ isPrimary: 'desc' }, { diagnosisDate: 'desc' }],
       take: 100,
     });
+  }
+
+  /**
+   * Linha do tempo unificada (sintomas FHIR, alertas, exames, etapas, TCLE, etc.)
+   * com escopo obrigatório por tenant via paciente.
+   */
+  async getTimeline(
+    patientId: string,
+    tenantId: string,
+    query: TimelineQueryDto
+  ): Promise<{
+    data: Array<{ type: TimelineEventType; date: string; payload: Record<string, unknown> }>;
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const patient = await this.prisma.patient.findFirst({
+      where: { id: patientId, tenantId },
+      select: { id: true },
+    });
+
+    if (!patient) {
+      throw new NotFoundException(`Patient with ID ${patientId} not found`);
+    }
+
+    const limit = Math.min(Math.max(1, query.limit ?? 50), 100);
+    const offset = Math.max(0, query.offset ?? 0);
+    const typeSet = this.parseTimelineTypesParam(query.types);
+
+    const baseWhere = { patientId, tenantId } as const;
+    const cap = TIMELINE_SOURCE_FETCH_CAP;
+
+    try {
+      const countPromises: Promise<number>[] = [];
+
+      if (typeSet.has('symptom')) {
+        countPromises.push(
+          this.prisma.observation.count({ where: baseWhere })
+        );
+      }
+      if (typeSet.has('alert')) {
+        countPromises.push(this.prisma.alert.count({ where: baseWhere }));
+      }
+      if (typeSet.has('exam')) {
+        countPromises.push(
+          this.prisma.complementaryExamResult.count({
+            where: {
+              tenantId,
+              deletedAt: null,
+              exam: baseWhere,
+            },
+          })
+        );
+      }
+      if (typeSet.has('navigation_step')) {
+        countPromises.push(
+          this.prisma.navigationStep.count({ where: baseWhere })
+        );
+      }
+      if (typeSet.has('consultation')) {
+        countPromises.push(
+          this.prisma.clinicalNote.count({ where: baseWhere })
+        );
+      }
+      if (typeSet.has('diagnosis')) {
+        countPromises.push(
+          this.prisma.cancerDiagnosis.count({ where: baseWhere })
+        );
+      }
+      if (typeSet.has('treatment')) {
+        countPromises.push(
+          this.prisma.treatment
+            .findMany({
+              where: baseWhere,
+              select: { startDate: true, actualEndDate: true },
+            })
+            .then((rows) =>
+              rows.reduce((acc, t) => {
+                let n = 0;
+                if (t.startDate) {
+                  n++;
+                }
+                if (t.actualEndDate) {
+                  n++;
+                }
+                if (!t.startDate && !t.actualEndDate) {
+                  n++;
+                }
+                return acc + n;
+              }, 0)
+            )
+        );
+      }
+      if (typeSet.has('note')) {
+        countPromises.push(
+          this.prisma.internalNote.count({ where: baseWhere })
+        );
+      }
+      if (typeSet.has('intervention')) {
+        countPromises.push(
+          this.prisma.intervention.count({ where: baseWhere })
+        );
+      }
+      if (typeSet.has('questionnaire')) {
+        countPromises.push(
+          this.prisma.questionnaireResponse.count({ where: baseWhere })
+        );
+      }
+
+      const countResults = await Promise.all(countPromises);
+      const total = countResults.reduce((a, b) => a + b, 0);
+
+      const merged: Array<{
+        sortAt: Date;
+        type: TimelineEventType;
+        payload: Record<string, unknown>;
+      }> = [];
+
+      const fetches: Promise<void>[] = [];
+
+      if (typeSet.has('symptom')) {
+        fetches.push(
+          this.prisma.observation
+            .findMany({
+              where: baseWhere,
+              orderBy: { effectiveDateTime: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const o of rows) {
+                merged.push({
+                  sortAt: o.effectiveDateTime,
+                  type: 'symptom',
+                  payload: {
+                    id: o.id,
+                    code: o.code,
+                    display: o.display,
+                    valueQuantity:
+                      o.valueQuantity === null || o.valueQuantity === undefined
+                        ? null
+                        : Number(o.valueQuantity),
+                    valueString: o.valueString,
+                    unit: o.unit,
+                    messageId: o.messageId,
+                  },
+                });
+              }
+            })
+        );
+      }
+
+      if (typeSet.has('alert')) {
+        fetches.push(
+          this.prisma.alert
+            .findMany({
+              where: baseWhere,
+              orderBy: { createdAt: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const a of rows) {
+                merged.push({
+                  sortAt: a.createdAt,
+                  type: 'alert',
+                  payload: {
+                    id: a.id,
+                    type: a.type,
+                    severity: a.severity,
+                    message: a.message,
+                    status: a.status,
+                    context: a.context,
+                  },
+                });
+              }
+            })
+        );
+      }
+
+      if (typeSet.has('exam')) {
+        fetches.push(
+          this.prisma.complementaryExamResult
+            .findMany({
+              where: {
+                tenantId,
+                deletedAt: null,
+                exam: baseWhere,
+              },
+              include: {
+                exam: { select: { id: true, name: true, type: true } },
+              },
+              orderBy: { performedAt: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const r of rows) {
+                merged.push({
+                  sortAt: r.performedAt,
+                  type: 'exam',
+                  payload: {
+                    id: r.id,
+                    examId: r.examId,
+                    examName: r.exam.name,
+                    examType: r.exam.type,
+                    valueNumeric: r.valueNumeric,
+                    valueText: r.valueText,
+                    unit: r.unit,
+                    referenceRange: r.referenceRange,
+                    isAbnormal: r.isAbnormal,
+                    criticalHigh: r.criticalHigh,
+                    criticalLow: r.criticalLow,
+                    report: r.report,
+                    components: r.components,
+                  },
+                });
+              }
+            })
+        );
+      }
+
+      if (typeSet.has('navigation_step')) {
+        fetches.push(
+          this.prisma.navigationStep
+            .findMany({
+              where: baseWhere,
+              orderBy: { updatedAt: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const s of rows) {
+                const sortAt =
+                  s.completedAt ??
+                  s.actualDate ??
+                  s.dueDate ??
+                  s.expectedDate ??
+                  s.createdAt;
+                merged.push({
+                  sortAt,
+                  type: 'navigation_step',
+                  payload: {
+                    id: s.id,
+                    stepKey: s.stepKey,
+                    stepName: s.stepName,
+                    status: s.status,
+                    journeyStage: s.journeyStage,
+                    cancerType: s.cancerType,
+                    professionalName: s.professionalName,
+                    institutionName: s.institutionName,
+                    result: s.result,
+                    completedAt: s.completedAt,
+                    dueDate: s.dueDate,
+                    actualDate: s.actualDate,
+                  },
+                });
+              }
+            })
+        );
+      }
+
+      if (typeSet.has('consultation')) {
+        fetches.push(
+          this.prisma.clinicalNote
+            .findMany({
+              where: baseWhere,
+              orderBy: { createdAt: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const n of rows) {
+                merged.push({
+                  sortAt: n.createdAt,
+                  type: 'consultation',
+                  payload: {
+                    id: n.id,
+                    noteType: n.noteType,
+                    status: n.status,
+                    stepName:
+                      n.noteType === 'MEDICAL'
+                        ? 'Consulta / evolução médica'
+                        : 'Evolução de enfermagem',
+                    professionalName: null as string | null,
+                  },
+                });
+              }
+            })
+        );
+      }
+
+      if (typeSet.has('diagnosis')) {
+        fetches.push(
+          this.prisma.cancerDiagnosis
+            .findMany({
+              where: baseWhere,
+              orderBy: { diagnosisDate: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const d of rows) {
+                merged.push({
+                  sortAt: d.diagnosisDate,
+                  type: 'diagnosis',
+                  payload: {
+                    id: d.id,
+                    cancerType: d.cancerType,
+                    stage: d.stage,
+                    isPrimary: d.isPrimary,
+                    diagnosisConfirmed: d.diagnosisConfirmed,
+                    icd10Code: d.icd10Code,
+                  },
+                });
+              }
+            })
+        );
+      }
+
+      if (typeSet.has('treatment')) {
+        fetches.push(
+          this.prisma.treatment
+            .findMany({
+              where: baseWhere,
+              orderBy: { updatedAt: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const t of rows) {
+                const basePayload = {
+                  id: t.id,
+                  diagnosisId: t.diagnosisId,
+                  treatmentType: t.treatmentType,
+                  treatmentName: t.treatmentName,
+                  protocol: t.protocol,
+                  intent: t.intent,
+                  status: t.status,
+                  currentCycle: t.currentCycle,
+                  totalCycles: t.totalCycles,
+                };
+                if (t.startDate) {
+                  merged.push({
+                    sortAt: t.startDate,
+                    type: 'treatment',
+                    payload: { ...basePayload, subEvent: 'start' },
+                  });
+                }
+                if (t.actualEndDate) {
+                  merged.push({
+                    sortAt: t.actualEndDate,
+                    type: 'treatment',
+                    payload: { ...basePayload, subEvent: 'end' },
+                  });
+                }
+                if (!t.startDate && !t.actualEndDate) {
+                  merged.push({
+                    sortAt: t.updatedAt,
+                    type: 'treatment',
+                    payload: { ...basePayload, subEvent: 'start' },
+                  });
+                }
+              }
+            })
+        );
+      }
+
+      if (typeSet.has('note')) {
+        fetches.push(
+          this.prisma.internalNote
+            .findMany({
+              where: baseWhere,
+              orderBy: { createdAt: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const n of rows) {
+                merged.push({
+                  sortAt: n.createdAt,
+                  type: 'note',
+                  payload: {
+                    id: n.id,
+                    authorId: n.authorId,
+                    content: n.content,
+                  },
+                });
+              }
+            })
+        );
+      }
+
+      if (typeSet.has('intervention')) {
+        fetches.push(
+          this.prisma.intervention
+            .findMany({
+              where: baseWhere,
+              orderBy: { createdAt: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const i of rows) {
+                merged.push({
+                  sortAt: i.createdAt,
+                  type: 'intervention',
+                  payload: {
+                    id: i.id,
+                    interventionType: i.type,
+                    notes: i.notes,
+                    userId: i.userId,
+                    messageId: i.messageId,
+                  },
+                });
+              }
+            })
+        );
+      }
+
+      if (typeSet.has('questionnaire')) {
+        fetches.push(
+          this.prisma.questionnaireResponse
+            .findMany({
+              where: baseWhere,
+              include: {
+                questionnaire: { select: { code: true, name: true, type: true } },
+              },
+              orderBy: { completedAt: 'desc' },
+              take: cap,
+            })
+            .then((rows) => {
+              for (const q of rows) {
+                merged.push({
+                  sortAt: q.completedAt,
+                  type: 'questionnaire',
+                  payload: {
+                    id: q.id,
+                    questionnaire: {
+                      code: q.questionnaire.code,
+                      name: q.questionnaire.name,
+                      type: q.questionnaire.type,
+                    },
+                    scores: q.scores,
+                    responses: q.responses,
+                  },
+                });
+              }
+            })
+        );
+      }
+
+      await Promise.all(fetches);
+
+      merged.sort(
+        (a, b) => b.sortAt.getTime() - a.sortAt.getTime() || String(b.payload.id).localeCompare(String(a.payload.id))
+      );
+
+      const page = merged.slice(offset, offset + limit);
+
+      return {
+        data: page.map((e) => ({
+          type: e.type,
+          date: e.sortAt.toISOString(),
+          payload: e.payload,
+        })),
+        total,
+        limit,
+        offset,
+      };
+    } catch (err) {
+      this.logger.error(
+        'Falha ao montar a linha do tempo do paciente',
+        err instanceof Error ? err.stack : String(err)
+      );
+      throw err;
+    }
+  }
+
+  private parseTimelineTypesParam(types?: string): Set<TimelineEventType> {
+    const allowed = new Set<string>(TIMELINE_EVENT_TYPES);
+    if (!types?.trim()) {
+      return new Set(TIMELINE_EVENT_TYPES);
+    }
+    const out = new Set<TimelineEventType>();
+    for (const raw of types.split(',')) {
+      const t = raw.trim().toLowerCase();
+      if (allowed.has(t)) {
+        out.add(t as TimelineEventType);
+      }
+    }
+    return out.size > 0 ? out : new Set(TIMELINE_EVENT_TYPES);
   }
 
   /**

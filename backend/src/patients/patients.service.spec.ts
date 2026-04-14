@@ -17,6 +17,43 @@ const mockPrisma = {
   },
   alert: {
     groupBy: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  observation: {
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  complementaryExamResult: {
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  navigationStep: {
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  clinicalNote: {
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  cancerDiagnosis: {
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  treatment: {
+    findMany: jest.fn(),
+  },
+  internalNote: {
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  intervention: {
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  questionnaireResponse: {
+    findMany: jest.fn(),
+    count: jest.fn(),
   },
   tenant: {
     findUnique: jest.fn(),
@@ -71,6 +108,25 @@ describe('PatientsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockPrisma.observation.count.mockResolvedValue(0);
+    mockPrisma.observation.findMany.mockResolvedValue([]);
+    mockPrisma.alert.count.mockResolvedValue(0);
+    mockPrisma.alert.findMany.mockResolvedValue([]);
+    mockPrisma.complementaryExamResult.count.mockResolvedValue(0);
+    mockPrisma.complementaryExamResult.findMany.mockResolvedValue([]);
+    mockPrisma.navigationStep.count.mockResolvedValue(0);
+    mockPrisma.navigationStep.findMany.mockResolvedValue([]);
+    mockPrisma.clinicalNote.count.mockResolvedValue(0);
+    mockPrisma.clinicalNote.findMany.mockResolvedValue([]);
+    mockPrisma.cancerDiagnosis.count.mockResolvedValue(0);
+    mockPrisma.cancerDiagnosis.findMany.mockResolvedValue([]);
+    mockPrisma.treatment.findMany.mockResolvedValue([]);
+    mockPrisma.internalNote.count.mockResolvedValue(0);
+    mockPrisma.internalNote.findMany.mockResolvedValue([]);
+    mockPrisma.intervention.count.mockResolvedValue(0);
+    mockPrisma.intervention.findMany.mockResolvedValue([]);
+    mockPrisma.questionnaireResponse.count.mockResolvedValue(0);
+    mockPrisma.questionnaireResponse.findMany.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -328,6 +384,78 @@ describe('PatientsService', () => {
       expect(mockPrisma.patient.delete).toHaveBeenCalledWith({
         where: { id: PATIENT_ID, tenantId: TENANT },
       });
+    });
+  });
+
+  // ─── getTimeline ───────────────────────────────────────────────────────────
+
+  describe('getTimeline', () => {
+    it('deve lançar NotFoundException quando o paciente não existe no tenant', async () => {
+      mockPrisma.patient.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.getTimeline(PATIENT_ID, TENANT, {})
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPrisma.observation.findMany).not.toHaveBeenCalled();
+    });
+
+    it('deve retornar lista vazia e total 0 quando não há eventos', async () => {
+      mockPrisma.patient.findFirst.mockResolvedValue({ id: PATIENT_ID });
+
+      const result = await service.getTimeline(PATIENT_ID, TENANT, {});
+
+      expect(result).toEqual({
+        data: [],
+        total: 0,
+        limit: 50,
+        offset: 0,
+      });
+      expect(mockPrisma.observation.count).toHaveBeenCalledWith({
+        where: { patientId: PATIENT_ID, tenantId: TENANT },
+      });
+    });
+
+    it('deve escopar contagens e leituras ao tenantId do paciente', async () => {
+      mockPrisma.patient.findFirst.mockResolvedValue({ id: PATIENT_ID });
+      mockPrisma.alert.count.mockResolvedValue(1);
+      mockPrisma.alert.findMany.mockResolvedValue([
+        {
+          id: 'a1',
+          tenantId: TENANT,
+          patientId: PATIENT_ID,
+          type: 'CRITICAL_SYMPTOM',
+          severity: 'HIGH',
+          message: 'Teste',
+          status: 'PENDING',
+          context: null,
+          createdAt: new Date('2024-06-01T12:00:00.000Z'),
+          updatedAt: new Date('2024-06-01T12:00:00.000Z'),
+        },
+      ]);
+
+      await service.getTimeline(PATIENT_ID, TENANT, { types: 'alert' });
+
+      expect(mockPrisma.alert.count).toHaveBeenCalledWith({
+        where: { patientId: PATIENT_ID, tenantId: TENANT },
+      });
+      expect(mockPrisma.alert.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { patientId: PATIENT_ID, tenantId: TENANT },
+        })
+      );
+    });
+
+    it('deve respeitar limit máximo 100 e offset', async () => {
+      mockPrisma.patient.findFirst.mockResolvedValue({ id: PATIENT_ID });
+
+      const result = await service.getTimeline(PATIENT_ID, TENANT, {
+        limit: 999,
+        offset: 5,
+      });
+
+      expect(result.limit).toBe(100);
+      expect(result.offset).toBe(5);
     });
   });
 });
