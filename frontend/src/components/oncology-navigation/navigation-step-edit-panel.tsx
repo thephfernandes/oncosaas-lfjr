@@ -37,6 +37,7 @@ import {
   STEP_DETAIL_FIELD_CONFIG,
   VARIANT_SECTION_TITLE,
 } from '@/lib/utils/nav-step-form-variants';
+import { buildSafeApiFileHref } from '@/lib/utils/safe-api-url';
 
 export type StepFileMeta = {
   filename: string;
@@ -474,14 +475,26 @@ export function NavigationStepEditPanel({
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {formatFileSize(file.size)}
                     </span>
-                    <a
-                      href={`${apiUrl}${file.path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 text-sm font-medium text-primary underline-offset-4 hover:underline"
-                    >
-                      Abrir
-                    </a>
+                    {(() => {
+                      const fileHref = buildSafeApiFileHref(apiUrl, file.path);
+                      if (!fileHref) {
+                        return (
+                          <span className="shrink-0 text-xs text-muted-foreground" title="Link inválido">
+                            —
+                          </span>
+                        );
+                      }
+                      return (
+                        <a
+                          href={fileHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                        >
+                          Abrir
+                        </a>
+                      );
+                    })()}
                   </li>
                 ))}
               </ul>
