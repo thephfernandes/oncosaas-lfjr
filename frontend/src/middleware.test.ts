@@ -1,7 +1,7 @@
 import { middleware } from './middleware';
 
-function buildRequest(pathname: string, cookie?: string) {
-  const url = `https://onconav.local${pathname}`;
+function buildRequest(pathname: string, cookie?: string, protocol: 'http' | 'https' = 'https') {
+  const url = `${protocol}://onconav.local${pathname}`;
   const headers = new Headers(cookie ? { cookie } : {});
 
   const request = {
@@ -53,6 +53,53 @@ describe('middleware auth gating (probe no backend)', () => {
     expect(init?.method).toBe('GET');
     expect((init?.headers as Record<string, string>)?.cookie).toContain('access_token=token');
   });
+  it('usa INTERNAL_APP_URL quando hostname é .internal (permitido)', async () => {
+    process.env.INTERNAL_APP_URL = 'http://app.internal:4000';
+    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await middleware(buildRequest('/dashboard', 'access_token=token'));
+    const [calledUrl] = fetchMock.mock.calls[0] as unknown as [string];
+    expect(calledUrl).toBe('http://app.internal:4000/api/v1/auth/profile');
+    delete process.env.INTERNAL_APP_URL;
+  });
+
+  it('cai para localhost quando INTERNAL_APP_URL tem hostname externo não permitido', async () => {
+    process.env.INTERNAL_APP_URL = 'http://169.254.169.254/';
+    const fetchMock = vi.fn(async () => new Response(null, { status: 401 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await middleware(buildRequest('/dashboard', 'access_token=token'));
+    const [calledUrl] = fetchMock.mock.calls[0] as unknown as [string];
+    // Deve usar loopback, não o hostname malicioso
+    expect(calledUrl).toContain('localhost');
+    expect(calledUrl).not.toContain('169.254');
+    delete process.env.INTERNAL_APP_URL;
+  });
+
+  it('sanitiza CR/LF no header cookie para evitar header injection', async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    // Simula `headers.get('cookie')` retornando string com newlines
+    // (Headers nativa rejeita newlines; aqui testamos que a sanitização
+    //  funciona mesmo se o valor chegar por outro caminho, ex: mock de ambiente)
+    const req = buildRequest('/dashboard');
+    vi.spyOn(req.headers, 'get').mockReturnValue('access_token=token\r\nX-Evil: injected');
+
+    await middleware(req);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const cookie = (init?.headers as Record<string, string>)?.cookie ?? '';
+    expect(cookie).not.toMatch(/[\r\n]/);
+    expect(cookie).toContain('access_token=token');
+  });
+
+  it('usa o protocolo da requisição (http) ao montar URL interna padrão', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: 'u1' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await middleware(buildRequest('/dashboard', 'access_token=token', 'http'));
+    const [calledUrl] = fetchMock.mock.calls[0] as unknown as [string];
+    expect(calledUrl).toBe('http://localhost:3000/api/v1/auth/profile');
+  });
+
   it('usa INTERNAL_APP_URL quando hostname é .internal (permitido)', async () => {
     process.env.INTERNAL_APP_URL = 'http://app.internal:4000';
     const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
