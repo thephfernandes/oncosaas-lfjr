@@ -3,6 +3,7 @@ import { AuthService } from '@/auth/auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ServiceUnavailableException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@/prisma/prisma.service';
 import { RedisService } from '@/redis/redis.service';
@@ -240,6 +241,65 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('refresh_token');
       expect(result.user.email).toBe('nurse@example.com');
       expect(result.user).not.toHaveProperty('password');
+    });
+  });
+
+  describe('refresh', () => {
+    it('deve lançar UnauthorizedException quando refresh token não existir no Redis', async () => {
+      mockRedis.get.mockResolvedValueOnce(null);
+
+      await expect(service.refresh('rt-inexistente')).rejects.toThrow(UnauthorizedException);
+      expect(mockRedis.get).toHaveBeenCalledWith('rt:rt-inexistente');
+    });
+
+    it('deve lançar ServiceUnavailableException quando Redis falhar ao ler token', async () => {
+      mockRedis.get.mockRejectedValueOnce(new Error('Redis down'));
+
+      await expect(service.refresh('qualquer')).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it('deve rotacionar refresh token e emitir novo access token quando válido', async () => {
+      mockRedis.get.mockResolvedValueOnce('user-1');
+      mockRedis.del.mockResolvedValue(1);
+      mockRedis.set.mockResolvedValue('OK');
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: 'user@example.com',
+        tenantId: 'tenant-1',
+        role: 'NURSE',
+        tenant: { id: 'tenant-1', name: 'Hospital Teste' },
+      });
+
+      const result = await service.refresh('old-refresh');
+
+      expect(mockRedis.del).toHaveBeenCalledWith('rt:old-refresh');
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        expect.stringMatching(/^rt:/),
+        'user-1',
+        expect.any(Number)
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          access_token: 'mock-access-token',
+          refresh_token: expect.any(String),
+        })
+      );
+    });
+  });
+
+  describe('logout', () => {
+    it('deve lançar ServiceUnavailableException quando Redis falhar ao deletar refresh token', async () => {
+      mockRedis.del.mockRejectedValueOnce(new Error('Redis down'));
+
+      await expect(service.logout('rt-1')).rejects.toThrow(ServiceUnavailableException);
+      expect(mockRedis.del).toHaveBeenCalledWith('rt:rt-1');
+    });
+
+    it('não deve lançar erro quando deletar refresh token com sucesso', async () => {
+      mockRedis.del.mockResolvedValueOnce(1);
+
+      await expect(service.logout('rt-ok')).resolves.toBeUndefined();
+      expect(mockRedis.del).toHaveBeenCalledWith('rt:rt-ok');
     });
   });
 
