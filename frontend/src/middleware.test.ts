@@ -49,12 +49,12 @@ describe('middleware auth gating (probe no backend)', () => {
     const [calledUrl, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     // Probe usa URL interna (loopback) — não o hostname externo da requisição original.
     // Isso evita roundtrip HTTPS externo no Docker de produção.
-    expect(calledUrl).toBe('https://localhost:3000/api/v1/auth/profile');
+    expect(calledUrl).toBe('http://localhost:3000/api/v1/auth/profile');
     expect(init?.method).toBe('GET');
     expect((init?.headers as Record<string, string>)?.cookie).toContain('access_token=token');
   });
 
-  it('usa o protocolo da requisição (http) ao montar URL interna padrão', async () => {
+  it('usa http no loopback por padrão (independente do protocolo externo)', async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: 'u1' }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     await middleware(buildRequest('/dashboard', 'access_token=token', 'http'));
